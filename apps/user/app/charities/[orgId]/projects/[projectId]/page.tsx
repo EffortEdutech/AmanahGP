@@ -1,9 +1,10 @@
 // apps/user/app/charities/[orgId]/projects/[projectId]/page.tsx
-// AmanahHub — Public project detail page
+// AmanahHub — Public project detail page (updated: includes evidence gallery)
 
-import { notFound }     from 'next/navigation';
-import Link             from 'next/link';
-import { createClient } from '@/lib/supabase/server';
+import { notFound }        from 'next/navigation';
+import Link                from 'next/link';
+import { createClient }    from '@/lib/supabase/server';
+import { EvidenceGallery } from '@/components/charity/evidence-gallery';
 
 interface Props { params: Promise<{ orgId: string; projectId: string }> }
 
@@ -36,7 +37,7 @@ export default async function PublicProjectPage({ params }: Props) {
   // Verified reports only
   const { data: reports } = await supabase
     .from('project_reports')
-    .select('id, title, report_body, report_date, verified_at')
+    .select('id, title, report_body, report_date, verified_at, organization_id')
     .eq('project_id', projectId)
     .eq('verification_status', 'verified')
     .order('report_date', { ascending: false });
@@ -44,11 +45,11 @@ export default async function PublicProjectPage({ params }: Props) {
   return (
     <div className="max-w-3xl mx-auto px-4 py-10">
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm mb-6">
+      <div className="flex items-center gap-2 text-sm mb-6 flex-wrap">
         <Link href="/charities" className="text-emerald-700 hover:text-emerald-800">Charities</Link>
         <span className="text-gray-300">/</span>
         <Link href={`/charities/${orgId}`}
-          className="text-emerald-700 hover:text-emerald-800 truncate max-w-[160px]">
+          className="text-emerald-700 hover:text-emerald-800 truncate max-w-40">
           {org.name}
         </Link>
         <span className="text-gray-300">/</span>
@@ -61,14 +62,14 @@ export default async function PublicProjectPage({ params }: Props) {
         <p className="text-sm text-gray-600 leading-relaxed mb-4">{project.objective}</p>
 
         <div className="flex flex-wrap gap-4 text-sm text-gray-500">
-          {project.location_text && (
-            <span>📍 {project.location_text}</span>
-          )}
+          {project.location_text && <span>📍 {project.location_text}</span>}
           {project.start_date && (
             <span>📅 {project.start_date} → {project.end_date ?? 'ongoing'}</span>
           )}
           {project.budget_amount && (
-            <span>💰 MYR {Number(project.budget_amount).toLocaleString('en-MY')}</span>
+            <span>
+              💰 MYR {Number(project.budget_amount).toLocaleString('en-MY')}
+            </span>
           )}
         </div>
 
@@ -90,8 +91,7 @@ export default async function PublicProjectPage({ params }: Props) {
           {reports.map((r) => {
             const body = r.report_body as Record<string, any>;
             return (
-              <div key={r.id}
-                className="bg-white rounded-xl border border-gray-200 p-5">
+              <div key={r.id} className="bg-white rounded-xl border border-gray-200 p-5">
                 <div className="flex items-start justify-between gap-2 mb-3">
                   <h3 className="text-sm font-semibold text-gray-900">{r.title}</h3>
                   <div className="flex items-center gap-1.5 flex-shrink-0">
@@ -117,13 +117,17 @@ export default async function PublicProjectPage({ params }: Props) {
                     <span>👥 {Number(body.beneficiaries_reached).toLocaleString()} beneficiaries</span>
                   )}
                   {body.spend_to_date != null && (
-                    <span>💸 MYR {Number(body.spend_to_date).toLocaleString('en-MY')} spent</span>
+                    <span>
+                      💸 MYR {Number(body.spend_to_date).toLocaleString('en-MY')} spent
+                    </span>
                   )}
                 </div>
 
                 {body.milestones_completed?.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-xs font-medium text-gray-500 mb-1">Milestones completed</p>
+                    <p className="text-xs font-medium text-gray-500 mb-1">
+                      Milestones completed
+                    </p>
                     <ul className="text-xs text-gray-600 space-y-0.5 list-disc list-inside">
                       {(body.milestones_completed as string[]).map((m, i) => (
                         <li key={i}>{m}</li>
@@ -131,6 +135,12 @@ export default async function PublicProjectPage({ params }: Props) {
                     </ul>
                   </div>
                 )}
+
+                {/* Evidence gallery — only approved public files */}
+                <EvidenceGallery
+                  reportId={r.id}
+                  organizationId={r.organization_id}
+                />
 
                 {r.verified_at && (
                   <p className="text-xs text-gray-400 mt-3">

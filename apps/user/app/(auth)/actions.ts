@@ -1,10 +1,10 @@
 'use server';
 // apps/user/app/(auth)/actions.ts
-// AmanahHub — Auth server actions (donor sign in / sign up)
+// AmanahHub — Auth server actions (updated: adds resetPassword)
 
-import { redirect } from 'next/navigation';
+import { redirect }     from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { signInSchema, signUpSchema, forgotPasswordSchema } from '@agp/validation';
+import { signInSchema, signUpSchema, forgotPasswordSchema, resetPasswordSchema } from '@agp/validation';
 
 export async function signIn(
   _prev: { error?: string } | null,
@@ -18,7 +18,6 @@ export async function signIn(
 
   const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword(parsed.data);
-
   if (error) return { error: 'Incorrect email or password' };
 
   const next = formData.get('next') as string | null;
@@ -37,7 +36,7 @@ export async function signUp(
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? 'Invalid input' };
 
   const supabase = await createClient();
-  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3200';
+  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3300';
 
   const { error } = await supabase.auth.signUp({
     email:    parsed.data.email,
@@ -47,7 +46,6 @@ export async function signUp(
       data: { display_name: parsed.data.displayName ?? '' },
     },
   });
-
   if (error) return { error: error.message };
   return { success: true };
 }
@@ -66,12 +64,27 @@ export async function forgotPassword(
   if (!parsed.success) return { error: 'Please enter a valid email address' };
 
   const supabase = await createClient();
-  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3200';
+  const appUrl   = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3300';
 
   const { error } = await supabase.auth.resetPasswordForEmail(parsed.data.email, {
     redirectTo: `${appUrl}/callback?type=recovery`,
   });
+  if (error) return { error: error.message };
+  return { success: true };
+}
 
+export async function resetPassword(
+  _prev: { error?: string; success?: boolean } | null,
+  formData: FormData
+): Promise<{ error?: string; success?: boolean }> {
+  const parsed = resetPasswordSchema.safeParse({
+    password:        formData.get('password'),
+    confirmPassword: formData.get('confirmPassword'),
+  });
+  if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? 'Invalid input' };
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.updateUser({ password: parsed.data.password });
   if (error) return { error: error.message };
   return { success: true };
 }

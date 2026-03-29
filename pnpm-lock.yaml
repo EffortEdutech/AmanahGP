@@ -109,6 +109,8 @@ importers:
 
   packages/config: {}
 
+  packages/scoring: {}
+
   packages/validation:
     dependencies:
       zod:
