@@ -1,11 +1,9 @@
 # Amanah Governance Platform — Decision Log
 
-**Version:** v1.0  
+**Version:** v1.2  
 **Date:** 27 Mar 2026  
 **Owner:** Darya Malak  
 **Status:** Active
-
-This is the single canonical record of locked decisions. Each entry has a status and a pointer to its full ADR.
 
 ---
 
@@ -28,6 +26,52 @@ This is the single canonical record of locked decisions. Each entry has a status
 | 13 | Malaysia-first: `org_type`, `oversight_authority`, `fund_types` from day 1 | **Locked** | — |
 | 14 | Non-custodial: platform never holds funds | **Locked** | — |
 | 15 | Branding: Amanah Governance Platform / AmanahHub / AmanahHub Console | **Locked** | — |
+| 16 | Repo, Supabase project, Supabase org, and GitHub org | **Locked** | — |
+| 17 | Local dev ports: 3300 (user) / 3301 (admin) | **Locked** | — |
+
+---
+
+## Decision #16 — Repo, Supabase, and GitHub
+
+**Decided:** 27 Mar 2026  
+**Status:** Confirmed and live
+
+| Layer | Name / URL |
+|---|---|
+| GitHub organisation | `EffortEdutech` |
+| Git repository name | `AmanahGP` |
+| GitHub repo URL | `https://github.com/EffortEdutech/AmanahGP` |
+| Supabase project name | `AmanahGP` |
+| Supabase project ref | `uscgtpvdgcgrfzvccnwq` |
+| Supabase org | `AmanahGP Org` |
+| Supabase dashboard | `https://supabase.com/dashboard/project/uscgtpvdgcgrfzvccnwq` |
+| Monorepo root folder | `amanah-governance-platform/` (local) |
+| Default branch | `main` |
+
+### What does NOT change
+- App names: **AmanahHub** and **AmanahHub Console**
+- Platform brand: **Amanah Governance Platform**
+- Internal folder paths: `apps/user`, `apps/admin`, `supabase/`
+- All env variable names, table names, RLS policies, function names
+
+---
+
+## Decision #17 — Local Dev Ports
+
+**Decided:** 27 Mar 2026
+
+| App | Port |
+|---|---|
+| AmanahHub (`apps/user`) | `3300` |
+| AmanahHub Console (`apps/admin`) | `3301` |
+
+Reason: port 3200 was occupied on the development machine.
+
+Start commands:
+```powershell
+pnpm -C apps/user dev -- -p 3300
+pnpm -C apps/admin dev -- -p 3301
+```
 
 ---
 
@@ -41,6 +85,7 @@ This is the single canonical record of locked decisions. Each entry has a status
 ---
 
 ## Change Control Reminder
+
 Any change to a **Locked** decision requires:
 1. Written rationale
 2. Impact on timeline / security / compliance
