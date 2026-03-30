@@ -1,6 +1,6 @@
 'use client';
 // apps/admin/components/layout/sidebar.tsx
-// AmanahHub Console — Main sidebar (updated Sprint 4: all links wired)
+// AmanahHub Console — Main sidebar (fixed: duplicate key bug)
 
 import Link              from 'next/link';
 import { usePathname }   from 'next/navigation';
@@ -38,22 +38,53 @@ export function Sidebar({ user, orgs }: SidebarProps) {
   const firstOrg = orgs[0];
   const orgId    = firstOrg?.organization_id;
 
-  // Build nav items dynamically — link to first org if available
   const NAV_ITEMS = [
-    { label: 'Dashboard',     href: '/dashboard',                             icon: ChartBarIcon },
-    { label: 'Organization',  href: orgId ? `/orgs/${orgId}` : '/onboarding/new', icon: BuildingOffice2Icon },
-    { label: 'Projects',      href: orgId ? `/orgs/${orgId}/projects` : '#',   icon: ClipboardDocumentListIcon },
-    { label: 'Members',       href: orgId ? `/orgs/${orgId}/members` : '#',    icon: UserGroupIcon },
-    { label: 'Financials',    href: orgId ? `/orgs/${orgId}/financials` : '#', icon: BanknotesIcon },
-    { label: 'Certification', href: orgId ? `/orgs/${orgId}/certification` : '#', icon: ShieldCheckIcon },
+    {
+      label:    'Dashboard',
+      href:     '/dashboard',
+      icon:     ChartBarIcon,
+      disabled: false,
+    },
+    {
+      label:    'Organization',
+      href:     orgId ? `/orgs/${orgId}` : null,
+      icon:     BuildingOffice2Icon,
+      disabled: !orgId,
+    },
+    {
+      label:    'Projects',
+      href:     orgId ? `/orgs/${orgId}/projects` : null,
+      icon:     ClipboardDocumentListIcon,
+      disabled: !orgId,
+    },
+    {
+      label:    'Members',
+      href:     orgId ? `/orgs/${orgId}/members` : null,
+      icon:     UserGroupIcon,
+      disabled: !orgId,
+    },
+    {
+      label:    'Financials',
+      href:     orgId ? `/orgs/${orgId}/financials` : null,
+      icon:     BanknotesIcon,
+      disabled: !orgId,
+    },
+    {
+      label:    'Certification',
+      href:     orgId ? `/orgs/${orgId}/certification` : null,
+      icon:     ShieldCheckIcon,
+      disabled: !orgId,
+    },
   ];
 
   const REVIEWER_NAV = [
     { label: 'Onboarding queue', href: '/review/onboarding', icon: QueueListIcon },
     { label: 'Reports queue',    href: '/review/reports',    icon: DocumentChartBarIcon },
+    { label: 'Certification',    href: '/review/certification', icon: ShieldCheckIcon },
   ];
 
-  function isActive(href: string) {
+  function isActive(href: string | null) {
+    if (!href) return false;
     if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   }
@@ -102,17 +133,32 @@ export function Sidebar({ user, orgs }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map((item) => (
-          <Link key={item.href} href={item.href}
-            className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-              ${isActive(item.href)
-                ? 'bg-emerald-50 text-emerald-800 font-medium'
-                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-              } ${item.href === '#' ? 'opacity-40 cursor-not-allowed pointer-events-none' : ''}`}>
-            <item.icon className="w-4 h-4 flex-shrink-0" />
-            {item.label}
-          </Link>
-        ))}
+        {NAV_ITEMS.map((item) => {
+          const active = isActive(item.href);
+
+          if (item.disabled || !item.href) {
+            return (
+              <div key={item.label}
+                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm
+                           text-gray-300 cursor-not-allowed select-none">
+                <item.icon className="w-4 h-4 flex-shrink-0" />
+                {item.label}
+              </div>
+            );
+          }
+
+          return (
+            <Link key={item.label} href={item.href}
+              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
+                ${active
+                  ? 'bg-emerald-50 text-emerald-800 font-medium'
+                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                }`}>
+              <item.icon className="w-4 h-4 flex-shrink-0" />
+              {item.label}
+            </Link>
+          );
+        })}
 
         {isReviewer(user.platformRole) && (
           <>
@@ -121,7 +167,7 @@ export function Sidebar({ user, orgs }: SidebarProps) {
               Reviewer
             </div>
             {REVIEWER_NAV.map((item) => (
-              <Link key={item.href} href={item.href}
+              <Link key={item.label} href={item.href}
                 className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
                   ${isActive(item.href)
                     ? 'bg-emerald-50 text-emerald-800 font-medium'

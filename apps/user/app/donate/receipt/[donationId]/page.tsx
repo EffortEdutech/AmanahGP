@@ -1,9 +1,10 @@
 // apps/user/app/donate/receipt/[donationId]/page.tsx
 // AmanahHub — Donation receipt page
-// Accessible via URL after ToyyibPay redirect (no auth required — ADR-004)
+// Uses service client so anonymous donors can view their receipt by ID
+// The donationId acts as the receipt "token" — it is unguessable (UUID v4)
 
-import { createClient } from '@/lib/supabase/server';
-import Link             from 'next/link';
+import { createServiceClient } from '@/lib/supabase/server';
+import Link                    from 'next/link';
 
 interface Props { params: Promise<{ donationId: string }> }
 
@@ -11,11 +12,12 @@ export const metadata = { title: 'Donation Receipt' };
 
 export default async function ReceiptPage({ params }: Props) {
   const { donationId } = await params;
-  const supabase = await createClient();
 
-  // Read via service role so anon donors can view their own receipt by ID
-  // RLS allows anon insert but not select — receipt URL is the "token"
-  const { data: donation } = await supabase
+  // Use service client — anon RLS blocks direct reads on donation_transactions
+  // The UUID itself is the access control (unguessable receipt token)
+  const svc = createServiceClient();
+
+  const { data: donation } = await svc
     .from('donation_transactions')
     .select(`
       id, amount, platform_fee_amount, currency, status,
@@ -30,7 +32,8 @@ export default async function ReceiptPage({ params }: Props) {
     return (
       <div className="max-w-md mx-auto px-4 py-16 text-center">
         <p className="text-gray-500 text-sm">Receipt not found.</p>
-        <Link href="/charities" className="mt-4 inline-block text-emerald-700 text-sm hover:underline">
+        <Link href="/charities"
+          className="mt-4 inline-block text-emerald-700 text-sm hover:underline">
           Browse charities
         </Link>
       </div>
@@ -49,14 +52,14 @@ export default async function ReceiptPage({ params }: Props) {
         {/* Status header */}
         <div className={`px-6 py-5 text-center ${
           isConfirmed ? 'bg-emerald-700' :
-          isPending   ? 'bg-amber-500' : 'bg-gray-400'
+          isPending   ? 'bg-amber-500'   : 'bg-gray-400'
         }`}>
           <div className="text-3xl mb-2">
             {isConfirmed ? '✓' : isPending ? '⏳' : '✗'}
           </div>
           <h1 className="text-white font-semibold text-lg">
             {isConfirmed ? 'Donation confirmed' :
-             isPending   ? 'Payment pending' : 'Payment not completed'}
+             isPending   ? 'Payment pending'    : 'Payment not completed'}
           </h1>
           {isPending && (
             <p className="text-amber-100 text-xs mt-1">
@@ -77,7 +80,7 @@ export default async function ReceiptPage({ params }: Props) {
             label="Platform contribution"
             value={`${donation.currency} ${Number(donation.platform_fee_amount).toLocaleString('en-MY', { minimumFractionDigits: 2 })}`}
           />
-          <Row label="Gateway" value={donation.gateway.toUpperCase()} />
+          <Row label="Gateway"   value={donation.gateway.toUpperCase()} />
           <Row label="Reference" value={donation.id.slice(0, 16).toUpperCase()} />
           {donation.confirmed_at && (
             <Row
