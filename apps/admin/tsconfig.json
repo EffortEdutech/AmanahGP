@@ -1,6 +1,10 @@
 {
   "compilerOptions": {
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -12,14 +16,34 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "plugins": [{ "name": "next" }],
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
     "paths": {
-      "@/*": ["./*"],
-      "@agp/config":    ["../../packages/config/src/index.ts"],
-      "@agp/validation":["../../packages/validation/src/index.ts"],
-      "@agp/scoring":   ["../../packages/scoring/src/index.ts"]
-    }
+      "@/*": [
+        "./*"
+      ],
+      "@agp/config": [
+        "../../packages/config/src/index.ts"
+      ],
+      "@agp/validation": [
+        "../../packages/validation/src/index.ts"
+      ],
+      "@agp/scoring": [
+        "../../packages/scoring/src/index.ts"
+      ]
+    },
+    "target": "ES2017"
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }
