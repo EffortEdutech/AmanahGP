@@ -1,6 +1,7 @@
 // apps/admin/app/(dashboard)/onboarding/new/page.tsx
-// AmanahHub Console — New org registration (Sprint 8 UI uplift)
-// Fixed: imports createOrganization from ../../orgs/actions (correct shared path)
+// AmanahHub Console — New org registration
+// Fixed: removed the redirect that sent users away if they already had an org.
+// Any authenticated user (including super_admin and org members) can register a new org.
 
 import { redirect }           from 'next/navigation';
 import { createClient }       from '@/lib/supabase/server';
@@ -15,20 +16,8 @@ export default async function NewOrgPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: me } = await supabase
-    .from('users').select('id')
-    .eq('auth_provider_user_id', user.id).single();
-  if (!me) redirect('/login');
-
-  // If user already has an org, redirect to it
-  const { data: existing } = await supabase
-    .from('org_members')
-    .select('organization_id')
-    .eq('user_id', me.id)
-    .eq('status', 'active')
-    .limit(1).maybeSingle();
-
-  if (existing) redirect(`/orgs/${existing.organization_id}`);
+  // No redirect for existing org members — any user may register additional orgs.
+  // Super admin can register on behalf of any party.
 
   return (
     <div className="max-w-xl">
@@ -39,10 +28,8 @@ export default async function NewOrgPage() {
         Step 1 of 3 — Basic profile and Malaysia governance classification
       </p>
 
-      {/* Step indicator */}
       <StepIndicator current={1} />
 
-      {/* Form — passes createOrganization from shared orgs/actions */}
       <OnboardingForm action={createOrganization} />
     </div>
   );
@@ -61,11 +48,8 @@ function StepIndicator({ current }: { current: number }) {
         <div key={step.n} className="flex items-center gap-2 flex-1 min-w-0">
           <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center
                           text-[10px] font-medium flex-shrink-0 ${
-            step.done
-              ? 'bg-emerald-100 text-emerald-700'
-              : step.n === current
-                ? 'bg-emerald-700 text-white'
-                : 'bg-gray-100 text-gray-400'
+            step.done        ? 'bg-emerald-100 text-emerald-700' :
+            step.n === current ? 'bg-emerald-700 text-white'    : 'bg-gray-100 text-gray-400'
           }`}>
             {step.done ? '✓' : step.n}
           </div>
