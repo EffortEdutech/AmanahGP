@@ -1,14 +1,15 @@
 // apps/admin/app/(dashboard)/review/onboarding/[orgId]/page.tsx
-// AmanahHub Console — Org review detail (Sprint 8 UI uplift)
-// Fixed: orgOnboardingDecision from '../../actions' (review/actions.ts, Sprint 2)
+// AmanahHub Console — Org onboarding review + document approval (Sprint 12)
+// Reviewer sees all uploaded docs and can approve each for public visibility.
 
-import { redirect }          from 'next/navigation';
-import Link                  from 'next/link';
-import { createClient }      from '@/lib/supabase/server';
-import { isReviewerOrAbove } from '@agp/config';
-import { StatusBadge, Badge, OrgRoleBadge } from '@/components/ui/badge';
-import { ReviewDecisionForm } from '@/components/review/review-decision-form';
-// orgOnboardingDecision lives in review/actions.ts — two levels up from [orgId]
+import { redirect }            from 'next/navigation';
+import Link                    from 'next/link';
+import { createClient,
+         createServiceClient } from '@/lib/supabase/server';
+import { isReviewerOrAbove }   from '@agp/config';
+import { StatusBadge }         from '@/components/ui/badge';
+import { ReviewDecisionForm }  from '@/components/review/review-decision-form';
+import { DocumentReviewPanel } from '@/components/documents/document-review-panel';
 import { orgOnboardingDecision } from '../../actions';
 
 interface Props { params: Promise<{ orgId: string }> }
@@ -24,6 +25,7 @@ const ORG_TYPE_LABELS: Record<string, string> = {
 export default async function OrgReviewPage({ params }: Props) {
   const { orgId } = await params;
   const supabase  = await createClient();
+  const svc       = createServiceClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -33,7 +35,7 @@ export default async function OrgReviewPage({ params }: Props) {
     .eq('auth_provider_user_id', user.id).single();
   if (!me || !isReviewerOrAbove(me.platform_role)) redirect('/dashboard');
 
-  const { data: org } = await supabase
+  const { data: org } = await svc
     .from('organizations')
     .select(`
       id, name, legal_name, registration_no, website_url, contact_email,
@@ -44,11 +46,22 @@ export default async function OrgReviewPage({ params }: Props) {
 
   if (!org) redirect('/review/onboarding');
 
-  const { data: members } = await supabase
+  const { data: members } = await svc
     .from('org_members')
-    .select(`org_role, status, users ( display_name, email )`)
+    .select('org_role, status, users ( display_name, email )')
     .eq('organization_id', orgId)
     .eq('status', 'active');
+
+  // All uploaded documents for this org
+  const { data: orgDocs } = await svc
+    .from('org_documents')
+    .select(`
+      id, document_category, document_type, label, file_name,
+      file_size_bytes, mime_type, is_approved_public, period_year, created_at
+    `)
+    .eq('organization_id', orgId)
+    .order('document_category')
+    .order('created_at', { ascending: false });
 
   const fundTypes = (org.fund_types ?? []) as string[];
 
@@ -63,9 +76,11 @@ export default async function OrgReviewPage({ params }: Props) {
         <div>
           <h1 className="text-[18px] font-semibold text-gray-900">{org.name}</h1>
           <p className="text-[11px] text-gray-500 mt-0.5">
-            {org.onboarding_submitted_at
-              ? `Submitted ${new Date(org.onboarding_submitted_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' })}`
-              : 'Submission date unknown'}
+            Submitted {org.onboarding_submitted_at
+              ? new Date(org.onboarding_submitted_at).toLocaleDateString('en-MY', {
+                  day: 'numeric', month: 'long', year: 'numeric',
+                })
+              : '—'}
           </p>
         </div>
         <StatusBadge status={org.onboarding_status} />
@@ -73,33 +88,32 @@ export default async function OrgReviewPage({ params }: Props) {
 
       <div className="grid grid-cols-2 gap-4">
 
-        {/* Left: profile + members */}
+        {/* LEFT: org profile + members */}
         <div className="space-y-3">
           <div className="card p-4">
             <p className="sec-label">Organization profile</p>
-            <table className="w-full text-[12px] border-collapse">
+            <table className="w-full text-[12px] border-collapse mt-1">
               <tbody>
                 <TRow label="Legal name"   value={org.legal_name ?? '—'} />
                 <TRow label="Registration" value={org.registration_no ?? '—'} />
                 <TRow label="State"        value={org.state ?? '—'} />
                 <TRow label="Type"         value={org.org_type ? ORG_TYPE_LABELS[org.org_type] ?? org.org_type : '—'} />
                 <TRow label="Oversight"    value={org.oversight_authority ?? '—'} />
+                <TRow label="Contact"      value={org.contact_email ?? '—'} />
               </tbody>
             </table>
-
             {fundTypes.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1 mt-2">
                 {fundTypes.map((f) => (
-                  <Badge key={f} variant="blue">{f.toUpperCase()}</Badge>
+                  <span key={f} className="badge badge-blue">{f.toUpperCase()}</span>
                 ))}
               </div>
             )}
-
             {org.summary && (
-              <>
-                <div className="h-px bg-gray-100 my-3" />
-                <p className="text-[12px] text-gray-700 leading-relaxed">{org.summary}</p>
-              </>
+              <p className="text-[11px] text-gray-600 mt-3 leading-relaxed border-t
+                            border-gray-100 pt-3">
+                {org.summary}
+              </p>
             )}
           </div>
 
@@ -113,7 +127,7 @@ export default async function OrgReviewPage({ params }: Props) {
                     <div key={i} className="flex items-center justify-between py-2">
                       <div className="min-w-0">
                         <span className="text-[12px] text-gray-900">{u?.display_name ?? '—'}</span>
-                        <span className="text-[11px] text-gray-400 ml-1">· {m.org_role}</span>
+                        <span className="text-[10px] text-gray-400 ml-1">· {m.org_role}</span>
                       </div>
                       <StatusBadge status={m.status} />
                     </div>
@@ -126,7 +140,7 @@ export default async function OrgReviewPage({ params }: Props) {
           </div>
         </div>
 
-        {/* Right: decision */}
+        {/* RIGHT: reviewer decision */}
         <div>
           <div className="card p-4">
             <p className="sec-label">Reviewer decision</p>
@@ -140,6 +154,26 @@ export default async function OrgReviewPage({ params }: Props) {
         </div>
 
       </div>
+
+      {/* DOCUMENT REVIEW PANEL — approve docs for public visibility */}
+      <div className="mt-4">
+        <DocumentReviewPanel
+          orgId={orgId}
+          documents={orgDocs ?? []}
+        />
+      </div>
+
+      {/* Document flow guidance */}
+      <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 mt-1
+                      text-[11px] text-blue-800 leading-relaxed">
+        <p className="font-semibold mb-1">How document approval works</p>
+        <p>
+          Documents uploaded by the organization are <strong>private by default</strong>.
+          Click <strong>"Approve public"</strong> on each document to make it visible
+          to donors on AmanahHub. Approved documents appear on the organization's
+          public profile under "Transparency documents". You can revoke approval at any time.
+        </p>
+      </div>
     </div>
   );
 }
@@ -147,7 +181,7 @@ export default async function OrgReviewPage({ params }: Props) {
 function TRow({ label, value }: { label: string; value: string }) {
   return (
     <tr>
-      <td className="py-1.5 text-gray-400 w-[120px] align-top">{label}</td>
+      <td className="py-1.5 text-gray-400 w-[100px] align-top">{label}</td>
       <td className="py-1.5 text-gray-800">{value}</td>
     </tr>
   );

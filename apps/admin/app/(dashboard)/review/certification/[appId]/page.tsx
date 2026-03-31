@@ -1,21 +1,25 @@
 // apps/admin/app/(dashboard)/review/certification/[appId]/page.tsx
-// AmanahHub Console — CTCF evaluation (Sprint 8 UI uplift)
-// Matches UAT s-r-ctcf: layer cards with check rows, score total card, cert decision form
+// AmanahHub Console — Reviewer: CTCF evaluation + document review
+// Fixed: submitCtcfEvaluation from '../../certification-actions' (was '../certification-actions')
 
-import { redirect }          from 'next/navigation';
-import Link                  from 'next/link';
-import { createClient }      from '@/lib/supabase/server';
-import { isReviewerOrAbove } from '@agp/config';
-import { CtcfEvaluationForm } from '@/components/review/ctcf-evaluation-form';
-import { submitCtcfEvaluation } from '../certification-actions';
+import { redirect }              from 'next/navigation';
+import { createClient,
+         createServiceClient }   from '@/lib/supabase/server';
+import { isReviewerOrAbove }     from '@agp/config';
+import { CtcfEvaluationForm }    from '@/components/review/ctcf-evaluation-form';
+import { DocumentReviewPanel }   from '@/components/documents/document-review-panel';
+// certification-actions.ts lives at review/certification-actions.ts
+// from review/certification/[appId]/ we need to go up TWO levels: ../../
+import { submitCtcfEvaluation }  from '../../certification-actions';
 
 interface Props { params: Promise<{ appId: string }> }
 
 export const metadata = { title: 'CTCF Evaluation | AmanahHub Console' };
 
 export default async function CtcfEvaluationPage({ params }: Props) {
-  const { appId }  = await params;
-  const supabase   = await createClient();
+  const { appId } = await params;
+  const supabase  = await createClient();
+  const svc       = createServiceClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
@@ -25,7 +29,7 @@ export default async function CtcfEvaluationPage({ params }: Props) {
     .eq('auth_provider_user_id', user.id).single();
   if (!me || !isReviewerOrAbove(me.platform_role)) redirect('/dashboard');
 
-  const { data: app } = await supabase
+  const { data: app } = await svc
     .from('certification_applications')
     .select(`
       id, status, submitted_at, reviewer_comment,
@@ -39,232 +43,160 @@ export default async function CtcfEvaluationPage({ params }: Props) {
   if (!app) redirect('/review/certification');
 
   const org = Array.isArray(app.organizations) ? app.organizations[0] : app.organizations;
-  const fundTypes = (org?.fund_types ?? []) as string[];
 
-  const { data: latestEval } = await supabase
+  // Latest evaluation
+  const { data: latestEval } = await svc
     .from('certification_evaluations')
     .select('id, total_score, score_breakdown, criteria_version, computed_at')
     .eq('certification_application_id', appId)
     .order('computed_at', { ascending: false })
     .limit(1).maybeSingle();
 
-  const { data: financials } = await supabase
+  // Org financial snapshot (for context)
+  const { data: financials } = await svc
     .from('financial_snapshots')
     .select('period_year, verification_status, inputs')
     .eq('organization_id', org?.id ?? '')
     .order('period_year', { ascending: false })
     .limit(1).maybeSingle();
 
-  const { data: verifiedReports } = await supabase
+  // Verified reports (for context)
+  const { data: verifiedReports } = await svc
     .from('project_reports')
-    .select('id, title, report_body, verified_at')
+    .select('id, title, verified_at')
     .eq('organization_id', org?.id ?? '')
     .eq('verification_status', 'verified')
     .order('verified_at', { ascending: false })
     .limit(5);
 
-  const hasWaqf   = fundTypes.includes('waqf');
-  const hasZakat  = fundTypes.includes('zakat');
-  const breakdown = latestEval?.score_breakdown as Record<string, any> | null;
-  const totalScore = latestEval ? Number(latestEval.total_score) : null;
+  // ALL org documents (governance + financial + shariah) for this org
+  const { data: orgDocs } = await svc
+    .from('org_documents')
+    .select(`
+      id, document_category, document_type, label, file_name,
+      file_size_bytes, mime_type, is_approved_public, period_year, created_at
+    `)
+    .eq('organization_id', org?.id ?? '')
+    .in('document_category', ['governance', 'financial', 'shariah'])
+    .order('document_category')
+    .order('created_at', { ascending: false });
 
-  // Score tier
-  function gradeLabel(s: number) {
-    if (s >= 85) return 'Platinum Amanah';
-    if (s >= 70) return 'Gold Amanah';
-    if (s >= 55) return 'Silver Amanah';
-    return 'Below threshold';
-  }
+  const fundTypes = (org?.fund_types ?? []) as string[];
+  const hasZakat  = fundTypes.includes('zakat');
+  const hasWaqf   = fundTypes.includes('waqf');
 
   return (
-    <div className="max-w-5xl">
-      {/* Breadcrumb */}
-      <Link href="/review/onboarding"
-        className="text-[11px] text-gray-400 hover:text-emerald-700 mb-4 block">
-        ← Certification queue
-      </Link>
+    <div className="max-w-3xl">
+      <div className="mb-5">
+        <a href="/review/certification"
+          className="text-[11px] text-gray-400 hover:text-emerald-700 mb-3 block">
+          ← Certification queue
+        </a>
+        <h1 className="text-[18px] font-semibold text-gray-900">CTCF Evaluation</h1>
+        <p className="text-[11px] text-gray-400 mt-0.5">
+          Application ID: {appId.substring(0, 8)}…
+        </p>
+      </div>
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-3 mb-4">
-        <div>
-          <h1 className="text-[18px] font-semibold text-gray-900">CTCF Evaluation</h1>
-          <p className="text-[11px] text-gray-500 mt-0.5">
-            {org?.name} · {org?.org_type?.replace('_', ' ')} · {org?.oversight_authority ?? '—'}
-            {hasWaqf ? ' · Waqf' : ''}{hasZakat ? ' · Zakat' : ''}
-          </p>
+      {/* Org context */}
+      <div className="card p-4 mb-4">
+        <p className="sec-label">Organization context</p>
+        <div className="grid grid-cols-2 gap-2 mt-2 text-[12px]">
+          <ContextRow label="Name"          value={org?.name ?? '—'} />
+          <ContextRow label="Type"          value={org?.org_type?.replace('_',' ') ?? '—'} />
+          <ContextRow label="Oversight"     value={org?.oversight_authority ?? '—'} />
+          <ContextRow label="Fund types"    value={fundTypes.join(', ').toUpperCase() || '—'} />
+          <ContextRow label="Status"        value={app.status} />
+          <ContextRow label="Submitted"
+            value={app.submitted_at
+              ? new Date(app.submitted_at).toLocaleDateString('en-MY', {
+                  day: 'numeric', month: 'short', year: 'numeric',
+                })
+              : '—'} />
         </div>
       </div>
 
-      {/* Existing eval summary */}
-      {latestEval && (
-        <div className="g-card mb-4 flex items-center justify-between">
-          <p className="text-[12px] font-medium text-emerald-800">
-            Previous evaluation: {Math.round(Number(latestEval.total_score))} — {gradeLabel(Number(latestEval.total_score))}
-          </p>
-          <p className="text-[10px] text-emerald-600">
-            {latestEval.criteria_version} · {new Date(latestEval.computed_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}
-          </p>
+      {/* Financial context */}
+      {financials && (
+        <div className="card p-4 mb-4">
+          <p className="sec-label">Financial snapshot ({financials.period_year})</p>
+          <div className="grid grid-cols-2 gap-2 mt-2 text-[12px]">
+            <ContextRow label="Status" value={financials.verification_status} />
+            {financials.inputs?.audit_firm && (
+              <ContextRow label="Auditor" value={financials.inputs.audit_firm} />
+            )}
+          </div>
         </div>
       )}
 
-      {/* 2-col body */}
-      <div className="grid grid-cols-2 gap-4">
-
-        {/* Left: layer cards */}
-        <div className="space-y-3">
-
-          {/* Layer 1 — Governance gate */}
-          <LayerCard
-            title="Layer 1 — governance gate"
-            subtitle="All items must pass"
-            items={[
-              { label: 'Legal identity / registration',    ok: !!org?.onboarding_status && org.onboarding_status === 'approved' },
-              { label: 'Governing document',               ok: breakdown?.governance?.has_governing_doc ?? null },
-              { label: 'Named board / trustees',           ok: breakdown?.governance?.has_board ?? null },
-              { label: 'Conflict of interest policy',      ok: breakdown?.governance?.has_coi_policy ?? null },
-              { label: 'Bank account separation',          ok: breakdown?.governance?.has_bank_separation ?? null },
-              { label: 'Contact + physical address',       ok: !!org },
-            ]}
-            footer={breakdown?.layer1_passed ? 'Gate passed' : undefined}
-          />
-
-          {/* Layer 2 — Financial */}
-          <LayerCard
-            title="Layer 2 — financial (20 pts)"
-            items={[
-              { label: 'Annual financial statement',       ok: !!financials?.inputs?.total_income },
-              { label: 'Audit evidence',                   ok: !!financials?.inputs?.is_audited },
-              { label: 'Program vs admin breakdown',       ok: !!(financials?.inputs?.program_expenses && financials?.inputs?.admin_expenses) },
-              { label: 'Zakat segregation',                ok: hasZakat ? (breakdown?.financial?.zakat_segregation ?? null) : null, na: !hasZakat },
-            ]}
-            score={breakdown?.financial ? `${breakdown.financial.score ?? 0}/20` : undefined}
-          />
-
-          {/* Layer 3 — Project */}
-          <LayerCard
-            title="Layer 3 — project reporting (25 pts)"
-            items={[
-              { label: 'Budget vs actual tracking',        ok: (verifiedReports?.length ?? 0) > 0 },
-              { label: 'Geo-verified reporting',           ok: breakdown?.project?.geo_verified ?? null },
-              { label: 'Before/after documentation',       ok: breakdown?.project?.before_after ?? null },
-              { label: 'Beneficiary metrics',              ok: (verifiedReports ?? []).some((r) => (r.report_body as any)?.beneficiary_count) },
-              { label: 'Completion report timeliness',     ok: breakdown?.project?.timely ?? null },
-            ]}
-            score={breakdown?.project ? `${breakdown.project.score ?? 0}/25` : undefined}
-          />
-
-        </div>
-
-        {/* Right: layer 4 + 5 + score + decision */}
-        <div className="space-y-3">
-
-          {/* Layer 4 — Impact */}
-          <LayerCard
-            title="Layer 4 — impact (20 pts)"
-            items={[
-              { label: 'KPIs defined',                     ok: breakdown?.impact?.kpis_defined ?? null },
-              { label: 'Sustainability plan',              ok: breakdown?.impact?.sustainability ?? null },
-              { label: 'Continuity tracking',              ok: breakdown?.impact?.continuity ?? null },
-              { label: 'Impact-per-cost metric',           ok: breakdown?.impact?.cost_effectiveness ?? null },
-            ]}
-            score={breakdown?.impact ? `${breakdown.impact.score ?? 0}/20` : undefined}
-          />
-
-          {/* Layer 5 — Shariah */}
-          <LayerCard
-            title="Layer 5 — Shariah governance (15 pts)"
-            items={[
-              { label: 'Named Shariah advisor (5 pts)',    ok: breakdown?.shariah?.has_advisor ?? null },
-              { label: 'Written Shariah policy (3 pts)',   ok: breakdown?.shariah?.has_policy ?? null },
-              { label: 'Zakat eligibility governance (3)', ok: hasZakat ? (breakdown?.shariah?.zakat_gov ?? null) : null, na: !hasZakat },
-              { label: 'Waqf asset governance (4 pts)',    ok: hasWaqf ? (breakdown?.shariah?.waqf_gov ?? null) : null, na: !hasWaqf },
-            ]}
-            score={breakdown?.shariah ? `${breakdown.shariah.score ?? 0}/${hasWaqf || hasZakat ? 15 : 8} → normalized ${breakdown.shariah.normalized ?? 0}/15` : undefined}
-          />
-
-          {/* Total score card */}
-          {totalScore !== null && (
-            <div className="g-card">
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className="text-[11px] font-medium text-emerald-800">Total CTCF score</p>
-                  <p className="text-[10px] text-emerald-600">
-                    {totalScore >= 55 ? '✓ Certifiable' : '✗ Below 55 threshold'}
-                    {totalScore >= 55 ? ` · ${gradeLabel(totalScore)}` : ''}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[32px] font-semibold text-emerald-700 leading-none">
-                    {Math.round(totalScore)}
-                  </span>
-                  <p className="text-[11px] font-medium text-emerald-700 mt-0.5">
-                    {gradeLabel(totalScore)}
-                  </p>
-                </div>
+      {/* Verified reports */}
+      {(verifiedReports ?? []).length > 0 && (
+        <div className="card p-4 mb-4">
+          <p className="sec-label">Verified reports ({verifiedReports!.length})</p>
+          <div className="space-y-1 mt-2">
+            {verifiedReports!.map((r) => (
+              <div key={r.id} className="text-[11px] text-gray-600 flex justify-between">
+                <span className="truncate">{r.title}</span>
+                <span className="text-gray-400 ml-2 flex-shrink-0">
+                  {r.verified_at
+                    ? new Date(r.verified_at).toLocaleDateString('en-MY')
+                    : ''}
+                </span>
               </div>
-            </div>
-          )}
-
-          {/* Evaluation + decision form */}
-          <div className="card p-4">
-            <p className="sec-label">Certification decision</p>
-            <CtcfEvaluationForm
-              appId={appId}
-              orgId={org?.id ?? ''}
-              reviewerId={me.id}
-              currentScore={totalScore ?? undefined}
-              action={submitCtcfEvaluation}
-            />
+            ))}
           </div>
-
         </div>
+      )}
+
+      {/* Previous evaluation */}
+      {latestEval && (
+        <div className="card p-4 mb-4 bg-emerald-50 border-emerald-200">
+          <p className="sec-label">Previous evaluation</p>
+          <div className="flex items-center gap-3 mt-2">
+            <span className="text-[22px] font-bold text-emerald-800">
+              {Number(latestEval.total_score).toFixed(1)}
+            </span>
+            <div className="text-[11px] text-emerald-700">
+              <p>{latestEval.criteria_version}</p>
+              <p className="text-gray-500">
+                {new Date(latestEval.computed_at).toLocaleDateString('en-MY')}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* DOCUMENT REVIEW PANEL — reviewer approves docs before CTCF scoring */}
+      <DocumentReviewPanel
+        orgId={org?.id ?? ''}
+        documents={orgDocs ?? []}
+      />
+
+      <div className="bg-amber-50 border border-amber-100 rounded-xl p-3 mb-4 text-[11px]
+                      text-amber-800">
+        <strong>Reviewer note:</strong> Review and approve all uploaded documents above
+        before completing the CTCF evaluation. Approved documents will become publicly
+        visible to donors on AmanahHub.
       </div>
+
+      {/* CTCF evaluation form */}
+      <CtcfEvaluationForm
+        appId={appId}
+        orgId={org?.id ?? ''}
+        orgName={org?.name ?? ''}
+        hasZakat={hasZakat}
+        hasWaqf={hasWaqf}
+        action={submitCtcfEvaluation}
+      />
     </div>
   );
 }
 
-/* ── Layer card component ── */
-function LayerCard({
-  title, subtitle, items, score, footer,
-}: {
-  title:    string;
-  subtitle?: string;
-  items:    { label: string; ok: boolean | null; na?: boolean }[];
-  score?:   string;
-  footer?:  string;
-}) {
+function ContextRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="card p-4">
-      <p className="sec-label">{title}</p>
-      {subtitle && <p className="text-[10px] text-gray-400 mb-2">{subtitle}</p>}
-
-      <div>
-        {items.map((item, i) => (
-          <div key={i} className="layer-row">
-            <span className="text-[11px] text-gray-700">{item.label}</span>
-            {item.na ? (
-              <span className="chk chk-na flex items-center justify-center">N/A</span>
-            ) : item.ok === true ? (
-              <span className="chk chk-y flex items-center justify-center">✓</span>
-            ) : item.ok === false ? (
-              <span className="chk chk-n flex items-center justify-center">✗</span>
-            ) : (
-              <span className="chk chk-na flex items-center justify-center">?</span>
-            )}
-          </div>
-        ))}
-      </div>
-
-      {(score || footer) && (
-        <div className="mt-2 flex items-center gap-2">
-          {footer && (
-            <span className="badge badge-green">{footer}</span>
-          )}
-          {score && (
-            <span className="text-[10px] text-gray-500">{score}</span>
-          )}
-        </div>
-      )}
+    <div className="flex gap-3">
+      <span className="text-gray-400 w-24 flex-shrink-0">{label}</span>
+      <span className="text-gray-800">{value}</span>
     </div>
   );
 }
