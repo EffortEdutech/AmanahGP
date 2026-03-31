@@ -1,10 +1,31 @@
+// apps/admin/next.config.ts
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
-  experimental: {
-    serverActions: {
-      allowedOrigins: ['localhost:3301'],
-    },
+  transpilePackages: ['@agp/config', '@agp/scoring', '@agp/validation'],
+
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'uscgtpvdgcgrfzvccnwq.supabase.co',
+        pathname: '/storage/v1/object/**',
+      },
+    ],
+  },
+
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          {
+            key: 'X-DNS-Prefetch-Control',
+            value: 'on',
+          },
+        ],
+      },
+    ];
   },
 };
 
