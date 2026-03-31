@@ -1,21 +1,18 @@
 // apps/user/app/charities/page.tsx
-// AmanahHub — Public charity directory
+// AmanahHub — Public charity directory (Sprint 7 UI uplift)
+// Data fetching unchanged — visual layer replaced to match UAT s-dir
 
 import { createClient }    from '@/lib/supabase/server';
 import { CharityCard }     from '@/components/charity/charity-card';
 import { DirectorySearch } from '@/components/charity/directory-search';
 
 export const metadata = {
-  title: 'Charity Directory',
-  description: 'Browse verified Islamic charities in Malaysia.',
+  title: 'Charity Directory | AmanahHub',
+  description: 'Browse verified Islamic charities in Malaysia. Trusted giving, transparent governance.',
 };
 
 interface Props {
-  searchParams: Promise<{
-    q?: string;
-    org_type?: string;
-    state?: string;
-  }>;
+  searchParams: Promise<{ q?: string; org_type?: string; state?: string }>;
 }
 
 export default async function CharitiesPage({ searchParams }: Props) {
@@ -39,10 +36,9 @@ export default async function CharitiesPage({ searchParams }: Props) {
 
   const { data: orgs } = await query;
 
-  // Shape — pick latest cert and score
   const items = (orgs ?? []).map((org) => {
     const certs  = (org.certification_history ?? []) as any[];
-    const scores = (org.amanah_index_history ?? []) as any[];
+    const scores = (org.amanah_index_history  ?? []) as any[];
 
     const latestCert  = certs.sort((a, b) =>
       new Date(b.decided_at).getTime() - new Date(a.decided_at).getTime())[0];
@@ -60,50 +56,55 @@ export default async function CharitiesPage({ searchParams }: Props) {
     };
   });
 
+  const hasFilters = !!(params.q || params.org_type || params.state);
+
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
-      {/* Hero */}
-      <div className="text-center mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">
+    <div className="max-w-5xl mx-auto px-4 py-6">
+
+      {/* Page header */}
+      <div className="mb-5">
+        <h1 className="text-lg font-semibold text-gray-900">Charity Directory</h1>
+        <p className="text-[11px] text-gray-500 mt-0.5">
           Trusted Giving. Transparent Governance.
-        </h1>
-        <p className="text-gray-500 max-w-xl mx-auto text-sm">
-          Every organization here has been reviewed and verified on the Amanah Governance Platform.
-          Give with confidence.
+          {items.length > 0 && ` — ${items.length} verified organization${items.length !== 1 ? 's' : ''}`}
         </p>
       </div>
 
       {/* Search + filters */}
-      <DirectorySearch
-        defaultQ={params.q}
-        defaultOrgType={params.org_type}
-        defaultState={params.state}
-      />
+      <div className="mb-5">
+        <DirectorySearch
+          defaultQ={params.q}
+          defaultOrgType={params.org_type}
+          defaultState={params.state}
+        />
+      </div>
 
       {/* Results */}
-      <div className="mt-6">
-        {items.length > 0 ? (
-          <>
-            <p className="text-xs text-gray-400 mb-4">
-              {items.length} organization{items.length !== 1 ? 's' : ''} found
+      {items.length > 0 ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {items.map((org) => (
+            <CharityCard key={org.id} org={org} />
+          ))}
+
+          {/* Pending slot */}
+          <div className="card p-4 flex flex-col items-center justify-center min-h-[96px] bg-gray-50">
+            <p className="text-[11px] text-gray-400 text-center">
+              More organizations under review
             </p>
-            <div className="grid gap-4 sm:grid-cols-2">
-              {items.map((org) => (
-                <CharityCard key={org.id} org={org} />
-              ))}
-            </div>
-          </>
-        ) : (
-          <div className="text-center py-16">
-            <p className="text-gray-400 text-sm">
-              No organizations found.
-              {params.q || params.org_type || params.state
-                ? ' Try adjusting your filters.'
-                : ''}
+            <p className="text-[10px] text-gray-300 mt-1">
+              Applications are verified before listing
             </p>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <div className="text-center py-16">
+          <p className="text-sm text-gray-400">
+            {hasFilters
+              ? 'No organizations matched your filters. Try adjusting your search.'
+              : 'No listed organizations yet.'}
+          </p>
+        </div>
+      )}
     </div>
   );
 }

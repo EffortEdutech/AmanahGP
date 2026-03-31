@@ -1,3 +1,111 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ── AmanahHub Console design tokens (Sprint 8 UI uplift) ── */
+@layer base {
+  :root {
+    --brand:        #047857;
+    --brand-light:  #ecfdf5;
+    --brand-dark:   #065f46;
+    --brand-border: #a7f3d0;
+  }
+}
+
+@layer components {
+  /* Score ring */
+  .score-ring          { @apply flex flex-col items-center justify-center rounded-full flex-shrink-0; }
+  .score-ring-platinum { @apply bg-violet-50  ring-1 ring-violet-200 text-violet-800; }
+  .score-ring-gold     { @apply bg-amber-50   ring-1 ring-amber-200  text-amber-800;  }
+  .score-ring-silver   { @apply bg-gray-100   ring-1 ring-gray-200   text-gray-600;   }
+  .score-ring-basic    { @apply bg-gray-100   ring-1 ring-gray-200   text-gray-500;   }
+
+  /* Badge */
+  .badge        { @apply inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium flex-shrink-0; }
+  .badge-green  { @apply bg-emerald-100 text-emerald-800; }
+  .badge-amber  { @apply bg-amber-100   text-amber-700;   }
+  .badge-blue   { @apply bg-blue-100    text-blue-800;    }
+  .badge-purple { @apply bg-violet-100  text-violet-800;  }
+  .badge-gray   { @apply bg-gray-100    text-gray-600;    }
+  .badge-red    { @apply bg-red-100     text-red-700;     }
+
+  /* Cards */
+  .card    { @apply bg-white border border-gray-200 rounded-xl; }
+  .g-card  { @apply bg-emerald-50 border border-emerald-100 rounded-lg p-3; }
+  .a-card  { @apply bg-amber-50   border border-amber-100   rounded-lg p-3; }
+
+  /* Stat block */
+  .stat-val { @apply text-[22px] font-semibold leading-none; }
+  .stat-lbl { @apply text-[11px] text-gray-500 mt-1; }
+  .stat-blk { @apply bg-gray-50 border border-gray-200 rounded-lg p-3; }
+
+  /* Progress bar */
+  .prog-wrap { @apply h-1 bg-gray-200 rounded-full overflow-hidden mt-1; }
+  .prog-fill { @apply h-full bg-emerald-600 rounded-full; }
+
+  /* List item */
+  .list-item {
+    @apply flex items-center gap-3 p-3 border border-gray-200 rounded-lg
+           bg-white hover:border-emerald-200 hover:bg-emerald-50/30
+           cursor-pointer transition-colors;
+  }
+
+  /* Section label */
+  .sec-label { @apply text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-2; }
+
+  /* Timeline */
+  .tl      { @apply relative pl-4; }
+  .tl::before { content: ''; @apply absolute left-[5px] top-2 bottom-2 w-px bg-gray-200; }
+  .tli     { @apply relative mb-3 pl-1; }
+  .tli::before {
+    content: '';
+    @apply absolute -left-4 top-[5px] w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white;
+  }
+
+  /* Layer row (CTCF) */
+  .layer-row {
+    @apply flex items-center justify-between py-1.5
+           border-b border-gray-100 last:border-b-0;
+  }
+
+  /* Check circle — justify-center (was incorrectly justify-content) */
+  .chk     { @apply inline-flex w-[18px] h-[18px] rounded-full items-center justify-center text-[9px] flex-shrink-0; }
+  .chk-y   { @apply bg-emerald-100 text-emerald-700; }
+  .chk-n   { @apply bg-red-100     text-red-700;     }
+  .chk-na  { @apply bg-gray-100    text-gray-500 text-[8px]; }
+
+  /* Decision radio option */
+  .dec-opt     { @apply flex items-center gap-2.5 p-2.5 rounded-lg border cursor-pointer text-sm font-medium; }
+  .dec-approve { @apply border-emerald-200 bg-emerald-50 text-emerald-800; }
+  .dec-changes { @apply border-amber-200   bg-amber-50   text-amber-800;   }
+  .dec-reject  { @apply border-red-200     bg-red-50     text-red-800;     }
+
+  /* Field */
+  .field {
+    @apply w-full px-3 py-2 border border-gray-300 rounded-lg text-sm
+           bg-white placeholder-gray-400
+           focus:border-emerald-500 focus:outline-none focus:ring-1 focus:ring-emerald-500;
+  }
+
+  /* Buttons — justify-center (was incorrectly justify-content) */
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg
+           text-sm font-medium text-white bg-emerald-700 hover:bg-emerald-800
+           transition-colors disabled:opacity-60;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-lg
+           text-xs font-medium text-gray-700 bg-white border border-gray-300
+           hover:bg-gray-50 transition-colors;
+  }
+
+  /* Avatar */
+  .avatar {
+    @apply w-8 h-8 rounded-full flex items-center justify-center
+           text-xs font-medium flex-shrink-0 select-none;
+  }
+  .avatar-green  { @apply bg-emerald-100 text-emerald-700; }
+  .avatar-blue   { @apply bg-blue-100    text-blue-700;    }
+  .avatar-purple { @apply bg-violet-100  text-violet-700;  }
+  .avatar-amber  { @apply bg-amber-100   text-amber-700;   }
+}

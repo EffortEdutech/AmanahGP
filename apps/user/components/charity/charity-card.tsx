@@ -1,22 +1,13 @@
-// apps/user/components/charity/charity-card.tsx
-// AmanahHub — Charity card for directory listing
+// components/charity/charity-card.tsx
+// AmanahHub — Charity directory card (Sprint 7 UI uplift)
+// Matches UAT s-dir card: score ring + org name + type/state + badges + summary
 
-import Link from 'next/link';
-
-interface Props {
-  org: {
-    id:                   string;
-    name:                 string;
-    summary:              string | null;
-    org_type:             string | null;
-    state:                string | null;
-    certification_status: string | null;
-    amanah_score:         number | null;
-  };
-}
+import Link                           from 'next/link';
+import { ScoreRing, scoreTier }       from '@/components/ui/score-ring';
+import { CertifiedBadge, TierBadge }  from '@/components/ui/badge';
 
 const ORG_TYPE_LABELS: Record<string, string> = {
-  ngo:              'NGO',
+  ngo:              'NGO / Welfare',
   mosque_surau:     'Mosque / Surau',
   waqf_institution: 'Waqf Institution',
   zakat_body:       'Zakat Body',
@@ -25,60 +16,61 @@ const ORG_TYPE_LABELS: Record<string, string> = {
   other:            'Other',
 };
 
-function ScoreBadge({ score }: { score: number }) {
-  const color =
-    score >= 85 ? 'bg-purple-50 text-purple-700' :
-    score >= 70 ? 'bg-amber-50 text-amber-700' :
-    score >= 55 ? 'bg-gray-100 text-gray-600' :
-                  'bg-gray-100 text-gray-400';
-  return (
-    <div className={`flex flex-col items-center justify-center w-14 h-14 rounded-xl ${color} flex-shrink-0`}>
-      <span className="text-lg font-bold leading-none">{score.toFixed(0)}</span>
-      <span className="text-xs mt-0.5 font-medium">Score</span>
-    </div>
-  );
+export interface CharityCardOrg {
+  id:                   string;
+  name:                 string;
+  summary:              string | null;
+  org_type:             string | null;
+  state:                string | null;
+  certification_status: string | null;
+  amanah_score:         number | null;
 }
 
-function CertBadge({ status }: { status: string }) {
-  if (status !== 'certified') return null;
+export function CharityCard({ org }: { org: CharityCardOrg }) {
+  const isCertified = org.certification_status === 'certified';
+  const hasScore    = org.amanah_score !== null && org.amanah_score > 0;
+
   return (
-    <span className="inline-flex items-center gap-1 text-xs font-medium
-                     text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-      ✓ Certified
-    </span>
-  );
-}
+    <Link
+      href={`/charities/${org.id}`}
+      className="card p-4 block hover:border-emerald-200 hover:shadow-sm transition-all"
+    >
+      {/* Top row: score ring + org info */}
+      <div className="flex items-start gap-3 mb-2.5">
+        {hasScore ? (
+          <ScoreRing score={org.amanah_score!} size="md" />
+        ) : (
+          <div className="w-14 h-14 rounded-full bg-gray-100 ring-1 ring-gray-200
+                          flex items-center justify-center text-gray-300 text-xs flex-shrink-0">
+            —
+          </div>
+        )}
 
-export function CharityCard({ org }: Props) {
-  return (
-    <Link href={`/charities/${org.id}`}
-      className="flex gap-4 p-5 bg-white rounded-xl border border-gray-200
-                 hover:border-emerald-200 hover:shadow-sm transition-all group">
-
-      {/* Score */}
-      {org.amanah_score != null && <ScoreBadge score={org.amanah_score} />}
-
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <h2 className="text-sm font-semibold text-gray-900 group-hover:text-emerald-800
-                         leading-snug line-clamp-2">
+        <div className="min-w-0 flex-1 pt-0.5">
+          <p className="text-[13px] font-semibold text-gray-900 leading-snug mb-0.5 truncate">
             {org.name}
-          </h2>
-          {org.certification_status && (
-            <CertBadge status={org.certification_status} />
+          </p>
+          <p className="text-[11px] text-gray-500 mb-1.5">
+            {org.org_type ? ORG_TYPE_LABELS[org.org_type] ?? org.org_type : ''}
+            {org.state ? ` · ${org.state}` : ''}
+          </p>
+
+          {/* Badges */}
+          {(isCertified || hasScore) && (
+            <div className="flex flex-wrap gap-1">
+              {isCertified && <CertifiedBadge />}
+              {hasScore && <TierBadge score={org.amanah_score!} />}
+            </div>
           )}
         </div>
-
-        <p className="text-xs text-gray-400 mb-2">
-          {org.org_type ? ORG_TYPE_LABELS[org.org_type] ?? org.org_type : ''}
-          {org.state ? ` · ${org.state}` : ''}
-        </p>
-
-        {org.summary && (
-          <p className="text-xs text-gray-500 line-clamp-2">{org.summary}</p>
-        )}
       </div>
+
+      {/* Summary */}
+      {org.summary && (
+        <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2">
+          {org.summary}
+        </p>
+      )}
     </Link>
   );
 }

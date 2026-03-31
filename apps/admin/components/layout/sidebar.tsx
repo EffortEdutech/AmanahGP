@@ -1,22 +1,11 @@
 'use client';
 // apps/admin/components/layout/sidebar.tsx
-// AmanahHub Console — Main sidebar (fixed: duplicate key bug)
+// AmanahHub Console — Compact sidebar (Sprint 8 UI uplift)
+// Matches UAT .sidebar 180px pattern with .sb-link 12px items
 
-import Link              from 'next/link';
-import { usePathname }   from 'next/navigation';
-import { signOut }       from '@/app/(auth)/actions';
-import {
-  BuildingOffice2Icon,
-  ClipboardDocumentListIcon,
-  UserGroupIcon,
-  ChartBarIcon,
-  ShieldCheckIcon,
-  ArrowRightOnRectangleIcon,
-  PlusCircleIcon,
-  QueueListIcon,
-  BanknotesIcon,
-  DocumentChartBarIcon,
-} from '@heroicons/react/24/outline';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { signOut }     from '@/app/(auth)/actions';
 
 interface SidebarProps {
   user: { displayName: string; email: string; platformRole: string };
@@ -30,174 +19,130 @@ interface SidebarProps {
 }
 
 function isReviewer(role: string) {
-  return role === 'reviewer' || role === 'super_admin';
+  return role === 'reviewer' || role === 'scholar' || role === 'super_admin';
+}
+
+function isOrgMember(orgs: SidebarProps['orgs']) {
+  return orgs.length > 0;
 }
 
 export function Sidebar({ user, orgs }: SidebarProps) {
   const pathname = usePathname();
+  const orgId    = orgs[0]?.organization_id;
   const firstOrg = orgs[0];
-  const orgId    = firstOrg?.organization_id;
 
-  const NAV_ITEMS = [
-    {
-      label:    'Dashboard',
-      href:     '/dashboard',
-      icon:     ChartBarIcon,
-      disabled: false,
-    },
-    {
-      label:    'Organization',
-      href:     orgId ? `/orgs/${orgId}` : null,
-      icon:     BuildingOffice2Icon,
-      disabled: !orgId,
-    },
-    {
-      label:    'Projects',
-      href:     orgId ? `/orgs/${orgId}/projects` : null,
-      icon:     ClipboardDocumentListIcon,
-      disabled: !orgId,
-    },
-    {
-      label:    'Members',
-      href:     orgId ? `/orgs/${orgId}/members` : null,
-      icon:     UserGroupIcon,
-      disabled: !orgId,
-    },
-    {
-      label:    'Financials',
-      href:     orgId ? `/orgs/${orgId}/financials` : null,
-      icon:     BanknotesIcon,
-      disabled: !orgId,
-    },
-    {
-      label:    'Certification',
-      href:     orgId ? `/orgs/${orgId}/certification` : null,
-      icon:     ShieldCheckIcon,
-      disabled: !orgId,
-    },
-  ];
-
-  const REVIEWER_NAV = [
-    { label: 'Onboarding queue', href: '/review/onboarding', icon: QueueListIcon },
-    { label: 'Reports queue',    href: '/review/reports',    icon: DocumentChartBarIcon },
-    { label: 'Certification',    href: '/review/certification', icon: ShieldCheckIcon },
-  ];
-
-  function isActive(href: string | null) {
+  function active(href: string | null) {
     if (!href) return false;
     if (href === '/dashboard') return pathname === '/dashboard';
     return pathname.startsWith(href);
   }
 
+  const reviewer = isReviewer(user.platformRole);
+  const hasOrg   = isOrgMember(orgs);
+
   return (
-    <aside className="w-64 bg-white border-r border-gray-200 flex flex-col flex-shrink-0">
+    <aside className="w-[180px] flex-shrink-0 bg-white border-r border-gray-200
+                      flex flex-col h-screen sticky top-0 overflow-y-auto">
+
       {/* Brand */}
-      <div className="px-5 py-5 border-b border-gray-100">
+      <div className="px-3 py-4 border-b border-gray-100 flex-shrink-0">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-lg bg-emerald-700 flex items-center justify-center
-                          text-white text-sm font-bold flex-shrink-0">A</div>
-          <div>
-            <div className="text-sm font-semibold text-gray-900">AmanahHub</div>
-            <div className="text-xs text-gray-400">Console</div>
+          <div className="w-6 h-6 rounded-md bg-emerald-700 flex items-center justify-center
+                          text-white text-xs font-medium flex-shrink-0">A</div>
+          <div className="min-w-0">
+            <div className="text-[12px] font-semibold text-gray-900 truncate">AmanahHub</div>
+            <div className="text-[10px] text-gray-400">Console</div>
           </div>
         </div>
       </div>
 
-      {/* Org context */}
-      {firstOrg ? (
-        <div className="px-4 py-3 border-b border-gray-100">
-          <p className="text-xs text-gray-400 mb-1">Organization</p>
-          <Link href={`/orgs/${firstOrg.organization_id}`}
-            className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50
-                       text-sm font-medium text-gray-800 truncate">
-            <BuildingOffice2Icon className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <span className="truncate">{firstOrg.org_name}</span>
-          </Link>
-          <Link href="/onboarding/new"
-            className="mt-1 flex items-center gap-2 px-2 py-1.5 rounded-md text-xs
-                       text-emerald-700 hover:bg-emerald-50 font-medium">
-            <PlusCircleIcon className="w-4 h-4" />
-            Add organization
-          </Link>
-        </div>
-      ) : (
-        <div className="px-4 py-3 border-b border-gray-100">
-          <Link href="/onboarding/new"
-            className="flex items-center gap-2 px-2 py-2 rounded-md text-sm
-                       text-emerald-700 hover:bg-emerald-50 font-medium">
-            <PlusCircleIcon className="w-4 h-4" />
-            Register organization
-          </Link>
+      {/* Org context label */}
+      {firstOrg && (
+        <div className="px-3 pt-3 pb-1">
+          <p className="text-[9px] font-medium text-gray-400 uppercase tracking-wider truncate">
+            {firstOrg.org_name}
+          </p>
         </div>
       )}
 
-      {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-        {NAV_ITEMS.map((item) => {
-          const active = isActive(item.href);
+      {/* Org admin nav */}
+      <nav className="flex-1 px-2 py-2 space-y-0.5">
 
-          if (item.disabled || !item.href) {
-            return (
-              <div key={item.label}
-                className="flex items-center gap-3 px-3 py-2 rounded-md text-sm
-                           text-gray-300 cursor-not-allowed select-none">
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                {item.label}
-              </div>
-            );
-          }
+        <NavLink href="/dashboard"         label="Dashboard"     icon="▣" active={active('/dashboard')} />
 
-          return (
-            <Link key={item.label} href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                ${active
-                  ? 'bg-emerald-50 text-emerald-800 font-medium'
-                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                }`}>
-              <item.icon className="w-4 h-4 flex-shrink-0" />
-              {item.label}
-            </Link>
-          );
-        })}
-
-        {isReviewer(user.platformRole) && (
+        {hasOrg && (
           <>
-            <div className="pt-4 pb-1 px-3 text-xs font-medium text-gray-400
-                            uppercase tracking-wider">
-              Reviewer
+            <NavLink href={`/orgs/${orgId}`}                label="Organization"   icon="◎" active={active(`/orgs/${orgId}`) && !active(`/orgs/${orgId}/projects`) && !active(`/orgs/${orgId}/members`) && !active(`/orgs/${orgId}/financials`) && !active(`/orgs/${orgId}/certification`)} />
+            <NavLink href={`/orgs/${orgId}/projects`}       label="Projects"       icon="▦" active={active(`/orgs/${orgId}/projects`)} />
+            <NavLink href={`/orgs/${orgId}/financials`}     label="Financials"     icon="$" active={active(`/orgs/${orgId}/financials`)} />
+            <NavLink href={`/orgs/${orgId}/certification`}  label="Certification"  icon="★" active={active(`/orgs/${orgId}/certification`)} />
+            <NavLink href={`/orgs/${orgId}/members`}        label="Members"        icon="♟" active={active(`/orgs/${orgId}/members`)} />
+          </>
+        )}
+
+        <NavLink href="/onboarding/new" label="New org" icon="+" active={active('/onboarding/new')} />
+
+        {/* Reviewer section */}
+        {reviewer && (
+          <>
+            <div className="pt-3 pb-1">
+              <p className="px-2 text-[9px] font-medium text-gray-400 uppercase tracking-wider">
+                Reviewer
+              </p>
             </div>
-            {REVIEWER_NAV.map((item) => (
-              <Link key={item.label} href={item.href}
-                className={`flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors
-                  ${isActive(item.href)
-                    ? 'bg-emerald-50 text-emerald-800 font-medium'
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}>
-                <item.icon className="w-4 h-4 flex-shrink-0" />
-                {item.label}
-              </Link>
-            ))}
+            <NavLink href="/review/onboarding"   label="All queues"     icon="≡" active={active('/review/onboarding') || active('/review/reports') || active('/review/certification') || active('/review/amanah') || active('/review/scholar')} />
+            <NavLink href="/review/certification" label="CTCF eval"     icon="★" active={active('/review/certification')} />
+            <NavLink href="/review/scholar"       label="Scholar notes"  icon="✎" active={active('/review/scholar')} />
+            <NavLink href="/review/amanah"        label="Amanah score"  icon="▲" active={active('/review/amanah')} />
           </>
         )}
       </nav>
 
       {/* User footer */}
-      <div className="px-4 py-4 border-t border-gray-100">
-        <div className="mb-2">
-          <div className="text-sm font-medium text-gray-800 truncate">
-            {user.displayName}
-          </div>
-          <div className="text-xs text-gray-400 truncate">{user.email}</div>
-        </div>
+      <div className="border-t border-gray-100 px-3 py-3 flex-shrink-0">
+        <p className="text-[11px] font-medium text-gray-700 truncate">
+          {user.displayName}
+        </p>
+        <p className="text-[10px] text-gray-400 truncate mb-2">{user.email}</p>
         <form action={signOut}>
           <button type="submit"
-            className="flex items-center gap-2 text-xs text-gray-500
-                       hover:text-gray-700 transition-colors w-full">
-            <ArrowRightOnRectangleIcon className="w-4 h-4" />
+            className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
             Sign out
           </button>
         </form>
       </div>
     </aside>
+  );
+}
+
+function NavLink({
+  href, label, icon, active, disabled,
+}: {
+  href: string; label: string; icon: string;
+  active?: boolean; disabled?: boolean;
+}) {
+  if (disabled) {
+    return (
+      <div className="flex items-center gap-2 px-2 py-1.5 rounded-md
+                      text-[12px] text-gray-300 cursor-not-allowed select-none">
+        <span className="w-3.5 text-[11px] flex-shrink-0 text-center">{icon}</span>
+        {label}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={href}
+      className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[12px]
+                  transition-colors w-full
+                  ${active
+                    ? 'bg-emerald-50 text-emerald-800 font-medium'
+                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
+                  }`}
+    >
+      <span className="w-3.5 text-[11px] flex-shrink-0 text-center">{icon}</span>
+      {label}
+    </Link>
   );
 }

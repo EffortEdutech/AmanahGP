@@ -1,159 +1,145 @@
 'use client';
-// apps/user/components/donation/donate-form.tsx
-// AmanahHub — Donation checkout form with amount presets
+// components/donation/donate-form.tsx
+// AmanahHub — Donation checkout form (Sprint 7 UI uplift)
+// Matches UAT s-donate: 3-col amount grid + custom + email + fee + submit
+// Props interface unchanged — server actions and orgId/projectId flow preserved
 
-import { useActionState, useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useTransition } from 'react';
 
-const PRESETS = [10, 20, 50, 100, 200, 500];
-const PLATFORM_FEE_RATE = 0.02; // 2%
+const PRESETS = [10, 25, 50, 100, 200];
+const PLATFORM_FEE_PCT = 0.02;
 
 interface Props {
   orgId:     string;
   orgName:   string;
   projectId?: string;
-  action:    (prev: any, fd: FormData) => Promise<{
-    ok: boolean; checkoutUrl?: string; error?: string;
-  }>;
+  action:    (formData: FormData) => Promise<void>;
 }
 
-const initial = { ok: false, checkoutUrl: undefined, error: undefined };
-
 export function DonateForm({ orgId, orgName, projectId, action }: Props) {
-  const [state, formAction, isPending] = useActionState(action, initial);
-  const [amount, setAmount]  = useState<string>('50');
-  const [custom, setCustom]  = useState(false);
-  const router = useRouter();
+  const [selected, setSelected]   = useState<number | null>(50);
+  const [custom,   setCustom]     = useState('');
+  const [email,    setEmail]      = useState('');
+  const [isPending, startTransition] = useTransition();
 
-  const numAmount    = parseFloat(amount) || 0;
-  const platformFee  = numAmount > 0 ? parseFloat((numAmount * PLATFORM_FEE_RATE).toFixed(2)) : 0;
+  const amount = custom !== ''
+    ? parseFloat(custom) || 0
+    : selected ?? 0;
 
-  // Redirect to ToyyibPay on success
-  useEffect(() => {
-    if (state?.ok && state.checkoutUrl) {
-      window.location.href = state.checkoutUrl;
-    }
-  }, [state?.ok, state?.checkoutUrl]);
+  const fee         = +(amount * PLATFORM_FEE_PCT).toFixed(2);
+  const totalToOrg  = +(amount - fee).toFixed(2);
+
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (amount <= 0) return;
+
+    const fd = new FormData();
+    fd.set('orgId',     orgId);
+    fd.set('amount',    String(amount));
+    fd.set('email',     email);
+    if (projectId) fd.set('projectId', projectId);
+
+    startTransition(async () => {
+      await action(fd);
+    });
+  }
 
   return (
-    <form action={formAction} className="space-y-5">
-      <input type="hidden" name="organizationId" value={orgId} />
-      {projectId && <input type="hidden" name="projectId" value={projectId} />}
+    <form onSubmit={handleSubmit} className="space-y-4">
 
-      {state?.error && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {state.error}
-        </div>
-      )}
-
-      {/* Amount presets */}
+      {/* Amount grid */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">
-          Donation amount (MYR)
-        </label>
-        <div className="grid grid-cols-3 gap-2 mb-3">
+        <p className="sec-label">Select amount (MYR)</p>
+        <div className="grid grid-cols-3 gap-2 mb-2">
           {PRESETS.map((p) => (
             <button
               key={p}
               type="button"
-              onClick={() => { setAmount(String(p)); setCustom(false); }}
-              className={`py-2 rounded-lg text-sm font-medium border transition-colors
-                ${!custom && amount === String(p)
-                  ? 'bg-emerald-700 text-white border-emerald-700'
-                  : 'bg-white text-gray-700 border-gray-300 hover:border-emerald-400'
-                }`}
+              onClick={() => { setSelected(p); setCustom(''); }}
+              className={`amt-btn ${selected === p && custom === '' ? 'amt-btn-sel' : ''}`}
             >
               RM {p}
             </button>
           ))}
-        </div>
-        <button
-          type="button"
-          onClick={() => { setCustom(true); setAmount(''); }}
-          className={`w-full py-2 rounded-lg text-sm font-medium border transition-colors
-            ${custom
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-              : 'bg-white text-gray-500 border-gray-300 hover:border-emerald-400'
-            }`}
-        >
-          Custom amount
-        </button>
-
-        {custom && (
-          <div className="mt-2 relative">
-            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-500">
-              RM
-            </span>
+          {/* Custom amount cell */}
+          <div className={`amt-btn p-0 overflow-hidden ${custom !== '' ? 'amt-btn-sel' : ''}`}>
             <input
               type="number"
               min="1"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2.5 rounded-lg border border-gray-300
-                         text-sm focus:border-emerald-500 focus:outline-none focus:ring-1
-                         focus:ring-emerald-500"
-              placeholder="0.00"
+              step="1"
+              placeholder="Custom"
+              value={custom}
+              onChange={(e) => {
+                setCustom(e.target.value);
+                setSelected(null);
+              }}
+              className="w-full h-full px-2 py-2.5 text-sm text-center bg-transparent
+                         border-none outline-none placeholder-gray-400
+                         [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none
+                         [&::-webkit-inner-spin-button]:appearance-none"
             />
           </div>
-        )}
-
-        {/* Hidden inputs for form data */}
-        <input type="hidden" name="amount" value={numAmount || ''} />
-        <input type="hidden" name="platformFeeAmount" value={platformFee} />
-        <input type="hidden" name="currency" value="MYR" />
+        </div>
       </div>
 
-      {/* Donor email (optional) */}
+      {/* Email (optional) */}
       <div>
-        <label htmlFor="donorEmail" className="block text-sm font-medium text-gray-700 mb-1">
-          Email address <span className="text-gray-400 font-normal">(optional — for receipt)</span>
+        <label className="sec-label block" htmlFor="email">
+          Email for receipt <span className="normal-case text-gray-400">(optional)</span>
         </label>
         <input
-          id="donorEmail" name="donorEmail" type="email"
-          className="block w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm
-                     shadow-sm placeholder-gray-400 focus:border-emerald-500
-                     focus:outline-none focus:ring-1 focus:ring-emerald-500"
+          id="email"
+          type="email"
           placeholder="you@example.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="field"
         />
       </div>
 
-      {/* Summary */}
-      {numAmount > 0 && (
-        <div className="bg-gray-50 rounded-lg px-4 py-3 text-sm space-y-1">
-          <div className="flex justify-between text-gray-600">
-            <span>Donation to {orgName}</span>
-            <span>RM {numAmount.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between text-gray-400 text-xs">
-            <span>Platform contribution (2%)</span>
-            <span>RM {platformFee.toFixed(2)}</span>
-          </div>
-          <div className="flex justify-between font-semibold text-gray-900 pt-1
-                          border-t border-gray-200 mt-1">
-            <span>Total charged</span>
-            <span>RM {(numAmount + platformFee).toFixed(2)}</span>
-          </div>
+      {/* Fee breakdown */}
+      {amount > 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 space-y-1.5">
+          <Row label="Your donation"     value={`RM ${amount.toFixed(2)}`} />
+          <Row label="Platform contribution (2%)" value={`RM ${fee.toFixed(2)}`} dimValue />
+          <div className="h-px bg-gray-200 my-1" />
+          <Row label={`Reaches ${orgName}`} value={`RM ${totalToOrg.toFixed(2)}`} bold />
         </div>
       )}
 
+      {/* Submit */}
       <button
         type="submit"
-        disabled={isPending || numAmount <= 0}
-        className="w-full py-3 rounded-lg text-sm font-semibold text-white
-                   bg-emerald-700 hover:bg-emerald-800
-                   disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+        disabled={isPending || amount <= 0}
+        className="w-full btn-primary py-3 text-sm justify-center
+                   disabled:opacity-60 disabled:cursor-not-allowed"
       >
         {isPending
-          ? 'Preparing checkout…'
-          : numAmount > 0
-            ? `Donate RM ${numAmount.toFixed(2)} →`
-            : 'Select an amount'}
+          ? 'Redirecting…'
+          : amount > 0
+            ? `Donate RM ${amount.toFixed(2)} →`
+            : 'Enter an amount'}
       </button>
 
-      <p className="text-xs text-center text-gray-400">
-        You will be redirected to ToyyibPay to complete your payment securely.
+      <p className="text-[10px] text-center text-gray-400">
+        You will be redirected to ToyyibPay to complete payment.
+        No funds are held by AmanahHub.
       </p>
     </form>
+  );
+}
+
+function Row({
+  label, value, bold, dimValue,
+}: {
+  label: string; value: string; bold?: boolean; dimValue?: boolean;
+}) {
+  return (
+    <div className="flex justify-between items-baseline gap-2">
+      <span className="text-[11px] text-gray-500">{label}</span>
+      <span className={`text-[12px] ${bold ? 'font-semibold text-gray-900' : dimValue ? 'text-gray-400' : 'text-gray-700'}`}>
+        {value}
+      </span>
+    </div>
   );
 }

@@ -1,15 +1,27 @@
 // apps/admin/app/(dashboard)/review/onboarding/[orgId]/page.tsx
-// AmanahHub Console — Reviewer: org onboarding detail + decision
+// AmanahHub Console — Org review detail (Sprint 8 UI uplift)
+// Fixed: orgOnboardingDecision from '../../actions' (review/actions.ts, Sprint 2)
 
 import { redirect }          from 'next/navigation';
+import Link                  from 'next/link';
 import { createClient }      from '@/lib/supabase/server';
 import { isReviewerOrAbove } from '@agp/config';
+import { StatusBadge, Badge, OrgRoleBadge } from '@/components/ui/badge';
 import { ReviewDecisionForm } from '@/components/review/review-decision-form';
+// orgOnboardingDecision lives in review/actions.ts — two levels up from [orgId]
 import { orgOnboardingDecision } from '../../actions';
 
 interface Props { params: Promise<{ orgId: string }> }
 
-export default async function ReviewOrgPage({ params }: Props) {
+export const metadata = { title: 'Review Organization | AmanahHub Console' };
+
+const ORG_TYPE_LABELS: Record<string, string> = {
+  ngo: 'NGO / Welfare', mosque_surau: 'Mosque / Surau',
+  waqf_institution: 'Waqf Institution', zakat_body: 'Zakat Body',
+  foundation: 'Foundation', cooperative: 'Cooperative', other: 'Other',
+};
+
+export default async function OrgReviewPage({ params }: Props) {
   const { orgId } = await params;
   const supabase  = await createClient();
 
@@ -19,15 +31,13 @@ export default async function ReviewOrgPage({ params }: Props) {
   const { data: me } = await supabase
     .from('users').select('platform_role')
     .eq('auth_provider_user_id', user.id).single();
-
   if (!me || !isReviewerOrAbove(me.platform_role)) redirect('/dashboard');
 
   const { data: org } = await supabase
     .from('organizations')
     .select(`
-      id, name, legal_name, registration_no, website_url,
-      contact_email, address_text, state, summary,
-      org_type, oversight_authority, fund_types,
+      id, name, legal_name, registration_no, website_url, contact_email,
+      state, org_type, oversight_authority, fund_types, summary,
       onboarding_status, onboarding_submitted_at
     `)
     .eq('id', orgId).single();
@@ -36,103 +46,109 @@ export default async function ReviewOrgPage({ params }: Props) {
 
   const { data: members } = await supabase
     .from('org_members')
-    .select('org_role, users ( display_name, email )')
+    .select(`org_role, status, users ( display_name, email )`)
     .eq('organization_id', orgId)
     .eq('status', 'active');
 
+  const fundTypes = (org.fund_types ?? []) as string[];
+
   return (
-    <div className="max-w-3xl">
-      <div className="mb-6">
-        <a href="/review/onboarding" className="text-sm text-gray-500 hover:text-gray-700 mb-1 block">
-          ← Onboarding queue
-        </a>
-        <h1 className="text-2xl font-semibold text-gray-900">{org.name}</h1>
-        <p className="text-sm text-gray-400 mt-0.5">
-          Submitted {org.onboarding_submitted_at
-            ? new Date(org.onboarding_submitted_at).toLocaleDateString('en-MY')
-            : '—'}
-        </p>
+    <div className="max-w-4xl">
+      <Link href="/review/onboarding"
+        className="text-[11px] text-gray-400 hover:text-emerald-700 mb-4 block">
+        ← Onboarding queue
+      </Link>
+
+      <div className="flex items-start justify-between gap-3 mb-4">
+        <div>
+          <h1 className="text-[18px] font-semibold text-gray-900">{org.name}</h1>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            {org.onboarding_submitted_at
+              ? `Submitted ${new Date(org.onboarding_submitted_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' })}`
+              : 'Submission date unknown'}
+          </p>
+        </div>
+        <StatusBadge status={org.onboarding_status} />
       </div>
 
-      {/* Profile */}
-      <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100 mb-5">
-        <SectionHead>Organization profile</SectionHead>
-        <Row label="Legal name"          value={org.legal_name ?? '—'} />
-        <Row label="Registration no."    value={org.registration_no ?? '—'} />
-        <Row label="State"               value={org.state ?? '—'} />
-        <Row label="Website"             value={org.website_url ?? '—'} />
-        <Row label="Contact email"       value={org.contact_email ?? '—'} />
-        <Row label="Summary"             value={org.summary ?? '—'} />
-      </div>
+      <div className="grid grid-cols-2 gap-4">
 
-      {/* Classification */}
-      <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100 mb-5">
-        <SectionHead>Governance classification</SectionHead>
-        <Row label="Type"               value={org.org_type?.replace('_', ' ') ?? '—'} />
-        <Row label="Oversight"          value={org.oversight_authority ?? '—'} />
-        <Row label="Fund types"
-             value={(org.fund_types ?? []).join(', ').toUpperCase() || '—'} />
-      </div>
+        {/* Left: profile + members */}
+        <div className="space-y-3">
+          <div className="card p-4">
+            <p className="sec-label">Organization profile</p>
+            <table className="w-full text-[12px] border-collapse">
+              <tbody>
+                <TRow label="Legal name"   value={org.legal_name ?? '—'} />
+                <TRow label="Registration" value={org.registration_no ?? '—'} />
+                <TRow label="State"        value={org.state ?? '—'} />
+                <TRow label="Type"         value={org.org_type ? ORG_TYPE_LABELS[org.org_type] ?? org.org_type : '—'} />
+                <TRow label="Oversight"    value={org.oversight_authority ?? '—'} />
+              </tbody>
+            </table>
 
-      {/* Members */}
-      <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100 mb-6">
-        <SectionHead>Registered members ({members?.length ?? 0})</SectionHead>
-        {members?.map((m, i) => {
-          const u = Array.isArray(m.users) ? m.users[0] : m.users;
-          return (
-            <div key={i} className="px-5 py-3 flex items-center justify-between">
-              <div>
-                <p className="text-sm text-gray-900">{u?.display_name ?? '—'}</p>
-                <p className="text-xs text-gray-400">{u?.email}</p>
+            {fundTypes.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                {fundTypes.map((f) => (
+                  <Badge key={f} variant="blue">{f.toUpperCase()}</Badge>
+                ))}
               </div>
-              <span className="text-xs text-gray-500">{m.org_role?.replace('org_', '')}</span>
-            </div>
-          );
-        })}
+            )}
+
+            {org.summary && (
+              <>
+                <div className="h-px bg-gray-100 my-3" />
+                <p className="text-[12px] text-gray-700 leading-relaxed">{org.summary}</p>
+              </>
+            )}
+          </div>
+
+          <div className="card p-4">
+            <p className="sec-label">Members ({members?.length ?? 0})</p>
+            {members?.length ? (
+              <div className="divide-y divide-gray-100">
+                {members.map((m, i) => {
+                  const u = Array.isArray(m.users) ? m.users[0] : m.users;
+                  return (
+                    <div key={i} className="flex items-center justify-between py-2">
+                      <div className="min-w-0">
+                        <span className="text-[12px] text-gray-900">{u?.display_name ?? '—'}</span>
+                        <span className="text-[11px] text-gray-400 ml-1">· {m.org_role}</span>
+                      </div>
+                      <StatusBadge status={m.status} />
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="text-[11px] text-gray-400">No active members.</p>
+            )}
+          </div>
+        </div>
+
+        {/* Right: decision */}
+        <div>
+          <div className="card p-4">
+            <p className="sec-label">Reviewer decision</p>
+            <ReviewDecisionForm
+              action={orgOnboardingDecision}
+              hiddenFields={{ orgId }}
+              mode="org"
+              placeholder="Explain decision or list required changes…"
+            />
+          </div>
+        </div>
+
       </div>
-
-      {/* Decision form */}
-      {org.onboarding_status === 'submitted' && (
-        <div className="rounded-lg border border-gray-200 bg-white px-5 py-5">
-          <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-            Reviewer decision
-          </h2>
-          <ReviewDecisionForm
-            hiddenFields={{ orgId }}
-            action={orgOnboardingDecision}
-            decisions={[
-              { value: 'approved',           label: 'Approve',           color: 'emerald' },
-              { value: 'changes_requested',  label: 'Request changes',   color: 'amber' },
-              { value: 'rejected',           label: 'Reject',            color: 'red' },
-            ]}
-            commentLabel="Reviewer notes (visible to org admin)"
-            successRedirect="/review/onboarding"
-          />
-        </div>
-      )}
-
-      {org.onboarding_status !== 'submitted' && (
-        <div className="rounded-md bg-gray-50 border border-gray-200 px-4 py-3 text-sm text-gray-500">
-          Decision already recorded: <strong>{org.onboarding_status}</strong>
-        </div>
-      )}
     </div>
   );
 }
 
-function SectionHead({ children }: { children: React.ReactNode }) {
+function TRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="px-5 py-3 bg-gray-50">
-      <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide">{children}</h3>
-    </div>
-  );
-}
-
-function Row({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="px-5 py-3 flex gap-4">
-      <dt className="w-40 flex-shrink-0 text-sm text-gray-500">{label}</dt>
-      <dd className="text-sm text-gray-900 break-words">{value}</dd>
-    </div>
+    <tr>
+      <td className="py-1.5 text-gray-400 w-[120px] align-top">{label}</td>
+      <td className="py-1.5 text-gray-800">{value}</td>
+    </tr>
   );
 }

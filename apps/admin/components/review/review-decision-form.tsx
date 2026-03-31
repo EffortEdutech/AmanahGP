@@ -1,101 +1,99 @@
 'use client';
 // apps/admin/components/review/review-decision-form.tsx
-// AmanahHub Console — Reusable reviewer decision form
-// Used for: org onboarding, report verification
+// AmanahHub Console — Colored radio decision form (Sprint 8 UI uplift)
+// Matches UAT colored option pattern: green approve / amber changes / red reject
 
-import { useActionState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useActionState } from 'react';
 
-interface Decision {
-  value: string;
-  label: string;
-  color: 'emerald' | 'amber' | 'red';
+type DecisionValue = 'approved' | 'changes_requested' | 'rejected';
+
+interface Option {
+  value:  DecisionValue;
+  label:  string;
+  cls:    string;  // tailwind classes for the option row
 }
+
+const ORG_OPTIONS: Option[] = [
+  { value: 'approved',          label: 'Approve — list publicly',  cls: 'dec-opt dec-approve' },
+  { value: 'changes_requested', label: 'Request changes',          cls: 'dec-opt dec-changes' },
+  { value: 'rejected',          label: 'Reject',                   cls: 'dec-opt dec-reject'  },
+];
+
+const REPORT_OPTIONS: Option[] = [
+  { value: 'approved',          label: 'Verify report',            cls: 'dec-opt dec-approve' },
+  { value: 'changes_requested', label: 'Request changes',          cls: 'dec-opt dec-changes' },
+  { value: 'rejected',          label: 'Reject',                   cls: 'dec-opt dec-reject'  },
+];
 
 interface Props {
-  hiddenFields:    Record<string, string>;
-  action:          (prev: any, fd: FormData) => Promise<{ error?: string; success?: boolean }>;
-  decisions:       Decision[];
-  commentLabel:    string;
-  successRedirect: string;
+  action:        (prev: any, fd: FormData) => Promise<any>;
+  hiddenFields?: Record<string, string>;
+  mode?:         'org' | 'report';
+  placeholder?:  string;
 }
 
-const COLOR_MAP = {
-  emerald: 'border-emerald-300 bg-emerald-50 text-emerald-800',
-  amber:   'border-amber-300 bg-amber-50 text-amber-800',
-  red:     'border-red-300 bg-red-50 text-red-800',
-};
-
-const BTN_MAP = {
-  emerald: 'bg-emerald-700 hover:bg-emerald-800 text-white',
-  amber:   'bg-amber-500 hover:bg-amber-600 text-white',
-  red:     'bg-red-600 hover:bg-red-700 text-white',
-};
-
 export function ReviewDecisionForm({
-  hiddenFields, action, decisions, commentLabel, successRedirect,
+  action,
+  hiddenFields = {},
+  mode = 'org',
+  placeholder = 'Explain decision or list required changes…',
 }: Props) {
-  const [state, formAction, isPending] = useActionState(action, null);
-  const router = useRouter();
+  const [state, formAction, pending] = useActionState(action, null);
+  const options = mode === 'report' ? REPORT_OPTIONS : ORG_OPTIONS;
 
-  useEffect(() => {
-    if (state?.success) router.push(successRedirect);
-  }, [state?.success, successRedirect, router]);
+  if (state?.success) {
+    return (
+      <div className="g-card text-center py-4">
+        <p className="text-sm font-medium text-emerald-800">Decision submitted</p>
+        <p className="text-[11px] text-emerald-600 mt-1">
+          {state.message ?? 'The record has been updated.'}
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <form action={formAction} className="space-y-4">
+    <form action={formAction}>
+      {/* Hidden fields */}
       {Object.entries(hiddenFields).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
 
-      {state?.error && (
-        <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
-          {state.error}
-        </div>
-      )}
-
-      {/* Decision selector */}
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-2">Decision *</label>
-        <div className="space-y-2">
-          {decisions.map((d) => (
-            <label key={d.value}
-              className={`flex items-center gap-3 px-4 py-3 rounded-md border cursor-pointer
-                          transition-colors ${COLOR_MAP[d.color]}`}>
-              <input type="radio" name="decision" value={d.value} required
-                className="h-4 w-4 flex-shrink-0" />
-              <span className="text-sm font-medium">{d.label}</span>
-            </label>
-          ))}
-        </div>
+      {/* Decision options */}
+      <div className="space-y-2 mb-3">
+        {options.map((opt, i) => (
+          <label key={opt.value} className={`${opt.cls} gap-2.5 cursor-pointer`}>
+            <input
+              type="radio"
+              name="decision"
+              value={opt.value}
+              defaultChecked={i === 0}
+              className="flex-shrink-0 accent-emerald-600"
+            />
+            <span>{opt.label}</span>
+          </label>
+        ))}
       </div>
 
       {/* Comment */}
-      <div>
-        <label htmlFor="comment" className="block text-sm font-medium text-gray-700 mb-1">
-          {commentLabel}
-        </label>
+      <div className="mb-3">
+        <p className="text-[10px] text-gray-500 mb-1">Notes to organization</p>
         <textarea
-          id="comment" name="comment" rows={4}
-          className="block w-full rounded-md border border-gray-300 px-3 py-2 text-sm
-                     shadow-sm placeholder-gray-400 focus:border-emerald-500 focus:outline-none
-                     focus:ring-1 focus:ring-emerald-500"
-          placeholder="Explain your decision or list what needs to change…"
+          name="comment"
+          rows={3}
+          placeholder={placeholder}
+          className="field resize-none text-[12px]"
         />
       </div>
 
-      {/* Submit */}
-      <div className="flex items-center justify-between pt-2">
-        <a href={successRedirect} className="text-sm text-gray-500 hover:text-gray-700">
-          Cancel
-        </a>
-        <button type="submit" disabled={isPending}
-          className="inline-flex items-center px-5 py-2.5 rounded-md text-sm font-medium
-                     bg-gray-900 hover:bg-gray-800 text-white
-                     disabled:opacity-60 disabled:cursor-not-allowed transition-colors">
-          {isPending ? 'Submitting…' : 'Submit decision'}
-        </button>
-      </div>
+      {/* Error */}
+      {state?.error && (
+        <p className="text-[11px] text-red-600 mb-2">{state.error}</p>
+      )}
+
+      <button type="submit" disabled={pending} className="btn-primary w-full py-2.5">
+        {pending ? 'Submitting…' : 'Submit decision'}
+      </button>
     </form>
   );
 }

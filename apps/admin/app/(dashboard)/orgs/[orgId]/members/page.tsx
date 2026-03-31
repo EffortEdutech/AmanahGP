@@ -1,133 +1,119 @@
 // apps/admin/app/(dashboard)/orgs/[orgId]/members/page.tsx
-// AmanahHub Console — Organization members and invite management
+// AmanahHub Console — Members (Sprint 8 UI uplift)
+// Matches UAT s-a-members: avatar rows + role badge + pending invites + inline invite form
 
 import { redirect }     from 'next/navigation';
+import Link             from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { inviteMember } from '../../actions';
-import { InviteForm }   from '@/components/org/invite-form';
-import { StatusBadge }  from '@/components/ui/status-badge';
+import { StatusBadge, OrgRoleBadge } from '@/components/ui/badge';
+import { InviteForm }   from './invite-form';
 
 interface Props { params: Promise<{ orgId: string }> }
 
 export const metadata = { title: 'Members | AmanahHub Console' };
 
+const ROLE_COLORS: Record<string, string> = {
+  org_admin:   'avatar-green',
+  org_manager: 'avatar-blue',
+  org_viewer:  'avatar-amber',
+};
+
 export default async function MembersPage({ params }: Props) {
   const { orgId } = await params;
   const supabase  = await createClient();
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name')
-    .eq('id', orgId)
-    .single();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
 
-  if (!org) redirect('/dashboard');
-
-  // Check if current user is org_admin
   const { data: isAdmin } = await supabase
     .rpc('org_role_at_least', { org_id: orgId, min_role: 'org_admin' });
 
-  // Fetch members
   const { data: members } = await supabase
     .from('org_members')
     .select(`
-      id, org_role, status, accepted_at,
-      users ( id, display_name, email, platform_role )
+      id, org_role, status, invited_at, accepted_at,
+      users ( id, display_name, email )
     `)
     .eq('organization_id', orgId)
-    .neq('status', 'removed')
-    .order('accepted_at', { ascending: false });
+    .order('accepted_at', { ascending: true });
 
-  // Fetch pending invitations
-  const { data: invitations } = await supabase
-    .from('org_invitations')
-    .select('id, invited_email, org_role, status, expires_at, created_at')
-    .eq('organization_id', orgId)
-    .eq('status', 'pending')
-    .order('created_at', { ascending: false });
+  const active  = (members ?? []).filter((m) => m.status === 'active');
+  const invited = (members ?? []).filter((m) => m.status === 'invited');
 
   return (
     <div className="max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <a href={`/orgs/${orgId}`} className="text-sm text-gray-500 hover:text-gray-700 mb-1 block">
-            ← {org.name}
-          </a>
-          <h1 className="text-2xl font-semibold text-gray-900">Members</h1>
-        </div>
-      </div>
+      <h1 className="text-[18px] font-semibold text-gray-900 mb-4">Members</h1>
 
-      {/* Current members */}
-      <div className="rounded-lg border border-gray-200 bg-white mb-6">
-        <div className="px-5 py-4 border-b border-gray-100">
-          <h2 className="text-sm font-semibold text-gray-700">
-            Active members ({members?.length ?? 0})
-          </h2>
-        </div>
-        {members?.length ? (
-          <ul className="divide-y divide-gray-100">
-            {members.map((m) => {
-              const user = Array.isArray(m.users) ? m.users[0] : m.users;
+      {/* Active members */}
+      <div className="card p-4 mb-3">
+        <p className="sec-label">Active members ({active.length})</p>
+        {active.length > 0 ? (
+          <div className="divide-y divide-gray-100">
+            {active.map((m) => {
+              const u = Array.isArray(m.users) ? m.users[0] : m.users;
+              const initials = (u?.display_name ?? '??')
+                .split(' ').map((w: string) => w[0]).slice(0, 2).join('').toUpperCase();
+
               return (
-                <li key={m.id} className="px-5 py-3 flex items-center justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
-                      {user?.display_name ?? '—'}
+                <div key={m.id} className="flex items-center gap-3 py-2.5">
+                  <div className={`avatar ${ROLE_COLORS[m.org_role] ?? 'avatar-green'}`}>
+                    {initials}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[12px] font-medium text-gray-900">
+                      {u?.display_name ?? '—'}
                     </p>
-                    <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                    <p className="text-[10px] text-gray-400 truncate">{u?.email}</p>
                   </div>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <span className="text-xs text-gray-500">
-                      {m.org_role.replace('org_', '')}
-                    </span>
-                    <StatusBadge status={m.status} />
-                  </div>
-                </li>
+                  <OrgRoleBadge role={m.org_role} />
+                </div>
               );
             })}
-          </ul>
+          </div>
         ) : (
-          <p className="px-5 py-4 text-sm text-gray-400">No active members found.</p>
+          <p className="text-[11px] text-gray-400">No active members.</p>
         )}
       </div>
 
-      {/* Pending invitations */}
-      {!!invitations?.length && (
-        <div className="rounded-lg border border-gray-200 bg-white mb-6">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-700">
-              Pending invitations ({invitations.length})
-            </h2>
-          </div>
-          <ul className="divide-y divide-gray-100">
-            {invitations.map((inv) => (
-              <li key={inv.id} className="px-5 py-3 flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-gray-900">{inv.invited_email}</p>
-                  <p className="text-xs text-gray-400">
-                    Role: {inv.org_role.replace('org_', '')} ·{' '}
-                    Expires {new Date(inv.expires_at).toLocaleDateString('en-MY')}
-                  </p>
+      {/* Pending invites */}
+      {invited.length > 0 && (
+        <div className="card p-4 mb-3">
+          <p className="sec-label">Pending invitations ({invited.length})</p>
+          <div className="space-y-2">
+            {invited.map((m) => {
+              const u = Array.isArray(m.users) ? m.users[0] : m.users;
+              return (
+                <div key={m.id} className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="text-[12px] text-gray-800 truncate">{u?.email}</p>
+                    <p className="text-[10px] text-gray-400">
+                      {m.org_role}
+                      {m.invited_at
+                        ? ` · invited ${new Date(m.invited_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short' })}`
+                        : ''}
+                    </p>
+                  </div>
+                  <StatusBadge status="pending" />
                 </div>
-                <StatusBadge status={inv.status} />
-              </li>
-            ))}
-          </ul>
+              );
+            })}
+          </div>
         </div>
       )}
 
-      {/* Invite form (org_admin only) */}
+      {/* Invite form */}
       {isAdmin && (
-        <div className="rounded-lg border border-gray-200 bg-white">
-          <div className="px-5 py-4 border-b border-gray-100">
-            <h2 className="text-sm font-semibold text-gray-700">Invite a member</h2>
-            <p className="text-xs text-gray-400 mt-0.5">
-              An invitation token will be generated. Share the token link with the invitee.
-            </p>
-          </div>
-          <div className="px-5 py-5">
-            <InviteForm orgId={orgId} action={inviteMember} />
-          </div>
+        <div className="card p-4">
+          <p className="sec-label">Invite a member</p>
+          <InviteForm orgId={orgId} />
+        </div>
+      )}
+
+      {!isAdmin && (
+        <div className="mt-4">
+          <Link href={`/orgs/${orgId}`} className="text-[11px] text-gray-400 hover:text-gray-600">
+            ← Back to organization
+          </Link>
         </div>
       )}
     </div>

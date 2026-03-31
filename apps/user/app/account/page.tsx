@@ -1,11 +1,13 @@
 // apps/user/app/account/page.tsx
-// AmanahHub — Donor account page (requires auth via middleware)
+// AmanahHub — Donor account page (Sprint 7 UI uplift)
+// Data fetching unchanged — visual layer replaced to match UAT s-account
 
-import { redirect }     from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-import Link             from 'next/link';
+import { redirect }  from 'next/navigation';
+import Link          from 'next/link';
+import { createClient }  from '@/lib/supabase/server';
+import { StatusBadge }   from '@/components/ui/badge';
 
-export const metadata = { title: 'My Account' };
+export const metadata = { title: 'My Account | AmanahHub' };
 
 export default async function AccountPage() {
   const supabase = await createClient();
@@ -19,122 +21,143 @@ export default async function AccountPage() {
     .eq('auth_provider_user_id', user.id)
     .single();
 
-  // Donation history for this donor
   const { data: donations } = await supabase
     .from('donation_transactions')
     .select(`
       id, amount, platform_fee_amount, currency, status,
       confirmed_at, initiated_at, gateway,
       organizations ( id, name ),
-      projects ( id, title )
+      projects      ( id, title )
     `)
     .eq('donor_user_id', profile?.id ?? '')
     .order('initiated_at', { ascending: false })
     .limit(20);
 
-  const totalConfirmed = (donations ?? [])
-    .filter((d) => d.status === 'confirmed')
-    .reduce((sum, d) => sum + Number(d.amount), 0);
+  const confirmed     = (donations ?? []).filter((d) => d.status === 'confirmed');
+  const totalConfirmed = confirmed.reduce((sum, d) => sum + Number(d.amount), 0);
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-10">
-      <h1 className="text-2xl font-bold text-gray-900 mb-6">My account</h1>
+    <div className="max-w-2xl mx-auto px-4 py-6">
+
+      {/* Page header */}
+      <h1 className="text-lg font-semibold text-gray-900 mb-5">My account</h1>
+
+      {/* Stats row */}
+      <div className="grid grid-cols-3 gap-3 mb-5">
+        <StatBlock
+          value={`MYR ${totalConfirmed.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`}
+          label="Total giving"
+          highlight
+        />
+        <StatBlock value={String(confirmed.length)} label="Confirmed" />
+        <StatBlock value={String(donations?.length ?? 0)} label="All donations" />
+      </div>
 
       {/* Profile card */}
-      <div className="bg-white rounded-xl border border-gray-200 p-5 mb-6">
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
-          Profile
-        </h2>
-        <div className="space-y-3">
-          <Row label="Name"   value={profile?.display_name ?? '—'} />
-          <Row label="Email"  value={profile?.email ?? user.email ?? '—'} />
-          <Row label="Member since"
-               value={profile?.created_at
-                 ? new Date(profile.created_at).toLocaleDateString('en-MY', {
-                     year: 'numeric', month: 'long',
-                   })
-                 : '—'} />
+      <div className="card p-4 mb-4">
+        <p className="sec-label">Profile</p>
+        <div className="space-y-2">
+          <ProfileRow label="Name"  value={profile?.display_name ?? '—'} />
+          <ProfileRow label="Email" value={profile?.email ?? user.email ?? '—'} />
+          <ProfileRow
+            label="Member since"
+            value={profile?.created_at
+              ? new Date(profile.created_at).toLocaleDateString('en-MY', {
+                  month: 'long', year: 'numeric',
+                })
+              : '—'}
+          />
         </div>
       </div>
 
-      {/* Giving summary */}
-      <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5 mb-6">
-        <h2 className="text-sm font-semibold text-emerald-800 uppercase tracking-wide mb-1">
-          Total giving
-        </h2>
-        <p className="text-3xl font-bold text-emerald-700">
-          MYR {totalConfirmed.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
-        </p>
-        <p className="text-xs text-emerald-600 mt-1">
-          Across {(donations ?? []).filter(d => d.status === 'confirmed').length} confirmed donation{(donations ?? []).filter(d => d.status === 'confirmed').length !== 1 ? 's' : ''}
-        </p>
-      </div>
-
       {/* Donation history */}
-      <div>
-        <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-          Donation history
-        </h2>
+      <div className="card p-4">
+        <p className="sec-label">Donation history</p>
 
         {donations?.length ? (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {donations.map((d) => {
               const org     = Array.isArray(d.organizations) ? d.organizations[0] : d.organizations;
               const project = Array.isArray(d.projects)      ? d.projects[0]      : d.projects;
-              const isOk    = d.status === 'confirmed';
+              const date    = d.confirmed_at ?? d.initiated_at;
 
               return (
-                <Link key={d.id} href={`/donate/receipt/${d.id}`}
-                  className="flex items-center justify-between px-5 py-4 bg-white
-                             rounded-xl border border-gray-200 hover:border-emerald-200
-                             transition-colors group">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-gray-900 group-hover:text-emerald-800 truncate">
+                <Link
+                  key={d.id}
+                  href={`/donate/receipt/${d.id}`}
+                  className="list-item"
+                >
+                  {/* Status dot */}
+                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                    d.status === 'confirmed' ? 'bg-emerald-500' :
+                    ['initiated', 'pending'].includes(d.status) ? 'bg-amber-400' :
+                    'bg-gray-300'
+                  }`} />
+
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-medium text-gray-900 truncate">
                       {org?.name ?? '—'}
                     </p>
                     {project && (
-                      <p className="text-xs text-gray-400 truncate">{project.title}</p>
+                      <p className="text-[10px] text-gray-400 truncate">
+                        {project.title}
+                      </p>
                     )}
-                    <p className="text-xs text-gray-400 mt-0.5">
-                      {new Date(d.initiated_at).toLocaleDateString('en-MY')}
-                      {' · '}{d.gateway.toUpperCase()}
-                    </p>
                   </div>
-                  <div className="flex flex-col items-end ml-4 flex-shrink-0">
-                    <p className="text-sm font-semibold text-gray-900">
-                      {d.currency} {Number(d.amount).toLocaleString('en-MY', { minimumFractionDigits: 2 })}
+
+                  <div className="flex-shrink-0 text-right">
+                    <p className="text-[12px] font-semibold text-gray-900">
+                      {d.currency} {Number(d.amount).toLocaleString('en-MY', {
+                        minimumFractionDigits: 2,
+                      })}
                     </p>
-                    <span className={`text-xs font-medium mt-1 ${
-                      isOk ? 'text-emerald-600' :
-                      d.status === 'failed' ? 'text-red-500' : 'text-amber-500'
-                    }`}>
-                      {d.status.charAt(0).toUpperCase() + d.status.slice(1)}
-                    </span>
+                    <div className="flex items-center justify-end gap-1.5 mt-0.5">
+                      <StatusBadge status={d.status} />
+                      {date && (
+                        <span className="text-[10px] text-gray-400">
+                          {new Date(date).toLocaleDateString('en-MY', {
+                            day: 'numeric', month: 'short',
+                          })}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </Link>
               );
             })}
           </div>
         ) : (
-          <div className="bg-white rounded-xl border border-dashed border-gray-300 px-6 py-10 text-center">
-            <p className="text-sm text-gray-400 mb-3">No donations yet.</p>
-            <Link href="/charities"
-              className="inline-flex items-center px-4 py-2 rounded-md text-sm font-medium
-                         text-white bg-emerald-700 hover:bg-emerald-800 transition-colors">
+          <div className="text-center py-8">
+            <p className="text-[12px] text-gray-400 mb-3">No donations yet.</p>
+            <Link href="/charities" className="btn-primary text-xs px-4 py-2">
               Browse charities
             </Link>
           </div>
         )}
       </div>
+
     </div>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function StatBlock({ value, label, highlight }: {
+  value: string; label: string; highlight?: boolean;
+}) {
   return (
-    <div className="flex gap-4">
-      <span className="w-32 text-sm text-gray-400 flex-shrink-0">{label}</span>
-      <span className="text-sm text-gray-900">{value}</span>
+    <div className={`card p-3 ${highlight ? 'bg-emerald-50 border-emerald-100' : ''}`}>
+      <div className={`stat-val text-[16px] ${highlight ? 'text-emerald-700' : ''}`}>
+        {value}
+      </div>
+      <div className={`stat-lbl ${highlight ? 'text-emerald-600' : ''}`}>{label}</div>
+    </div>
+  );
+}
+
+function ProfileRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex gap-3">
+      <span className="text-[11px] text-gray-400 w-24 flex-shrink-0 pt-0.5">{label}</span>
+      <span className="text-[12px] text-gray-800">{value}</span>
     </div>
   );
 }

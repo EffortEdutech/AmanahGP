@@ -1,46 +1,85 @@
 // apps/admin/app/(dashboard)/onboarding/new/page.tsx
-// AmanahHub Console — Register new organization (Step 1: Basic Profile)
+// AmanahHub Console — New org registration (Sprint 8 UI uplift)
+// Fixed: imports createOrganization from ../../orgs/actions (correct shared path)
 
+import { redirect }           from 'next/navigation';
+import { createClient }       from '@/lib/supabase/server';
 import { createOrganization } from '../../orgs/actions';
-import { OnboardingForm }     from '@/components/org/onboarding-form';
+import { OnboardingForm }     from './onboarding-form';
 
 export const metadata = { title: 'Register Organization | AmanahHub Console' };
 
-export default function NewOrgPage() {
+export default async function NewOrgPage() {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: me } = await supabase
+    .from('users').select('id')
+    .eq('auth_provider_user_id', user.id).single();
+  if (!me) redirect('/login');
+
+  // If user already has an org, redirect to it
+  const { data: existing } = await supabase
+    .from('org_members')
+    .select('organization_id')
+    .eq('user_id', me.id)
+    .eq('status', 'active')
+    .limit(1).maybeSingle();
+
+  if (existing) redirect(`/orgs/${existing.organization_id}`);
+
   return (
-    <div className="max-w-2xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-semibold text-gray-900">Register your organization</h1>
-        <p className="mt-2 text-sm text-gray-500">
-          Start by providing your organization's basic profile. You will complete governance
-          classification in the next step.
-        </p>
-      </div>
+    <div className="max-w-xl">
+      <h1 className="text-[18px] font-semibold text-gray-900 mb-0.5">
+        Register organization
+      </h1>
+      <p className="text-[11px] text-gray-400 mb-5">
+        Step 1 of 3 — Basic profile and Malaysia governance classification
+      </p>
 
       {/* Step indicator */}
-      <div className="flex items-center gap-3 mb-8">
-        <StepBadge number={1} label="Basic profile" active />
-        <div className="flex-1 h-px bg-gray-200" />
-        <StepBadge number={2} label="Classification" />
-        <div className="flex-1 h-px bg-gray-200" />
-        <StepBadge number={3} label="Review & submit" />
-      </div>
+      <StepIndicator current={1} />
 
+      {/* Form — passes createOrganization from shared orgs/actions */}
       <OnboardingForm action={createOrganization} />
     </div>
   );
 }
 
-function StepBadge({ number, label, active }: { number: number; label: string; active?: boolean }) {
+function StepIndicator({ current }: { current: number }) {
+  const steps = [
+    { n: 1, label: 'Basic profile',  done: current > 1 },
+    { n: 2, label: 'Classification', done: current > 2 },
+    { n: 3, label: 'Review',         done: false        },
+  ];
+
   return (
-    <div className="flex items-center gap-2">
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold
-        ${active ? 'bg-emerald-700 text-white' : 'bg-gray-100 text-gray-400'}`}>
-        {number}
-      </div>
-      <span className={`text-sm ${active ? 'text-gray-900 font-medium' : 'text-gray-400'}`}>
-        {label}
-      </span>
+    <div className="flex items-center gap-2 mb-5">
+      {steps.map((step, i) => (
+        <div key={step.n} className="flex items-center gap-2 flex-1 min-w-0">
+          <div className={`w-[22px] h-[22px] rounded-full flex items-center justify-center
+                          text-[10px] font-medium flex-shrink-0 ${
+            step.done
+              ? 'bg-emerald-100 text-emerald-700'
+              : step.n === current
+                ? 'bg-emerald-700 text-white'
+                : 'bg-gray-100 text-gray-400'
+          }`}>
+            {step.done ? '✓' : step.n}
+          </div>
+          <span className={`text-[11px] truncate ${
+            step.n === current ? 'font-medium text-gray-900' :
+            step.done          ? 'text-emerald-700'          : 'text-gray-400'
+          }`}>
+            {step.label}
+          </span>
+          {i < steps.length - 1 && (
+            <div className={`flex-1 h-px ${step.done ? 'bg-emerald-200' : 'bg-gray-200'}`} />
+          )}
+        </div>
+      ))}
     </div>
   );
 }

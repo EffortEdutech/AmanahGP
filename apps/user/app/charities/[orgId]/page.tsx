@@ -1,11 +1,13 @@
 // apps/user/app/charities/[orgId]/page.tsx
-// AmanahHub — Public charity profile page
+// AmanahHub — Public charity profile (Sprint 7 UI uplift)
+// Data fetching unchanged — visual layer replaced to match UAT s-profile
 
-import { notFound }     from 'next/navigation';
-import Link             from 'next/link';
-import { createClient } from '@/lib/supabase/server';
-import { AmanahScorePanel } from '@/components/charity/amanah-score-panel';
-import { CertPanel }        from '@/components/charity/cert-panel';
+import { notFound }            from 'next/navigation';
+import Link                    from 'next/link';
+import { createClient }        from '@/lib/supabase/server';
+import { AmanahScorePanel }    from '@/components/charity/amanah-score-panel';
+import { CertPanel }           from '@/components/charity/cert-panel';
+import { StatusBadge, Badge }  from '@/components/ui/badge';
 
 interface Props { params: Promise<{ orgId: string }> }
 
@@ -15,15 +17,19 @@ export async function generateMetadata({ params }: Props) {
   const { data }  = await supabase
     .from('organizations').select('name, summary').eq('id', orgId).single();
   return {
-    title: data?.name ?? 'Charity Profile',
+    title: data?.name ? `${data.name} | AmanahHub` : 'Charity Profile | AmanahHub',
     description: data?.summary ?? '',
   };
 }
 
 const ORG_TYPE_LABELS: Record<string, string> = {
-  ngo: 'NGO / Welfare Association', mosque_surau: 'Mosque / Surau',
-  waqf_institution: 'Waqf Institution', zakat_body: 'Zakat Body',
-  foundation: 'Foundation', cooperative: 'Cooperative', other: 'Other',
+  ngo:              'NGO / Welfare',
+  mosque_surau:     'Mosque / Surau',
+  waqf_institution: 'Waqf Institution',
+  zakat_body:       'Zakat Body',
+  foundation:       'Foundation',
+  cooperative:      'Cooperative',
+  other:            'Other',
 };
 
 export default async function CharityProfilePage({ params }: Props) {
@@ -42,7 +48,6 @@ export default async function CharityProfilePage({ params }: Props) {
 
   if (!org) notFound();
 
-  // Latest Amanah score
   const { data: scoreHistory } = await supabase
     .from('amanah_index_history')
     .select('score_value, score_version, computed_at, public_summary, breakdown')
@@ -50,7 +55,6 @@ export default async function CharityProfilePage({ params }: Props) {
     .order('computed_at', { ascending: false })
     .limit(5);
 
-  // Latest certification
   const { data: certHistory } = await supabase
     .from('certification_history')
     .select('new_status, valid_from, valid_to, decided_at')
@@ -58,7 +62,6 @@ export default async function CharityProfilePage({ params }: Props) {
     .order('decided_at', { ascending: false })
     .limit(3);
 
-  // Latest evaluation score breakdown
   const { data: latestEval } = await supabase
     .from('certification_evaluations')
     .select('total_score, score_breakdown, criteria_version, computed_at')
@@ -67,7 +70,6 @@ export default async function CharityProfilePage({ params }: Props) {
     .limit(1)
     .maybeSingle();
 
-  // Public projects
   const { data: projects } = await supabase
     .from('projects')
     .select('id, title, objective, location_text, status, start_date, end_date')
@@ -76,156 +78,156 @@ export default async function CharityProfilePage({ params }: Props) {
     .eq('status', 'active')
     .order('created_at', { ascending: false });
 
-  const latestScore = scoreHistory?.[0];
-  const latestCert  = certHistory?.[0];
+  const fundTypes = (org.fund_types ?? []) as string[];
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10">
-      {/* Breadcrumb */}
-      <div className="mb-6">
-        <Link href="/charities" className="text-sm text-emerald-700 hover:text-emerald-800">
-          ← Charity directory
-        </Link>
-      </div>
+    <div className="max-w-5xl mx-auto px-4 py-5">
 
-      {/* Header */}
-      <div className="flex items-start justify-between gap-6 mb-8 flex-wrap">
+      {/* Breadcrumb */}
+      <Link href="/charities"
+        className="text-[11px] text-gray-400 hover:text-emerald-700 transition-colors mb-4 block">
+        ← Charity directory
+      </Link>
+
+      {/* Header row */}
+      <div className="flex items-start justify-between gap-4 mb-5 flex-wrap">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">{org.name}</h1>
+          <h1 className="text-lg font-semibold text-gray-900 leading-snug">{org.name}</h1>
           {org.legal_name && org.legal_name !== org.name && (
-            <p className="text-sm text-gray-400 mt-0.5">{org.legal_name}</p>
+            <p className="text-[11px] text-gray-400 mt-0.5">{org.legal_name}</p>
           )}
-          <p className="text-sm text-gray-500 mt-1">
-            {org.org_type ? ORG_TYPE_LABELS[org.org_type] : ''}
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            {org.org_type ? ORG_TYPE_LABELS[org.org_type] ?? org.org_type : ''}
             {org.state ? ` · ${org.state}` : ''}
             {org.registration_no ? ` · Reg: ${org.registration_no}` : ''}
           </p>
         </div>
-
         <Link
           href={`/donate/${org.id}`}
-          className="inline-flex items-center px-6 py-2.5 rounded-lg text-sm font-semibold
-                     text-white bg-emerald-700 hover:bg-emerald-800 transition-colors shadow-sm">
+          className="btn-primary text-sm px-5 py-2"
+        >
           Donate now
         </Link>
       </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Left — main content */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Body: main (1fr) + sidebar (220px) */}
+      <div className="grid gap-3" style={{ gridTemplateColumns: '1fr 220px' }}>
 
-          {/* Summary */}
-          {org.summary && (
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
-                About
-              </h2>
-              <p className="text-sm text-gray-700 leading-relaxed">{org.summary}</p>
+        {/* ── Left: main content ── */}
+        <div className="space-y-3">
 
-              <div className="mt-4 flex flex-wrap gap-4 text-sm text-gray-500">
-                {org.website_url && (
-                  <a href={org.website_url} target="_blank" rel="noopener noreferrer"
-                    className="text-emerald-700 hover:underline">
-                    {org.website_url.replace(/^https?:\/\//, '')}
-                  </a>
-                )}
+          {/* About */}
+          {(org.summary || org.website_url || org.oversight_authority || fundTypes.length > 0) && (
+            <div className="card p-4">
+              <p className="sec-label">About</p>
+
+              {org.summary && (
+                <p className="text-[12px] text-gray-700 leading-relaxed mb-3">
+                  {org.summary}
+                </p>
+              )}
+
+              <div className="space-y-1.5 text-[11px]">
                 {org.oversight_authority && (
-                  <span>Overseen by: {org.oversight_authority}</span>
+                  <div className="flex gap-2">
+                    <span className="text-gray-400 w-24 flex-shrink-0">Oversight</span>
+                    <span className="text-gray-700">{org.oversight_authority}</span>
+                  </div>
+                )}
+                {org.website_url && (
+                  <div className="flex gap-2">
+                    <span className="text-gray-400 w-24 flex-shrink-0">Website</span>
+                    <a href={org.website_url} target="_blank" rel="noopener noreferrer"
+                      className="text-emerald-700 hover:underline truncate">
+                      {org.website_url.replace(/^https?:\/\//, '')}
+                    </a>
+                  </div>
                 )}
               </div>
 
-              {org.fund_types?.length > 0 && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(org.fund_types as string[]).map((f) => (
-                    <span key={f}
-                      className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 font-medium">
+              {fundTypes.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {fundTypes.map((f) => (
+                    <Badge key={f} variant="green">
                       {f.charAt(0).toUpperCase() + f.slice(1)}
-                    </span>
+                    </Badge>
                   ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* Projects */}
-          <div>
-            <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-3">
+          {/* Active projects */}
+          <div className="card p-4">
+            <p className="sec-label">
               Active projects ({projects?.length ?? 0})
-            </h2>
+            </p>
+
             {projects?.length ? (
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {projects.map((p) => (
-                  <Link key={p.id}
-                    href={`/charities/${org.id}/projects/${p.id}`}
-                    className="block p-5 bg-white rounded-xl border border-gray-200
-                               hover:border-emerald-200 hover:shadow-sm transition-all group">
-                    <h3 className="text-sm font-semibold text-gray-900
-                                   group-hover:text-emerald-800 mb-1">
-                      {p.title}
-                    </h3>
-                    <p className="text-xs text-gray-500 line-clamp-2">{p.objective}</p>
-                    {(p.location_text || p.start_date) && (
-                      <p className="text-xs text-gray-400 mt-2">
-                        {p.location_text}
-                        {p.location_text && p.start_date ? ' · ' : ''}
-                        {p.start_date}
+                  <Link
+                    key={p.id}
+                    href={`/charities/${orgId}/projects/${p.id}`}
+                    className="list-item"
+                  >
+                    {/* Status dot */}
+                    <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[12px] font-medium text-gray-900 truncate">
+                        {p.title}
                       </p>
-                    )}
+                      {p.location_text && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">{p.location_text}</p>
+                      )}
+                    </div>
+
+                    <div className="flex-shrink-0 text-right">
+                      <StatusBadge status={p.status} />
+                      {(p.start_date || p.end_date) && (
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {p.start_date
+                            ? new Date(p.start_date).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })
+                            : ''}
+                          {p.end_date
+                            ? ` – ${new Date(p.end_date).toLocaleDateString('en-MY', { month: 'short', year: 'numeric' })}`
+                            : ''}
+                        </p>
+                      )}
+                    </div>
                   </Link>
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-xl border border-gray-200 p-5
-                              text-sm text-gray-400 text-center">
-                No public projects yet.
-              </div>
+              <p className="text-[11px] text-gray-400 py-2">No public projects yet.</p>
             )}
           </div>
+
         </div>
 
-        {/* Right — trust panels */}
-        <div className="space-y-4">
-          <AmanahScorePanel
-            latestScore={latestScore ? {
-              value:         Number(latestScore.score_value),
-              version:       latestScore.score_version,
-              computedAt:    latestScore.computed_at,
-              publicSummary: latestScore.public_summary,
-              breakdown:     latestScore.breakdown as any,
-            } : null}
-            history={(scoreHistory ?? []).map((s) => ({
-              value:      Number(s.score_value),
-              computedAt: s.computed_at,
-            }))}
-          />
-
+        {/* ── Right: sidebar ── */}
+        <div className="space-y-3">
+          <AmanahScorePanel scoreHistory={scoreHistory as any} />
           <CertPanel
-            latestCert={latestCert ? {
-              status:    latestCert.new_status,
-              validFrom: latestCert.valid_from,
-              validTo:   latestCert.valid_to,
-              decidedAt: latestCert.decided_at,
-            } : null}
-            evaluation={latestEval ? {
-              totalScore:  Number(latestEval.total_score),
-              version:     latestEval.criteria_version,
-              computedAt:  latestEval.computed_at,
-            } : null}
+            certHistory={certHistory as any}
+            latestEval={latestEval as any}
           />
 
-          {/* Donate CTA */}
-          <div className="bg-emerald-700 rounded-xl p-5 text-center">
-            <p className="text-white text-sm font-medium mb-1">Support this organization</p>
-            <p className="text-emerald-200 text-xs mb-4">
-              Direct to charity. No funds held by platform.
+          {/* Quick donate card */}
+          <div className="card p-4 bg-emerald-50 border-emerald-100">
+            <p className="text-[11px] font-medium text-emerald-800 mb-2">
+              Support this organization
             </p>
-            <Link href={`/donate/${org.id}`}
-              className="block w-full py-2.5 rounded-lg bg-white text-emerald-700
-                         text-sm font-semibold hover:bg-emerald-50 transition-colors">
+            <p className="text-[10px] text-emerald-600 mb-3 leading-relaxed">
+              Donations go directly to {org.name}. AmanahHub is non-custodial.
+            </p>
+            <Link href={`/donate/${org.id}`} className="btn-primary w-full justify-center text-xs py-2">
               Donate now
             </Link>
           </div>
         </div>
+
       </div>
     </div>
   );
