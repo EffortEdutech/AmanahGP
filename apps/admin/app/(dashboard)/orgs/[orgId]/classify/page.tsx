@@ -3,7 +3,7 @@
 
 import { redirect }          from 'next/navigation';
 import { createClient }      from '@/lib/supabase/server';
-import { classifyOrganization } from '../actions';
+import { classifyOrganization } from '../../actions';
 import { ClassifyForm }      from '@/components/org/classify-form';
 
 interface Props { params: Promise<{ orgId: string }> }

@@ -3,7 +3,7 @@
 
 import { redirect }         from 'next/navigation';
 import { createClient }     from '@/lib/supabase/server';
-import { submitOnboarding } from '../actions';
+import { submitOnboarding } from '../../actions';
 import { SubmitOnboardingForm } from '@/components/org/submit-onboarding-form';
 import {
   ORG_TYPE_OPTIONS,
