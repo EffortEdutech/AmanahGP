@@ -132,17 +132,12 @@ export default async function ReviewReportPage({ params }: Props) {
           <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide mb-4">
             Verification decision
           </h2>
-          <ReviewDecisionForm
-            hiddenFields={{ reportId }}
-            action={reportVerificationDecision}
-            decisions={[
-              { value: 'verified',           label: 'Verify report',     color: 'emerald' },
-              { value: 'changes_requested',  label: 'Request changes',   color: 'amber' },
-              { value: 'rejected',           label: 'Reject report',     color: 'red' },
-            ]}
-            commentLabel="Reviewer comment (visible to org admin)"
-            successRedirect="/review/reports"
-          />
+            <ReviewDecisionForm
+              hiddenFields={{ reportId }}
+              action={reportVerificationDecision}
+              mode="report"
+              placeholder="Reviewer comment (visible to org admin)"
+            />
         </div>
       )}
 

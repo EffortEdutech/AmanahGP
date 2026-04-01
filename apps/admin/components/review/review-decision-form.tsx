@@ -1,35 +1,33 @@
 'use client';
 // apps/admin/components/review/review-decision-form.tsx
-// AmanahHub Console — Colored radio decision form (Sprint 8 UI uplift)
-// Matches UAT colored option pattern: green approve / amber changes / red reject
 
 import { useActionState } from 'react';
 
-type DecisionValue = 'approved' | 'changes_requested' | 'rejected';
+type DecisionValue = 'approved' | 'verified' | 'changes_requested' | 'rejected';
 
 interface Option {
-  value:  DecisionValue;
-  label:  string;
-  cls:    string;  // tailwind classes for the option row
+  value: DecisionValue;
+  label: string;
+  cls: string;
 }
 
 const ORG_OPTIONS: Option[] = [
-  { value: 'approved',          label: 'Approve — list publicly',  cls: 'dec-opt dec-approve' },
-  { value: 'changes_requested', label: 'Request changes',          cls: 'dec-opt dec-changes' },
-  { value: 'rejected',          label: 'Reject',                   cls: 'dec-opt dec-reject'  },
+  { value: 'approved',          label: 'Approve — list publicly', cls: 'dec-opt dec-approve' },
+  { value: 'changes_requested', label: 'Request changes',         cls: 'dec-opt dec-changes' },
+  { value: 'rejected',          label: 'Reject',                  cls: 'dec-opt dec-reject'  },
 ];
 
 const REPORT_OPTIONS: Option[] = [
-  { value: 'approved',          label: 'Verify report',            cls: 'dec-opt dec-approve' },
-  { value: 'changes_requested', label: 'Request changes',          cls: 'dec-opt dec-changes' },
-  { value: 'rejected',          label: 'Reject',                   cls: 'dec-opt dec-reject'  },
+  { value: 'verified',          label: 'Verify report',           cls: 'dec-opt dec-approve' },
+  { value: 'changes_requested', label: 'Request changes',         cls: 'dec-opt dec-changes' },
+  { value: 'rejected',          label: 'Reject',                  cls: 'dec-opt dec-reject'  },
 ];
 
 interface Props {
-  action:        (prev: any, fd: FormData) => Promise<any>;
+  action: (prev: any, fd: FormData) => Promise<any>;
   hiddenFields?: Record<string, string>;
-  mode?:         'org' | 'report';
-  placeholder?:  string;
+  mode?: 'org' | 'report';
+  placeholder?: string;
 }
 
 export function ReviewDecisionForm({
@@ -54,12 +52,10 @@ export function ReviewDecisionForm({
 
   return (
     <form action={formAction}>
-      {/* Hidden fields */}
       {Object.entries(hiddenFields).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
 
-      {/* Decision options */}
       <div className="space-y-2 mb-3">
         {options.map((opt, i) => (
           <label key={opt.value} className={`${opt.cls} gap-2.5 cursor-pointer`}>
@@ -75,7 +71,6 @@ export function ReviewDecisionForm({
         ))}
       </div>
 
-      {/* Comment */}
       <div className="mb-3">
         <p className="text-[10px] text-gray-500 mb-1">Notes to organization</p>
         <textarea
@@ -86,7 +81,6 @@ export function ReviewDecisionForm({
         />
       </div>
 
-      {/* Error */}
       {state?.error && (
         <p className="text-[11px] text-red-600 mb-2">{state.error}</p>
       )}
