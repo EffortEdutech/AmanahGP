@@ -143,11 +143,11 @@ export function computeAmanahScore(input: AmanahInput): AmanahResult {
  */
 export function computeGovernanceScore(params: {
   onboardingStatus: string;
-  listingStatus:    string;
-  ctcfGatePassed:   boolean;
+  listingStatus: string;
+  ctcfGatePassed: boolean;
 }): number {
   if (params.onboardingStatus !== 'approved') {
-    return params.onboarding_status === 'submitted' ? 30 : 0;
+    return params.onboardingStatus === 'submitted' ? 30 : 0;
   }
   if (params.listingStatus !== 'listed') return 60;
   return params.ctcfGatePassed ? 100 : 80;
