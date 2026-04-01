@@ -73,10 +73,10 @@ export async function submitCtcfEvaluation(
       hasImpactPerCostMetric:  bool('l4_cost_effectiveness'),
     },
     layer5: {
-      hasNamedShariahAdvisor:  bool('l5_advisor'),
+      hasShariahAdvisor: bool('l5_advisor'),
       hasWrittenShariahPolicy: bool('l5_policy'),
-      hasZakatEligibilityGov:  nullable('l5_zakat_gov'),
-      hasWaqfAssetGovernance:  nullable('l5_waqf_gov'),
+      hasZakatEligibilityGov: nullable('l5_zakat_gov'),
+      hasWaqfAssetGovernance: nullable('l5_waqf_gov'),
     },
   };
 

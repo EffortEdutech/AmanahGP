@@ -91,7 +91,7 @@ export async function GET(request: NextRequest) {
         new Date(a.decided_at ?? 0).getTime()
     )[0];
 
-    const latestScore = [...(org.amanah_index_history ?? [])].so
+    const latestScore = [...(org.amanah_index_history ?? [])].sort(
       (a: AmanahIndexHistoryRow, b: AmanahIndexHistoryRow) =>
         new Date(b.computed_at ?? 0).getTime() -
         new Date(a.computed_at ?? 0).getTime()
