@@ -1,27 +1,62 @@
 // apps/user/app/account/page.tsx
-// AmanahHub — Donor account page (Sprint 7 UI uplift)
-// Data fetching unchanged — visual layer replaced to match UAT s-account
+// AmanahHub — Donor account page
 
-import { redirect }  from 'next/navigation';
-import Link          from 'next/link';
-import { createClient }  from '@/lib/supabase/server';
-import { StatusBadge }   from '@/components/ui/badge';
+import { redirect } from 'next/navigation';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/server';
+import { StatusBadge } from '@/components/ui/badge';
 
 export const metadata = { title: 'My Account | AmanahHub' };
+
+type UserProfile = {
+  id: string;
+  display_name: string | null;
+  email: string | null;
+  platform_role: string | null;
+  created_at: string | null;
+};
+
+type RelatedOrg = {
+  id: string;
+  name: string;
+};
+
+type RelatedProject = {
+  id: string;
+  title: string;
+};
+
+type DonationRow = {
+  id: string;
+  amount: number | string;
+  platform_fee_amount: number | string | null;
+  currency: string;
+  status: string;
+  confirmed_at: string | null;
+  initiated_at: string | null;
+  gateway: string | null;
+  organizations: RelatedOrg | RelatedOrg[] | null;
+  projects: RelatedProject | RelatedProject[] | null;
+};
 
 export default async function AccountPage() {
   const supabase = await createClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
   if (!user) redirect('/login?next=/account');
 
-  const { data: profile } = await supabase
+  const { data: profileData } = await supabase
     .from('users')
-    .select('display_name, email, platform_role, created_at')
+    .select('id, display_name, email, platform_role, created_at')
     .eq('auth_provider_user_id', user.id)
     .single();
 
-  const { data: donations } = await supabase
+  const profile = (profileData ?? null) as UserProfile | null;
+
+  const { data: donationsData } = await supabase
     .from('donation_transactions')
     .select(`
       id, amount, platform_fee_amount, currency, status,
@@ -33,16 +68,15 @@ export default async function AccountPage() {
     .order('initiated_at', { ascending: false })
     .limit(20);
 
-  const confirmed     = (donations ?? []).filter((d) => d.status === 'confirmed');
+  const donations = (donationsData ?? []) as DonationRow[];
+
+  const confirmed = donations.filter((d) => d.status === 'confirmed');
   const totalConfirmed = confirmed.reduce((sum, d) => sum + Number(d.amount), 0);
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-
-      {/* Page header */}
       <h1 className="text-lg font-semibold text-gray-900 mb-5">My account</h1>
 
-      {/* Stats row */}
       <div className="grid grid-cols-3 gap-3 mb-5">
         <StatBlock
           value={`MYR ${totalConfirmed.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`}
@@ -50,64 +84,63 @@ export default async function AccountPage() {
           highlight
         />
         <StatBlock value={String(confirmed.length)} label="Confirmed" />
-        <StatBlock value={String(donations?.length ?? 0)} label="All donations" />
+        <StatBlock value={String(donations.length)} label="All donations" />
       </div>
 
-      {/* Profile card */}
       <div className="card p-4 mb-4">
         <p className="sec-label">Profile</p>
         <div className="space-y-2">
-          <ProfileRow label="Name"  value={profile?.display_name ?? '—'} />
+          <ProfileRow label="Name" value={profile?.display_name ?? '—'} />
           <ProfileRow label="Email" value={profile?.email ?? user.email ?? '—'} />
           <ProfileRow
             label="Member since"
-            value={profile?.created_at
-              ? new Date(profile.created_at).toLocaleDateString('en-MY', {
-                  month: 'long', year: 'numeric',
-                })
-              : '—'}
+            value={
+              profile?.created_at
+                ? new Date(profile.created_at).toLocaleDateString('en-MY', {
+                    month: 'long',
+                    year: 'numeric',
+                  })
+                : '—'
+            }
           />
         </div>
       </div>
 
-      {/* Donation history */}
       <div className="card p-4">
         <p className="sec-label">Donation history</p>
 
-        {donations?.length ? (
+        {donations.length ? (
           <div className="space-y-2">
             {donations.map((d) => {
-              const org     = Array.isArray(d.organizations) ? d.organizations[0] : d.organizations;
-              const project = Array.isArray(d.projects)      ? d.projects[0]      : d.projects;
-              const date    = d.confirmed_at ?? d.initiated_at;
+              const org = Array.isArray(d.organizations) ? d.organizations[0] : d.organizations;
+              const project = Array.isArray(d.projects) ? d.projects[0] : d.projects;
+              const date = d.confirmed_at ?? d.initiated_at;
 
               return (
-                <Link
-                  key={d.id}
-                  href={`/donate/receipt/${d.id}`}
-                  className="list-item"
-                >
-                  {/* Status dot */}
-                  <div className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                    d.status === 'confirmed' ? 'bg-emerald-500' :
-                    ['initiated', 'pending'].includes(d.status) ? 'bg-amber-400' :
-                    'bg-gray-300'
-                  }`} />
+                <Link key={d.id} href={`/donate/receipt/${d.id}`} className="list-item">
+                  <div
+                    className={`w-2 h-2 rounded-full flex-shrink-0 ${
+                      d.status === 'confirmed'
+                        ? 'bg-emerald-500'
+                        : ['initiated', 'pending'].includes(d.status)
+                          ? 'bg-amber-400'
+                          : 'bg-gray-300'
+                    }`}
+                  />
 
                   <div className="min-w-0 flex-1">
                     <p className="text-[12px] font-medium text-gray-900 truncate">
                       {org?.name ?? '—'}
                     </p>
                     {project && (
-                      <p className="text-[10px] text-gray-400 truncate">
-                        {project.title}
-                      </p>
+                      <p className="text-[10px] text-gray-400 truncate">{project.title}</p>
                     )}
                   </div>
 
                   <div className="flex-shrink-0 text-right">
                     <p className="text-[12px] font-semibold text-gray-900">
-                      {d.currency} {Number(d.amount).toLocaleString('en-MY', {
+                      {d.currency}{' '}
+                      {Number(d.amount).toLocaleString('en-MY', {
                         minimumFractionDigits: 2,
                       })}
                     </p>
@@ -116,7 +149,8 @@ export default async function AccountPage() {
                       {date && (
                         <span className="text-[10px] text-gray-400">
                           {new Date(date).toLocaleDateString('en-MY', {
-                            day: 'numeric', month: 'short',
+                            day: 'numeric',
+                            month: 'short',
                           })}
                         </span>
                       )}
@@ -135,13 +169,18 @@ export default async function AccountPage() {
           </div>
         )}
       </div>
-
     </div>
   );
 }
 
-function StatBlock({ value, label, highlight }: {
-  value: string; label: string; highlight?: boolean;
+function StatBlock({
+  value,
+  label,
+  highlight,
+}: {
+  value: string;
+  label: string;
+  highlight?: boolean;
 }) {
   return (
     <div className={`card p-3 ${highlight ? 'bg-emerald-50 border-emerald-100' : ''}`}>
