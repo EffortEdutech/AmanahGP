@@ -1,0 +1,48 @@
+# =============================================================
+# IMPORTANT: Add this to your ROOT package.json before deploying
+# =============================================================
+# Open: package.json (in repo root, not inside apps/)
+# Add the "packageManager" field with your exact pnpm version
+# Run `pnpm --version` to get the exact version number
+
+# Example root package.json additions:
+# {
+#   "name": "amanah-governance-platform",
+#   "private": true,
+#   "packageManager": "pnpm@9.0.0",   ← ADD THIS (use your actual version)
+#   "engines": {
+#     "node": ">=20.0.0",             ← ADD THIS
+#     "pnpm": ">=9.0.0"               ← ADD THIS
+#   },
+#   "scripts": {
+#     "dev:user":  "pnpm -C apps/user dev -- -p 3300",
+#     "dev:admin": "pnpm -C apps/admin dev -- -p 3301",
+#     "build:user":  "pnpm -C apps/user build",
+#     "build:admin": "pnpm -C apps/admin build"
+#   }
+# }
+
+# =============================================================
+# CHECK: apps/user/next.config.ts
+# =============================================================
+# Make sure it does NOT have localhost hardcoded anywhere.
+# The transpilePackages should include your workspace packages:
+#
+# import type { NextConfig } from 'next';
+# const nextConfig: NextConfig = {
+#   transpilePackages: ['@agp/config', '@agp/scoring', '@agp/validation'],
+# };
+# export default nextConfig;
+
+# =============================================================
+# CHECK: apps/admin/next.config.ts  (same)
+# =============================================================
+
+# =============================================================
+# CHECK: .gitignore — make sure these are ignored
+# =============================================================
+# .env.local
+# .env.production.local
+# .env*.local
+# apps/user/.env.local
+# apps/admin/.env.local
