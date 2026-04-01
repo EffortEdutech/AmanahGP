@@ -9,7 +9,13 @@ import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/dashboard', '/orgs', '/onboarding', '/admin'];
-const AUTH_ROUTES        = ['/login', '/signup', '/forgot-password', '/callback'];
+const AUTH_ROUTES = ['/login', '/signup', '/forgot-password', '/callback'];
+
+type CookieSetInput = {
+  name: string;
+  value: string;
+  options?: Parameters<NextResponse['cookies']['set']>[2];
+};
 
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -22,12 +28,12 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+        setAll(cookiesToSet: CookieSetInput[]) {
+          cookiesToSet.forEach(({ name, value }: CookieSetInput) =>
             request.cookies.set(name, value)
           );
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }: CookieSetInput) =>
             response.cookies.set(name, value, options)
           );
         },
@@ -35,26 +41,24 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session — required for Server Components to pick up updated session
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-  const isAuthRoute  = AUTH_ROUTES.some((p) => pathname.startsWith(p));
+  const isAuthRoute = AUTH_ROUTES.some((p) => pathname.startsWith(p));
 
-  // ── Redirect unauthenticated users to login ───────────────
   if (isProtected && !user) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('next', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // ── Redirect authenticated users away from auth pages ─────
   if (isAuthRoute && user && pathname !== '/callback') {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }
 
-  // ── Root redirect ──────────────────────────────────────────
   if (pathname === '/') {
     if (user) return NextResponse.redirect(new URL('/dashboard', request.url));
     return NextResponse.redirect(new URL('/login', request.url));

@@ -10,6 +10,12 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PREFIXES = ['/account'];
 
+type CookieSetInput = {
+  name: string;
+  value: string;
+  options?: Parameters<NextResponse['cookies']['set']>[2];
+};
+
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -21,12 +27,12 @@ export async function middleware(request: NextRequest) {
         getAll() {
           return request.cookies.getAll();
         },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
+        setAll(cookiesToSet: CookieSetInput[]) {
+          cookiesToSet.forEach(({ name, value }: CookieSetInput) =>
             request.cookies.set(name, value)
           );
           response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }: CookieSetInput) =>
             response.cookies.set(name, value, options)
           );
         },
@@ -34,10 +40,11 @@ export async function middleware(request: NextRequest) {
     }
   );
 
-  // Refresh session
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  const pathname   = request.nextUrl.pathname;
+  const pathname = request.nextUrl.pathname;
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
 
   if (isProtected && !user) {
