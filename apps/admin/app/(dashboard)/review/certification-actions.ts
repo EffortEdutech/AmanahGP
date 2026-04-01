@@ -82,7 +82,7 @@ export async function submitCtcfEvaluation(
 
   const result = computeCtcfScore(input);
 
-  if (!result.gatePassed) {
+  if (!result.layer1_gate.passed) {
     return { error: 'Layer 1 governance gate not passed. All 6 items are required.' };
   }
 
@@ -94,7 +94,7 @@ export async function submitCtcfEvaluation(
       organization_id:               orgId,
       certification_application_id:  appId,
       criteria_version:              'ctcf_v1',
-      total_score:                   result.totalScore,
+      total_score:                   result.total_score,
       score_breakdown:               result.breakdown,
       computed_at:                   new Date().toISOString(),
       computed_by_user_id:           me.id,
@@ -117,11 +117,11 @@ export async function submitCtcfEvaluation(
     action:         'CTCF_EVALUATED',
     entityTable:    'certification_evaluations',
     entityId:       evalRow.id,
-    metadata:       { total_score: result.totalScore, grade: result.grade },
+    metadata:       { total_score: result.total_score, grade: result.grade },
   });
 
   revalidatePath(`/review/certification/${appId}`);
-  return { success: true, score: result.totalScore, grade: result.grade };
+  return { success: true, score: result.total_score, grade: result.grade };
 }
 
 // =============================================================

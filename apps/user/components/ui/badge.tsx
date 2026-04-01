@@ -2,7 +2,7 @@
 // AmanahHub — Badge component (Sprint 7 UI uplift)
 // Matches UAT .badge .bg .ba .bb .bp .bgr .bred
 
-import { scoreTier, tierLabel, type ScoreTier } from './score-ring';
+import { scoreTier, tierLabel, type Tier as ScoreTier } from './score-ring';
 
 type Variant = 'green' | 'amber' | 'blue' | 'purple' | 'gray' | 'red';
 
