@@ -74,7 +74,7 @@ export async function submitCtcfEvaluation(
     },
     layer5: {
       hasShariahAdvisor: bool('l5_advisor'),
-      hasWrittenShariahPolicy: bool('l5_policy'),
+      hasShariahPolicy: bool('l5_policy'),
       hasZakatEligibilityGov: nullable('l5_zakat_gov'),
       hasWaqfAssetGovernance: nullable('l5_waqf_gov'),
     },
