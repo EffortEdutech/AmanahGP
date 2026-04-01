@@ -39,11 +39,13 @@ export async function initiateDonation(
 
   let donorUserId: string | null = null;
   if (user) {
-    const { data: userRecord } = await supabase
+    const { data } = await supabase
       .from('users')
       .select('id')
       .eq('auth_provider_user_id', user.id)
       .single();
+
+    const userRecord = data as { id: string } | null;
     donorUserId = userRecord?.id ?? null;
   }
 

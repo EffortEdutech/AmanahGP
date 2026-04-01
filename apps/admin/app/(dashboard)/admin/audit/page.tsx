@@ -40,9 +40,13 @@ export default async function AuditLogsPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: me } = await supabase
-    .from('users').select('platform_role')
-    .eq('auth_provider_user_id', user.id).single();
+  const { data } = await supabase
+    .from('users')
+    .select('platform_role')
+    .eq('auth_provider_user_id', user.id)
+    .single();
+
+  const me = data as { platform_role: string } | null;
   if (!me || me.platform_role !== 'super_admin') redirect('/dashboard');
 
   // Latest 100 audit events via service client
