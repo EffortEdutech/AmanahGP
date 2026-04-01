@@ -2,9 +2,9 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
   "installCommand": "pnpm install --frozen-lockfile",
-  "buildCommand": "pnpm -C apps/admin build",
-  "outputDirectory": "apps/admin/.next",
-  "devCommand": "pnpm -C apps/admin dev -- -p 3301",
+  "buildCommand": "pnpm build",
+  "outputDirectory": ".next",
+  "devCommand": "pnpm dev -- -p 3301",
   "ignoreCommand": "git diff HEAD^ HEAD --quiet -- . ../../packages/",
   "headers": [
     {
