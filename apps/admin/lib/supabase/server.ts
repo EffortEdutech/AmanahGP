@@ -9,6 +9,12 @@ import type { Database } from '@/supabase/types/supabase';
 export async function createClient() {
   const cookieStore = await cookies();
 
+  type CookieSetInput = {
+    name: string;
+    value: string;
+    options?: Parameters<typeof cookieStore.set>[2];
+  };
+
   return createServerClient<Database>(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -17,9 +23,9 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: CookieSetInput[]) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
+            cookiesToSet.forEach(({ name, value, options }: CookieSetInput) =>
               cookieStore.set(name, value, options)
             );
           } catch {
@@ -41,7 +47,10 @@ export function createServiceClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
     {
-      cookies: { getAll: () => [], setAll: () => {} },
+      cookies: {
+        getAll: () => [],
+        setAll: () => {},
+      },
       auth: { persistSession: false },
     }
   );
