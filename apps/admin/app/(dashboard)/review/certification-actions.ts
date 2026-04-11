@@ -212,7 +212,9 @@ export async function certificationDecision(
     actorUserId:    me.id,
     actorRole:      me.platform_role,
     organizationId: orgId,
-    action:         AUDIT_ACTIONS.CERTIFICATION_DECISION,
+    action:         decision === 'certified'
+      ? AUDIT_ACTIONS.CERTIFICATION_APPROVED
+      : AUDIT_ACTIONS.CERTIFICATION_REJECTED,
     entityTable:    'certification_applications',
     entityId:       appId,
     metadata:       { decision, reason: reason || null },
