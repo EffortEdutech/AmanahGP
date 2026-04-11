@@ -14,7 +14,7 @@ import { writeAuditLog }                     from '@/lib/audit';
 import { isReviewerOrAbove, AUDIT_ACTIONS, TRUST_EVENT_TYPES } from '@agp/config';
 import { computeCtcfScore }                  from '@agp/scoring';
 import type { CtcfInput, CtcfResponse, OrgSizeBand } from '@agp/scoring';
-import { triggerAmanahRecalc }               from './recalculate';
+import { triggerAmanahRecalc }               from '@/app/(dashboard)/review/recalculate';
 
 async function requireReviewer() {
   const supabase = await createClient();
@@ -221,7 +221,11 @@ export async function certificationDecision(
   });
 
   // Trigger Amanah recalculation
-  await triggerAmanahRecalc(orgId, 'certification_updated');
+  await triggerAmanahRecalc({
+    organizationId: orgId,
+    triggerEvent:   'certification_updated',
+    actorUserId:    me.id,
+  });
 
   revalidatePath(`/review/certification`);
   revalidatePath(`/review/certification/${appId}`);
