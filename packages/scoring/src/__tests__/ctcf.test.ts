@@ -1,295 +1,452 @@
 // packages/scoring/src/__tests__/ctcf.test.ts
-// Amanah Governance Platform — CTCF scoring engine unit tests
+// Amanah Governance Platform — CTCF v2 scoring engine unit tests
 
 import { describe, it, expect } from 'vitest';
 import {
   computeCtcfScore,
+  computeCtcfScore_v1,
   CERTIFICATION_THRESHOLD,
   LAYER2_MINIMUM,
   CTCF_GRADES,
+  RAW_MAX_SCORE,
   type CtcfInput,
+  type CtcfInputV1,
 } from '../ctcf';
 
-// ── Helpers ───────────────────────────────────────────────────
+// =============================================================
+// TEST HELPERS
+// =============================================================
 
-function allTrue(): CtcfInput {
+/** All criteria full, small size band, Zakat+Waqf applicable. */
+function allFull(): CtcfInput {
   return {
+    sizeBand: 'small',
     layer1: {
-      hasLegalRegistration:     true,
-      hasGoverningDocument:     true,
-      hasNamedBoard:            true,
-      hasConflictOfInterest:    true,
-      hasBankAccountSeparation: true,
-      hasContactAndAddress:     true,
+      legalRegistration:     true,
+      governingDocument:     true,
+      namedBoard:            true,
+      conflictOfInterest:    true,
+      bankAccountSeparation: true,
+      contactAndAddress:     true,
     },
     layer2: {
-      hasAnnualFinancialStatement: true,
-      hasAuditEvidence:            true,
-      hasProgramAdminBreakdown:    true,
-      hasZakatSegregation:         true,
+      annualFinancialStatement: 'full',
+      auditEvidence:            'full',
+      programAdminBreakdown:    'full',
+      zakatSegregation:         'full',
     },
     layer3: {
-      hasBudgetVsActual:       true,
-      hasGeoVerifiedReporting: true,
-      hasBeforeAfterDocs:      true,
-      hasBeneficiaryMetrics:   true,
-      hasCompletionTimeliness: true,
+      budgetVsActual:       'full',
+      geoVerifiedReporting: 'full',
+      beforeAfterDocs:      'full',
+      beneficiaryMetrics:   'full',
+      completionTimeliness: 'full',
     },
     layer4: {
-      hasKpisDefined:         true,
-      hasSustainabilityPlan:  true,
-      hasContinuityTracking:  true,
-      hasImpactPerCostMetric: true,
+      kpiQualityAndToC:    'full',
+      sustainabilityPlan:  'full',
+      continuityTracking:  'full',
+      impactPerCostMetric: 'full',
     },
     layer5: {
-      hasShariahAdvisor:      true,
-      hasShariahPolicy:       true,
-      hasZakatEligibilityGov: true,
-      hasWaqfAssetGovernance: true,
+      shariahAdvisor:      'full',
+      shariahPolicy:       'full',
+      zakatEligibilityGov: 'full',
+      waqfAssetGovernance: 'full',
     },
   };
 }
 
 // =============================================================
-// LAYER 1 GATE
+// LAYER 1 — GATE
 // =============================================================
 describe('Layer 1 — Gate', () => {
   it('passes when all 6 items are true', () => {
-    const result = computeCtcfScore(allTrue());
-    expect(result.layer1_gate.passed).toBe(true);
+    expect(computeCtcfScore(allFull()).layer1_gate.passed).toBe(true);
   });
 
-  it('fails when any single item is false', () => {
-    const items: (keyof CtcfInput['layer1'])[] = [
-      'hasLegalRegistration', 'hasGoverningDocument', 'hasNamedBoard',
-      'hasConflictOfInterest', 'hasBankAccountSeparation', 'hasContactAndAddress',
-    ];
-    for (const item of items) {
-      const input = allTrue();
-      input.layer1[item] = false;
-      const result = computeCtcfScore(input);
-      expect(result.layer1_gate.passed).toBe(false);
-      expect(result.total_score).toBe(0);
-      expect(result.is_certifiable).toBe(false);
-    }
-  });
+  const gateFields = [
+    'legalRegistration', 'governingDocument', 'namedBoard',
+    'conflictOfInterest', 'bankAccountSeparation', 'contactAndAddress',
+  ] as const;
 
-  it('returns score 0 on gate failure regardless of other layers', () => {
-    const input = allTrue();
-    input.layer1.hasLegalRegistration = false;
-    const result = computeCtcfScore(input);
-    expect(result.total_score).toBe(0);
-    expect(result.layer2_financial.normalized).toBe(0);
-    expect(result.layer3_project.normalized).toBe(0);
-  });
-
-  it('notes include the failed item names', () => {
-    const input = allTrue();
-    input.layer1.hasConflictOfInterest    = false;
-    input.layer1.hasBankAccountSeparation = false;
-    const result = computeCtcfScore(input);
-    expect(result.layer1_gate.notes).toContain('Conflict of interest');
-    expect(result.layer1_gate.notes).toContain('Bank account separation');
-  });
+  for (const field of gateFields) {
+    it(`fails and returns zero score when ${field} is false`, () => {
+      const input = allFull();
+      input.layer1[field] = false;
+      const r = computeCtcfScore(input);
+      expect(r.layer1_gate.passed).toBe(false);
+      expect(r.is_certifiable).toBe(false);
+      expect(r.total_score).toBe(0);
+      expect(r.layer1_gate.failed_items).toContain(
+        field.replace(/([A-Z])/g, ' $1').toLowerCase().replace(/^./, (c) => c.toUpperCase()).trim()
+      );
+    });
+  }
 });
 
 // =============================================================
-// LAYER 2 — Financial Transparency
+// LAYER 2 — FINANCIAL TRANSPARENCY
 // =============================================================
 describe('Layer 2 — Financial Transparency', () => {
-  it('scores 20/20 when all 4 items true (including zakat)', () => {
-    const result = computeCtcfScore(allTrue());
-    expect(result.layer2_financial.earned).toBe(20);
-    expect(result.layer2_financial.normalized).toBe(20);
+  it('scores 20/20 when all four criteria are full', () => {
+    const r = computeCtcfScore(allFull());
+    expect(r.layer2_financial.normalized).toBe(20);
   });
 
-  it('normalizes correctly when zakat is N/A', () => {
-    const input = allTrue();
-    input.layer2.hasZakatSegregation = null;
-    // 15 earned / 15 max * 20 = 20
-    const result = computeCtcfScore(input);
-    expect(result.layer2_financial.max).toBe(15);
-    expect(result.layer2_financial.normalized).toBe(20);
+  it('partial on one criterion scores 2.5 (half of 5)', () => {
+    const input = allFull();
+    input.layer2.annualFinancialStatement = 'partial';
+    const r = computeCtcfScore(input);
+    // earned = 2.5 + 5 + 5 + 5 = 17.5; max = 20; norm = 17.5
+    expect(r.layer2_financial.normalized).toBeCloseTo(17.5, 1);
   });
 
-  it('partial score with zakat N/A normalizes correctly', () => {
-    const input = allTrue();
-    input.layer2.hasZakatSegregation    = null;
-    input.layer2.hasProgramAdminBreakdown = false;
-    // 10 earned / 15 max * 20 = 13.33
-    const result = computeCtcfScore(input);
-    expect(result.layer2_financial.normalized).toBeCloseTo(13.33, 1);
+  it('no on one criterion scores 0 for that criterion', () => {
+    const input = allFull();
+    input.layer2.auditEvidence = 'no';
+    const r = computeCtcfScore(input);
+    // earned = 5 + 0 + 5 + 5 = 15; norm = 15
+    expect(r.layer2_financial.normalized).toBeCloseTo(15, 1);
   });
 
-  it('fails layer2 minimum when score < 12', () => {
-    const input = allTrue();
-    input.layer2.hasAuditEvidence         = false;
-    input.layer2.hasProgramAdminBreakdown = false;
-    input.layer2.hasZakatSegregation      = false;
-    // 5/20 normalized = 5 < 12
-    const result = computeCtcfScore(input);
-    expect(result.layer2_financial.normalized).toBe(5);
-    expect(result.layer2_passes_minimum).toBe(false);
-    expect(result.is_certifiable).toBe(false);
+  it('N/A on zakatSegregation normalises correctly (max 15, still worth 20)', () => {
+    const input = allFull();
+    input.layer2.zakatSegregation = 'na';
+    const r = computeCtcfScore(input);
+    // earned = 5+5+5 = 15; maxApplicable = 15; norm = (15/15)*20 = 20
+    expect(r.layer2_financial.normalized).toBeCloseTo(20, 1);
   });
 
-  it('layer2 minimum fails when only 1 of 3 applicable items true', () => {
-    const input = allTrue();
-    input.layer2.hasZakatSegregation      = null;
-    input.layer2.hasAuditEvidence         = false;
-    input.layer2.hasProgramAdminBreakdown = false;
-    // 5/15 * 20 = 6.67 < 12
-    const result = computeCtcfScore(input);
-    expect(result.layer2_passes_minimum).toBe(false);
+  it('Layer 2 floor blocks certification when normalised L2 < 10', () => {
+    const input = allFull();
+    // All L2 criteria set to 'no' → normalized = 0 < 10
+    input.layer2.annualFinancialStatement = 'no';
+    input.layer2.auditEvidence            = 'no';
+    input.layer2.programAdminBreakdown    = 'no';
+    input.layer2.zakatSegregation         = 'no';
+    const r = computeCtcfScore(input);
+    expect(r.layer2_passes_minimum).toBe(false);
+    expect(r.is_certifiable).toBe(false);
+  });
+
+  it('L2 floor passes when normalised L2 = 10 exactly (two partials + one full)', () => {
+    const input = allFull();
+    // full(5) + partial(2.5) + partial(2.5) + no(0) = 10; max=20; norm=10
+    input.layer2.annualFinancialStatement = 'full';
+    input.layer2.auditEvidence            = 'partial';
+    input.layer2.programAdminBreakdown    = 'partial';
+    input.layer2.zakatSegregation         = 'no';
+    const r = computeCtcfScore(input);
+    expect(r.layer2_financial.normalized).toBeCloseTo(10, 1);
+    expect(r.layer2_passes_minimum).toBe(true);
   });
 });
 
 // =============================================================
-// LAYER 3 — Project Transparency
+// LAYER 3 — PROJECT TRANSPARENCY
 // =============================================================
 describe('Layer 3 — Project Transparency', () => {
-  it('scores 25 when all 5 items true', () => {
-    const result = computeCtcfScore(allTrue());
-    expect(result.layer3_project.earned).toBe(25);
-    expect(result.layer3_project.normalized).toBe(25);
+  it('scores 25/25 when all criteria are full', () => {
+    expect(computeCtcfScore(allFull()).layer3_project.normalized).toBe(25);
   });
 
-  it('scores 5 pts per item', () => {
-    const input = allTrue();
-    input.layer3.hasBudgetVsActual       = false;
-    input.layer3.hasGeoVerifiedReporting = false;
-    const result = computeCtcfScore(input);
-    expect(result.layer3_project.earned).toBe(15);
+  it('N/A on geo and beforeAfterDocs normalises to 25 when remaining 3 are full', () => {
+    const input = allFull();
+    input.layer3.geoVerifiedReporting = 'na';
+    input.layer3.beforeAfterDocs      = 'na';
+    // earned=5+5+5=15; maxApplicable=15; norm=(15/15)*25=25
+    const r = computeCtcfScore(input);
+    expect(r.layer3_project.normalized).toBeCloseTo(25, 1);
   });
 
-  it('scores 0 when all false (after gate pass)', () => {
-    const input = allTrue();
-    input.layer3 = {
-      hasBudgetVsActual: false, hasGeoVerifiedReporting: false,
-      hasBeforeAfterDocs: false, hasBeneficiaryMetrics: false,
-      hasCompletionTimeliness: false,
-    };
-    const result = computeCtcfScore(input);
-    expect(result.layer3_project.earned).toBe(0);
+  it('partial on one criterion gives 2.5 pts for that criterion', () => {
+    const input = allFull();
+    input.layer3.completionTimeliness = 'partial';
+    // earned=5+5+5+5+2.5=22.5; max=25; norm=22.5
+    const r = computeCtcfScore(input);
+    expect(r.layer3_project.normalized).toBeCloseTo(22.5, 1);
+  });
+
+  it('all N/A gives full layer score (25)', () => {
+    const input = allFull();
+    input.layer3.budgetVsActual       = 'na';
+    input.layer3.geoVerifiedReporting = 'na';
+    input.layer3.beforeAfterDocs      = 'na';
+    input.layer3.beneficiaryMetrics   = 'na';
+    input.layer3.completionTimeliness = 'na';
+    const r = computeCtcfScore(input);
+    expect(r.layer3_project.normalized).toBe(25);
   });
 });
 
 // =============================================================
-// LAYER 4 — Impact & Sustainability
+// LAYER 4 — IMPACT & SUSTAINABILITY
 // =============================================================
 describe('Layer 4 — Impact & Sustainability', () => {
-  it('scores 20 when all 4 items true', () => {
-    const result = computeCtcfScore(allTrue());
-    expect(result.layer4_impact.earned).toBe(20);
+  it('scores 20/20 when all criteria are full', () => {
+    expect(computeCtcfScore(allFull()).layer4_impact.normalized).toBe(20);
   });
 
-  it('scores 5 pts per item', () => {
-    const input = allTrue();
-    input.layer4.hasKpisDefined = false;
-    const result = computeCtcfScore(input);
-    expect(result.layer4_impact.earned).toBe(15);
+  it('partial on kpiQualityAndToC gives 2.5 pts', () => {
+    const input = allFull();
+    input.layer4.kpiQualityAndToC = 'partial';
+    // earned=2.5+5+5+5=17.5; norm=17.5
+    const r = computeCtcfScore(input);
+    expect(r.layer4_impact.normalized).toBeCloseTo(17.5, 1);
+  });
+
+  it('no on all criteria scores 0', () => {
+    const input = allFull();
+    input.layer4.kpiQualityAndToC    = 'no';
+    input.layer4.sustainabilityPlan  = 'no';
+    input.layer4.continuityTracking  = 'no';
+    input.layer4.impactPerCostMetric = 'no';
+    const r = computeCtcfScore(input);
+    expect(r.layer4_impact.normalized).toBe(0);
   });
 });
 
 // =============================================================
-// LAYER 5 — Shariah Governance
+// LAYER 5 — SHARIAH GOVERNANCE
 // =============================================================
 describe('Layer 5 — Shariah Governance', () => {
-  it('scores 15 when all items applicable and true', () => {
-    const result = computeCtcfScore(allTrue());
-    expect(result.layer5_shariah.normalized).toBe(15);
+  it('scores 15/15 when all criteria applicable and full', () => {
+    expect(computeCtcfScore(allFull()).layer5_shariah.normalized).toBe(15);
   });
 
-  it('normalizes correctly when both zakat and waqf are N/A', () => {
-    const input = allTrue();
-    input.layer5.hasZakatEligibilityGov = null;
-    input.layer5.hasWaqfAssetGovernance = null;
-    // max applicable = 8 (advisor 5 + policy 3), earned = 8
-    // normalized = 8/8 * 15 = 15
-    const result = computeCtcfScore(input);
-    expect(result.layer5_shariah.normalized).toBe(15);
+  it('partial on shariahAdvisor gives 2 pts (max 5 × 0.5 = 2.5)', () => {
+    const input = allFull();
+    input.layer5.shariahAdvisor = 'partial';
+    // earned=2.5+3+3+4=12.5; max=15; norm=12.5
+    const r = computeCtcfScore(input);
+    expect(r.layer5_shariah.normalized).toBeCloseTo(12.5, 1);
   });
 
-  it('deducts advisor points (5pts) when missing', () => {
-    const input = allTrue();
-    input.layer5.hasShariahAdvisor = false;
-    // 10/15 * 15 = 10
-    const result = computeCtcfScore(input);
-    expect(result.layer5_shariah.normalized).toBe(10);
+  it('N/A on both zakat and waqf normalises to 15 from base 8', () => {
+    const input = allFull();
+    input.layer5.zakatEligibilityGov = 'na';
+    input.layer5.waqfAssetGovernance = 'na';
+    // earned=5+3=8; maxApplicable=8; norm=(8/8)*15=15
+    const r = computeCtcfScore(input);
+    expect(r.layer5_shariah.normalized).toBeCloseTo(15, 1);
+  });
+
+  it('N/A on waqf only normalises correctly', () => {
+    const input = allFull();
+    input.layer5.waqfAssetGovernance = 'na';
+    // earned=5+3+3=11; maxApplicable=11; norm=(11/11)*15=15
+    const r = computeCtcfScore(input);
+    expect(r.layer5_shariah.normalized).toBeCloseTo(15, 1);
+  });
+
+  it('no on shariahAdvisor deducts 5 pts (max applicable)', () => {
+    const input = allFull();
+    input.layer5.shariahAdvisor = 'no';
+    // earned=0+3+3+4=10; max=15; norm=(10/15)*15=10
+    const r = computeCtcfScore(input);
+    expect(r.layer5_shariah.normalized).toBeCloseTo(10, 1);
   });
 });
 
 // =============================================================
-// TOTAL SCORE AND GRADES
+// TOTAL SCORE, NORMALISATION, AND GRADES
 // =============================================================
-describe('Total score and grades', () => {
-  it('returns 80 for all-true zakat+waqf org', () => {
-    // L2:20 + L3:25 + L4:20 + L5:15 = 80
-    const result = computeCtcfScore(allTrue());
-    expect(result.total_score).toBe(80);
-    expect(result.grade).toBe('Gold Amanah');
-    expect(result.is_certifiable).toBe(true);
+describe('Total score and normalisation', () => {
+  it('returns total_score = 100 when all criteria are full', () => {
+    const r = computeCtcfScore(allFull());
+    // raw = 20+25+20+15 = 80; normalised = (80/80)*100 = 100
+    expect(r.raw_total).toBe(80);
+    expect(r.total_score).toBe(100);
   });
 
-  it('Platinum grade requires ≥85 — all-true zakat+waqf scores 80 (below platinum)', () => {
-    const result = computeCtcfScore(allTrue());
-    // Max with zakat+waqf all true = 80, which is Gold not Platinum
-    expect(result.total_score).toBeLessThan(CTCF_GRADES.PLATINUM.min);
-    expect(result.grade).toBe('Gold Amanah');
+  it('normalises correctly for a partial result', () => {
+    const input = allFull();
+    // Make all L2 partial: earned=2.5+2.5+2.5+2.5=10; norm=10
+    input.layer2.annualFinancialStatement = 'partial';
+    input.layer2.auditEvidence            = 'partial';
+    input.layer2.programAdminBreakdown    = 'partial';
+    input.layer2.zakatSegregation         = 'partial';
+    const r = computeCtcfScore(input);
+    // raw = 10 + 25 + 20 + 15 = 70; total = (70/80)*100 = 87.5
+    expect(r.raw_total).toBeCloseTo(70, 1);
+    expect(r.total_score).toBeCloseTo(87.5, 1);
   });
 
-  it('Silver grade at 55–69 — remove 3 layer3 items (−15 pts → 65)', () => {
-    const input = allTrue();
-    // Start at 80, remove 3 items from layer3 (3 × 5 = 15 pts)
-    // 80 − 15 = 65 → Silver Amanah ✓
-    input.layer3.hasBudgetVsActual       = false;
-    input.layer3.hasGeoVerifiedReporting = false;
-    input.layer3.hasBeforeAfterDocs      = false;
-    const result = computeCtcfScore(input);
-    expect(result.total_score).toBeGreaterThanOrEqual(55);
-    expect(result.total_score).toBeLessThan(70);
-    expect(result.grade).toBe('Silver Amanah');
-    expect(result.is_certifiable).toBe(true);
+  it('Platinum grade at ≥ 85', () => {
+    const r = computeCtcfScore(allFull());
+    expect(r.grade).toBe(CTCF_GRADES.PLATINUM.label);
+    expect(r.is_certifiable).toBe(true);
   });
 
-  it('Not certified below threshold — zero all layers 2–5', () => {
-    const input = allTrue();
-    input.layer2 = {
-      hasAnnualFinancialStatement: false, hasAuditEvidence: false,
-      hasProgramAdminBreakdown: false, hasZakatSegregation: false,
+  it('Gold grade at 70–84', () => {
+    const input = allFull();
+    // Drop ~2 criteria to partial to land in 70–84 range
+    input.layer2.annualFinancialStatement = 'partial'; // -2.5 raw
+    input.layer2.auditEvidence            = 'partial'; // -2.5 raw
+    input.layer3.completionTimeliness     = 'partial'; // -2.5 raw
+    // raw = 80 - 2.5 - 2.5 - 2.5 = 72.5; total = 90.625 — still Platinum.
+    // Let's set multiple criteria to 'no':
+    input.layer2.annualFinancialStatement = 'no';  // -5 raw
+    input.layer2.auditEvidence            = 'no';  // -5 raw
+    input.layer3.completionTimeliness     = 'no';  // -5 raw
+    input.layer4.impactPerCostMetric      = 'no';  // -5 raw
+    // raw = 80 - 5 - 5 - 5 - 5 = 60; total = (60/80)*100 = 75 → Gold
+    const r = computeCtcfScore(input);
+    expect(r.total_score).toBeCloseTo(75, 1);
+    expect(r.grade).toBe(CTCF_GRADES.GOLD.label);
+  });
+
+  it('Silver grade at 55–69', () => {
+    const input = allFull();
+    // Drop enough criteria to reach 55–69
+    input.layer2.annualFinancialStatement = 'no';
+    input.layer2.auditEvidence            = 'no';
+    input.layer2.programAdminBreakdown    = 'no';
+    input.layer3.completionTimeliness     = 'no';
+    input.layer4.kpiQualityAndToC         = 'no';
+    input.layer4.continuityTracking       = 'no';
+    // raw = 80 - 5-5-5-5-5-5 = 50; total = (50/80)*100 = 62.5 → Silver
+    const r = computeCtcfScore(input);
+    expect(r.total_score).toBeCloseTo(62.5, 1);
+    expect(r.grade).toBe(CTCF_GRADES.SILVER.label);
+    expect(r.is_certifiable).toBe(true);
+  });
+
+  it('Not Certified when total_score < 55', () => {
+    const input = allFull();
+    // Drop many criteria to go below 55
+    input.layer2.annualFinancialStatement = 'no';
+    input.layer2.auditEvidence            = 'no';
+    input.layer2.programAdminBreakdown    = 'no';
+    input.layer2.zakatSegregation         = 'no';
+    input.layer3.budgetVsActual           = 'no';
+    input.layer3.geoVerifiedReporting     = 'no';
+    input.layer3.completionTimeliness     = 'no';
+    // raw = 80 - 5-5-5-5-5-5-5 = 45; total = (45/80)*100 = 56.25 — still above 55
+    // Need more: remove one more
+    input.layer4.kpiQualityAndToC = 'no';
+    // raw = 40; total = (40/80)*100 = 50 → Not Certified
+    const r = computeCtcfScore(input);
+    expect(r.total_score).toBeCloseTo(50, 1);
+    expect(r.grade).toBe(CTCF_GRADES.NONE.label);
+    expect(r.is_certifiable).toBe(false);
+  });
+
+  it('RAW_MAX_SCORE constant equals 80', () => {
+    expect(RAW_MAX_SCORE).toBe(80);
+  });
+
+  it('CERTIFICATION_THRESHOLD constant equals 55', () => {
+    expect(CERTIFICATION_THRESHOLD).toBe(55);
+  });
+
+  it('LAYER2_MINIMUM constant equals 10', () => {
+    expect(LAYER2_MINIMUM).toBe(10);
+  });
+});
+
+// =============================================================
+// SIZE BAND STORED IN RESULT
+// =============================================================
+describe('Size band', () => {
+  it('stores the size band in the result', () => {
+    const input = allFull();
+    input.sizeBand = 'large';
+    const r = computeCtcfScore(input);
+    expect(r.size_band).toBe('large');
+  });
+});
+
+// =============================================================
+// BREAKDOWN STRUCTURE
+// =============================================================
+describe('Breakdown structure', () => {
+  it('includes normalised_total in breakdown', () => {
+    const r = computeCtcfScore(allFull());
+    expect((r.breakdown as any).normalized_total).toBe(100);
+  });
+
+  it('includes raw_total in breakdown', () => {
+    const r = computeCtcfScore(allFull());
+    expect((r.breakdown as any).raw_total).toBe(80);
+  });
+});
+
+// =============================================================
+// NOTES CONTENT
+// =============================================================
+describe('Notes in layer results', () => {
+  it('records partial criteria in notes', () => {
+    const input = allFull();
+    input.layer2.auditEvidence = 'partial';
+    const r = computeCtcfScore(input);
+    expect(r.layer2_financial.notes).toContain('Partial');
+  });
+
+  it('records no criteria in notes', () => {
+    const input = allFull();
+    input.layer4.kpiQualityAndToC = 'no';
+    const r = computeCtcfScore(input);
+    expect(r.layer4_impact.notes).toContain('Not met');
+  });
+
+  it('records N/A criteria in notes', () => {
+    const input = allFull();
+    input.layer3.geoVerifiedReporting = 'na';
+    const r = computeCtcfScore(input);
+    expect(r.layer3_project.notes).toContain('N/A');
+  });
+
+  it('notes show "All criteria fully met" when no issues', () => {
+    const r = computeCtcfScore(allFull());
+    expect(r.layer2_financial.notes).toBe('All criteria fully met.');
+  });
+});
+
+// =============================================================
+// ctcf_v1 ARCHIVE — smoke test that archived engine still works
+// =============================================================
+describe('computeCtcfScore_v1 (archive)', () => {
+  function v1AllTrue(): CtcfInputV1 {
+    return {
+      layer1: {
+        hasLegalRegistration: true, hasGoverningDocument: true,
+        hasNamedBoard: true, hasConflictOfInterest: true,
+        hasBankAccountSeparation: true, hasContactAndAddress: true,
+      },
+      layer2: {
+        hasAnnualFinancialStatement: true, hasAuditEvidence: true,
+        hasProgramAdminBreakdown: true, hasZakatSegregation: true,
+      },
+      layer3: {
+        hasBudgetVsActual: true, hasGeoVerifiedReporting: true,
+        hasBeforeAfterDocs: true, hasBeneficiaryMetrics: true,
+        hasCompletionTimeliness: true,
+      },
+      layer4: {
+        hasKpisDefined: true, hasSustainabilityPlan: true,
+        hasContinuityTracking: true, hasImpactPerCostMetric: true,
+      },
+      layer5: {
+        hasShariahAdvisor: true, hasShariahPolicy: true,
+        hasZakatEligibilityGov: true, hasWaqfAssetGovernance: true,
+      },
     };
-    input.layer3 = {
-      hasBudgetVsActual: false, hasGeoVerifiedReporting: false,
-      hasBeforeAfterDocs: false, hasBeneficiaryMetrics: false,
-      hasCompletionTimeliness: false,
-    };
-    input.layer4 = {
-      hasKpisDefined: false, hasSustainabilityPlan: false,
-      hasContinuityTracking: false, hasImpactPerCostMetric: false,
-    };
-    const result = computeCtcfScore(input);
-    expect(result.total_score).toBeLessThan(CERTIFICATION_THRESHOLD);
-    expect(result.is_certifiable).toBe(false);
-    expect(result.grade).toBe('Not Certified');
+  }
+
+  it('v1 engine still produces a valid result for all-true input', () => {
+    const r = computeCtcfScore_v1(v1AllTrue());
+    expect(r.version).toBe('ctcf_v1');
+    expect(r.layer1_gate.passed).toBe(true);
+    expect(r.total_score).toBe(80); // v1 raw score out of 80 (no 0–100 normalisation in v1)
   });
 
-  it('is_certifiable requires BOTH threshold AND layer2 minimum', () => {
-    const input = allTrue();
-    // Force layer2 below minimum (only 1 item true = 5/20 normalized)
-    input.layer2.hasAuditEvidence         = false;
-    input.layer2.hasProgramAdminBreakdown = false;
-    input.layer2.hasZakatSegregation      = false;
-    // layer2 = 5 (< 12 minimum) → not certifiable even if total ≥ 55
-    const result = computeCtcfScore(input);
-    expect(result.layer2_passes_minimum).toBe(false);
-    expect(result.is_certifiable).toBe(false);
-  });
-
-  it('breakdown is stored for JSONB', () => {
-    const result = computeCtcfScore(allTrue());
-    expect(result.breakdown).toHaveProperty('layer1_gate');
-    expect(result.breakdown).toHaveProperty('layer2_financial');
-    expect(result.breakdown).toHaveProperty('normalized_total');
-    expect(result.breakdown.normalized_total).toBe(result.total_score);
+  it('v1 gate failure zeroes the score', () => {
+    const input = v1AllTrue();
+    input.layer1.hasLegalRegistration = false;
+    const r = computeCtcfScore_v1(input);
+    expect(r.layer1_gate.passed).toBe(false);
+    expect(r.total_score).toBe(0);
   });
 });
