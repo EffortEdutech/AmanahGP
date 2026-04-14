@@ -15,7 +15,7 @@
     "incremental": true,
     "plugins": [{ "name": "next" }],
     "paths": {
-      "@/*": ["./src/*"],
+      "@/*": ["./*"],
       "@agp/config": ["../../packages/config/src/index.ts"],
       "@agp/scoring": ["../../packages/scoring/src/index.ts"],
       "@agp/validation": ["../../packages/validation/src/index.ts"]

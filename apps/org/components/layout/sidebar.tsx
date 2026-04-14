@@ -22,7 +22,6 @@ import { signOut } from '@/app/(auth)/actions';
 interface OrgEntry {
   organization_id: string;
   org_name: string;
-  org_slug: string;
   org_role: string;
   onboarding_status: string;
   listing_status: string;
