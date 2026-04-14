@@ -1,17 +1,15 @@
-// apps/org/middleware.ts
-// amanahOS — Route protection middleware
-
+// apps/org/middleware.ts — Sprint 16 Revised
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PREFIXES = [
   '/dashboard',
   '/profile',
-  '/accounting',
+  '/accounting',      // covers all /accounting/* sub-routes
   '/projects',
   '/reports',
   '/compliance',
-  '/policy-kit',     // renamed from /governance
+  '/policy-kit',
   '/trust',
   '/certification',
   '/members',
@@ -26,7 +24,6 @@ type CookieSetInput = {
 export async function middleware(request: NextRequest) {
   const { pathname, searchParams } = request.nextUrl;
 
-  // ── Env guard ────────────────────────────────────────────────
   const supabaseUrl     = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
@@ -37,14 +34,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/setup', request.url));
   }
 
-  // ── Always-public paths ───────────────────────────────────────
   const isNoAccess       = pathname === '/no-access';
   const isSetup          = pathname === '/setup';
   const isLoginWithError = pathname === '/login' && searchParams.has('error');
-
   if (isNoAccess || isSetup || isLoginWithError) return NextResponse.next();
 
-  // ── Supabase client ───────────────────────────────────────────
   let response = NextResponse.next({ request });
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
@@ -62,7 +56,6 @@ export async function middleware(request: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser();
 
-  // ── Route guards ──────────────────────────────────────────────
   const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
   const isLogin     = pathname === '/login';
   const isRoot      = pathname === '/';
@@ -72,14 +65,8 @@ export async function middleware(request: NextRequest) {
     url.searchParams.set('next', pathname);
     return NextResponse.redirect(url);
   }
-
-  if (isLogin && user) {
-    return NextResponse.redirect(new URL('/dashboard', request.url));
-  }
-
-  if (isRoot) {
-    return NextResponse.redirect(new URL(user ? '/dashboard' : '/login', request.url));
-  }
+  if (isLogin && user) return NextResponse.redirect(new URL('/dashboard', request.url));
+  if (isRoot)          return NextResponse.redirect(new URL(user ? '/dashboard' : '/login', request.url));
 
   return response;
 }
