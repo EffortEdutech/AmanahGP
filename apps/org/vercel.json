@@ -1,0 +1,7 @@
+{
+  "framework": "nextjs",
+  "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
+  "buildCommand": "cd ../.. && pnpm -C apps/org build",
+  "outputDirectory": ".next",
+  "regions": ["sin1"]
+}
