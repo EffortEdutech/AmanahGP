@@ -1,42 +1,60 @@
-// apps/org/app/(protected)/orgs/[orgId]/profile/page.tsx
-// amanahOS — Organisation Profile
-// [MOVE FROM apps/admin] — this is the future destination of org profile management.
-// Phase 2 Sprint 14: scaffold. Sprint 15+: full edit form.
+// apps/org/app/(protected)/profile/page.tsx
+// amanahOS — Organisation Profile (flat route, no URL params)
+// Gets orgId from user's first org membership via session.
 
-import { redirect, notFound } from 'next/navigation';
+import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
 import { ComingSoonModule } from '@/components/ui/coming-soon-module';
 
 export const metadata = { title: 'Profile — amanahOS' };
 
-export default async function ProfilePage({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
-  const { orgId } = await params;
+export default async function ProfilePage() {
   const supabase = await createClient();
+  const service  = createServiceClient();
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, slug, org_type, state, description, registration_number, oversight_authority, onboarding_status')
-    .eq('id', orgId)
+  // Resolve platform user
+  const { data: platformUser } = await supabase
+    .from('users')
+    .select('id')
+    .eq('auth_provider_user_id', user.id)
     .single();
+  if (!platformUser) redirect('/no-access?reason=no_user_record');
 
-  if (!org) notFound();
-
-  // Verify user is a member of this org
-  const { data: membership } = await supabase
+  // Get first org via service client (UUID mismatch bypass)
+  const { data: membership } = await service
     .from('org_members')
-    .select('org_role')
-    .eq('organization_id', orgId)
-    .eq('user_id', user.id)
+    .select('organization_id, org_role')
+    .eq('user_id', platformUser.id)
+    .eq('status', 'active')
+    .order('created_at', { ascending: true })
+    .limit(1)
     .single();
+  if (!membership) redirect('/no-access?reason=no_org_membership');
 
-  if (!membership) redirect('/dashboard');
+  const { data: org } = await service
+    .from('organizations')
+    .select('id, name, legal_name, registration_no, org_type, state, oversight_authority, fund_types, summary, onboarding_status, listing_status, contact_email, website_url')
+    .eq('id', membership.organization_id)
+    .single();
+  if (!org) redirect('/dashboard');
+
+  const rows: Array<{ label: string; value: string | null }> = [
+    { label: 'Name',                 value: org.name },
+    { label: 'Legal name',           value: org.legal_name },
+    { label: 'Registration no.',     value: org.registration_no },
+    { label: 'Type',                 value: org.org_type?.replace(/_/g, ' ') ?? null },
+    { label: 'State',                value: org.state },
+    { label: 'Oversight authority',  value: org.oversight_authority },
+    { label: 'Fund types',           value: (org.fund_types as string[] | null)?.join(', ') ?? null },
+    { label: 'Contact email',        value: org.contact_email },
+    { label: 'Website',              value: org.website_url },
+    { label: 'Onboarding status',    value: org.onboarding_status },
+    { label: 'Listing status',       value: org.listing_status },
+  ];
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">
@@ -45,31 +63,24 @@ export default async function ProfilePage({
         <p className="text-sm text-gray-500 mt-0.5">{org.name}</p>
       </div>
 
-      {/* Current read-only view */}
       <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
-        <ProfileRow label="Name"                value={org.name} />
-        <ProfileRow label="Slug"                value={org.slug} />
-        <ProfileRow label="Type"                value={org.org_type?.replace(/_/g, ' ') ?? '—'} />
-        <ProfileRow label="State"               value={org.state ?? '—'} />
-        <ProfileRow label="Registration no."    value={org.registration_number ?? '—'} />
-        <ProfileRow label="Oversight authority" value={org.oversight_authority ?? '—'} />
-        <ProfileRow label="Status"              value={org.onboarding_status} />
+        {rows.map(({ label, value }) => (
+          <div key={label} className="flex px-4 py-3 gap-4">
+            <span className="text-[11px] text-gray-400 w-40 flex-shrink-0 font-medium pt-0.5">
+              {label}
+            </span>
+            <span className="text-[13px] text-gray-700 capitalize">
+              {value ?? <span className="text-gray-300 not-italic">—</span>}
+            </span>
+          </div>
+        ))}
       </div>
 
       <ComingSoonModule
         label="Profile editing"
-        sprintTarget="Sprint 15"
-        description="Full organisation profile edit form — name, description, contact, classification, bank details — migrating from AmanahHub Console."
+        sprintTarget="Sprint 18"
+        description="Full edit form — name, description, contact, classification, bank details — migrating from AmanahHub Console."
       />
-    </div>
-  );
-}
-
-function ProfileRow({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex px-4 py-3 gap-4">
-      <span className="text-[11px] text-gray-400 w-36 flex-shrink-0 font-medium pt-0.5">{label}</span>
-      <span className="text-[13px] text-gray-700 capitalize">{value}</span>
     </div>
   );
 }

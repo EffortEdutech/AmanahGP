@@ -1,19 +1,6 @@
 'use client';
 // apps/org/components/layout/sidebar.tsx
 // amanahOS — Sidebar navigation
-//
-// Nav structure:
-// ▣  Dashboard
-// ── Organisation ──
-// ◎  Profile
-// ▦  Projects
-// ✎  Reports
-// $  Accounting         ← NEW — Phase 2 core module
-// ── Governance ──
-// ☑  Compliance
-// ⊞  Governance
-// ── Trust ──
-// ▲  Trust score
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -34,33 +21,27 @@ interface SidebarProps {
 
 export function Sidebar({ user, orgs }: SidebarProps) {
   const pathname = usePathname();
-
   const active = (prefix: string) => pathname.startsWith(prefix);
 
-  // Detect selected org from URL: /orgs/[orgId]/...
-  const urlOrgId = pathname.match(/\/orgs\/([0-9a-f-]{36})/)?.[1];
-  const activeOrg = urlOrgId ? orgs.find((o) => o.organization_id === urlOrgId) : null;
   const defaultOrg = orgs[0];
-  const contextOrg = activeOrg ?? defaultOrg;
-  const orgId = contextOrg?.organization_id;
+  const contextOrg = defaultOrg;
+  const orgId      = contextOrg?.organization_id;
 
-  const role = contextOrg?.org_role ?? '';
-  const isAdmin = role === 'org_admin';
+  const role      = contextOrg?.org_role ?? '';
   const isManager = ['org_admin', 'org_manager'].includes(role);
 
-  // Status badge helpers
   const onboardingBadge = () => {
     const s = contextOrg?.onboarding_status;
-    if (s === 'approved') return { label: 'Active', cls: 'text-emerald-600 bg-emerald-50' };
+    if (s === 'approved')  return { label: 'Active',       cls: 'text-emerald-600 bg-emerald-50' };
     if (s === 'submitted') return { label: 'Under review', cls: 'text-amber-600 bg-amber-50' };
-    return { label: 'Setup needed', cls: 'text-gray-500 bg-gray-100' };
+    return                        { label: 'Setup needed', cls: 'text-gray-500 bg-gray-100' };
   };
   const badge = onboardingBadge();
 
   return (
     <aside className="w-52 flex-shrink-0 flex flex-col h-full bg-white border-r border-gray-100">
 
-      {/* App brand */}
+      {/* Brand */}
       <div className="px-3 py-3 border-b border-gray-100">
         <div className="flex items-center gap-2">
           <div className="w-7 h-7 rounded-md bg-emerald-600 flex items-center justify-center flex-shrink-0">
@@ -100,25 +81,15 @@ export function Sidebar({ user, orgs }: SidebarProps) {
         {orgId && (
           <>
             <SectionLabel label="Organisation" />
-
-            <NavLink href={`/orgs/${orgId}/profile`} label="Profile" icon="◎"
-              isActive={active(`/orgs/${orgId}/profile`)} />
-
-            <NavLink href={`/orgs/${orgId}/projects`} label="Projects" icon="▦"
-              isActive={active(`/orgs/${orgId}/projects`)} />
-
-            <NavLink href={`/orgs/${orgId}/reports`} label="Reports" icon="✎"
-              isActive={active(`/orgs/${orgId}/reports`)} />
-
+            <NavLink href="/profile"    label="Profile"    icon="◎" isActive={active('/profile')} />
+            <NavLink href="/projects"   label="Projects"   icon="▦" isActive={active('/projects')} />
+            <NavLink href="/reports"    label="Reports"    icon="✎" isActive={active('/reports')} />
             {isManager && (
-              <NavLink href={`/orgs/${orgId}/accounting`} label="Accounting" icon="$"
-                isActive={active(`/orgs/${orgId}/accounting`)}
-                badge="New" />
+              <NavLink href="/accounting" label="Accounting" icon="$"
+                isActive={active('/accounting')} badge="New" />
             )}
-
             {isManager && (
-              <NavLink href={`/orgs/${orgId}/members`} label="Members" icon="♟"
-                isActive={active(`/orgs/${orgId}/members`)} />
+              <NavLink href="/members" label="Members" icon="♟" isActive={active('/members')} />
             )}
           </>
         )}
@@ -127,13 +98,10 @@ export function Sidebar({ user, orgs }: SidebarProps) {
         {orgId && isManager && (
           <>
             <SectionLabel label="Governance" />
-
-            <NavLink href={`/orgs/${orgId}/compliance`} label="Compliance" icon="☑"
-              isActive={active(`/orgs/${orgId}/compliance`)} />
-
-            <NavLink href={`/orgs/${orgId}/governance`} label="Policy kit" icon="⊞"
-              isActive={active(`/orgs/${orgId}/governance`)}
-              badge="New" />
+            <NavLink href="/compliance" label="Compliance"  icon="☑"
+              isActive={active('/compliance')} badge="Sprint 16" />
+            <NavLink href="/policy-kit" label="Policy kit"  icon="⊞"
+              isActive={active('/policy-kit')} badge="Sprint 17" />
           </>
         )}
 
@@ -141,33 +109,8 @@ export function Sidebar({ user, orgs }: SidebarProps) {
         {orgId && (
           <>
             <SectionLabel label="Trust" />
-
-            <NavLink href={`/orgs/${orgId}/trust`} label="Trust score" icon="▲"
-              isActive={active(`/orgs/${orgId}/trust`)} />
-
-            <NavLink href={`/orgs/${orgId}/certification`} label="Certification" icon="★"
-              isActive={active(`/orgs/${orgId}/certification`)} />
-          </>
-        )}
-
-        {/* ── Org switcher (if multiple orgs) ── */}
-        {orgs.length > 1 && (
-          <>
-            <SectionLabel label="Switch org" />
-            {orgs.map((org) => (
-              <Link
-                key={org.organization_id}
-                href={`/orgs/${org.organization_id}`}
-                className={`flex items-center gap-2 px-2 py-1.5 rounded-md text-[11px] transition-colors w-full truncate
-                  ${org.organization_id === orgId
-                    ? 'bg-emerald-50 text-emerald-800 font-medium'
-                    : 'text-gray-500 hover:bg-gray-100 hover:text-gray-700'
-                  }`}
-              >
-                <span className="w-3.5 text-[10px] flex-shrink-0 text-center">◈</span>
-                <span className="truncate">{org.org_name}</span>
-              </Link>
-            ))}
+            <NavLink href="/trust"          label="Trust score"   icon="▲" isActive={active('/trust')} />
+            <NavLink href="/certification"  label="Certification" icon="★" isActive={active('/certification')} />
           </>
         )}
 
@@ -178,17 +121,13 @@ export function Sidebar({ user, orgs }: SidebarProps) {
         <p className="text-[11px] font-medium text-gray-700 truncate">{user.displayName}</p>
         <p className="text-[10px] text-gray-400 truncate">{user.email}</p>
         <div className="flex items-center justify-between mt-1.5">
-          <a
-            href={process.env.NEXT_PUBLIC_CONSOLE_URL ?? '#'}
-            className="text-[9px] text-gray-400 hover:text-gray-600 transition-colors"
-          >
+          <a href={process.env.NEXT_PUBLIC_CONSOLE_URL ?? '#'}
+            className="text-[9px] text-gray-400 hover:text-gray-600 transition-colors">
             Console ↗
           </a>
           <form action={signOut}>
-            <button
-              type="submit"
-              className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors"
-            >
+            <button type="submit"
+              className="text-[10px] text-gray-400 hover:text-gray-600 transition-colors">
               Sign out
             </button>
           </form>
@@ -201,25 +140,13 @@ export function Sidebar({ user, orgs }: SidebarProps) {
 function SectionLabel({ label }: { label: string }) {
   return (
     <div className="pt-3 pb-0.5">
-      <p className="px-2 text-[9px] font-medium uppercase tracking-wider text-gray-400">
-        {label}
-      </p>
+      <p className="px-2 text-[9px] font-medium uppercase tracking-wider text-gray-400">{label}</p>
     </div>
   );
 }
 
-function NavLink({
-  href,
-  label,
-  icon,
-  isActive,
-  badge,
-}: {
-  href: string;
-  label: string;
-  icon: string;
-  isActive?: boolean;
-  badge?: string;
+function NavLink({ href, label, icon, isActive, badge }: {
+  href: string; label: string; icon: string; isActive?: boolean; badge?: string;
 }) {
   return (
     <Link
