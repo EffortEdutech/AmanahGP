@@ -6,6 +6,7 @@ import { redirect, notFound }  from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { ReconcileForm }       from './reconcile-form';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 
 export const metadata = { title: 'Bank reconciliation — amanahOS' };
 
@@ -103,19 +104,11 @@ export default async function ReconcilePage({
       </div>
 
       {/* Period selector */}
-      <div className="flex flex-wrap gap-2">
-        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-          <a key={m}
-            href={`/accounting/bank-accounts/${id}/reconcile?year=${year}&month=${m}`}
-            className={`px-2.5 py-1 text-[10px] font-medium rounded border transition-colors ${
-              m === month
-                ? 'bg-gray-800 text-white border-gray-800'
-                : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-            }`}>
-            {MONTHS[m - 1]} {year}
-          </a>
-        ))}
-      </div>
+      <MonthYearPicker
+        selectedYear={year}
+        selectedMonth={month}
+        basePath={`/accounting/bank-accounts/${id}/reconcile`}
+      />
 
       {/* Linked account info */}
       {!bankAccount.linked_account_id && (

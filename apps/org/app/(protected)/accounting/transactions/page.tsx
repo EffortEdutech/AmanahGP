@@ -1,21 +1,18 @@
 // apps/org/app/(protected)/accounting/transactions/page.tsx
-// amanahOS — Transaction Ledger
-// Full journal entry list with filters: account, fund, entry type, date range.
-// Shows debit/credit per line, fund tag, lock status, running total.
+// amanahOS — Transaction Ledger (picker update)
 
 import { redirect }            from 'next/navigation';
 import Link                    from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 
 export const metadata = { title: 'Transactions — amanahOS' };
 
 export default async function TransactionsPage({
   searchParams,
 }: {
-  searchParams: Promise<{
-    year?: string; month?: string; fundId?: string; type?: string;
-  }>;
+  searchParams: Promise<{ year?: string; month?: string; fundId?: string; type?: string }>;
 }) {
   const supabase = await createClient();
   const service  = createServiceClient();
@@ -35,20 +32,17 @@ export default async function TransactionsPage({
     .order('created_at', { ascending: true }).limit(1).single();
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
-  const orgId      = membership.organization_id;
-  const org        = membership.organizations as { id: string; name: string } | null;
-  const isManager  = ['org_admin', 'org_manager'].includes(membership.org_role);
+  const orgId       = membership.organization_id;
+  const org         = membership.organizations as { id: string; name: string } | null;
+  const isManager   = ['org_admin', 'org_manager'].includes(membership.org_role);
   const currentYear = new Date().getFullYear();
-  const selectedYear = parseInt(params.year ?? String(currentYear));
+  const selectedYear  = parseInt(params.year  ?? String(currentYear));
   const selectedMonth = params.month ? parseInt(params.month) : null;
 
-  // Load funds for filter
   const { data: funds } = await service
-    .from('funds')
-    .select('id, fund_code, fund_name, fund_type')
+    .from('funds').select('id, fund_code, fund_name, fund_type')
     .eq('organization_id', orgId).eq('is_active', true).order('fund_code');
 
-  // Build query
   let query = service
     .from('journal_entries')
     .select(`
@@ -71,16 +65,12 @@ export default async function TransactionsPage({
     .order('created_at', { ascending: false })
     .limit(100);
 
-  // Filter by fund (client-side since fund is in lines not header)
   const filteredEntries = params.fundId
     ? (entries ?? []).filter((e) =>
-        (e.journal_lines as Array<{ fund_id: string }>).some(
-          (l) => l.fund_id === params.fundId
-        )
+        (e.journal_lines as Array<{ fund_id: string }>).some((l) => l.fund_id === params.fundId)
       )
     : (entries ?? []);
 
-  // Compute totals
   type Line = {
     account_id: string; fund_id: string;
     debit_amount: number; credit_amount: number; description: string | null;
@@ -107,97 +97,76 @@ export default async function TransactionsPage({
     project: 'bg-blue-100 text-blue-700',
   };
 
-  const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  // Build extra params for picker (preserve fund filter)
+  const fundExtraParam = params.fundId ? `&fundId=${params.fundId}` : '';
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-5">
 
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Transaction ledger</h1>
           <p className="text-sm text-gray-500 mt-0.5">{org?.name}</p>
         </div>
-        {isManager && (
-          <Link href="/accounting/transactions/new"
-            className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm
-                       font-medium rounded-md transition-colors flex items-center gap-2">
-            <span>+</span> New entry
+        <div className="flex items-center gap-2">
+          {/* Month/year picker */}
+          <MonthYearPicker
+            selectedYear={selectedYear}
+            selectedMonth={selectedMonth}
+            basePath="/accounting/transactions"
+            extraParams={fundExtraParam}
+            allowAllMonths
+          />
+          {isManager && (
+            <Link href="/accounting/transactions/new"
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm
+                         font-medium rounded-lg transition-colors flex items-center gap-1.5">
+              <span className="text-base leading-none">+</span> New entry
+            </Link>
+          )}
+        </div>
+      </div>
+
+      {/* ── Fund filter pills ── */}
+      {funds && funds.length > 0 && (
+        <div className="flex flex-wrap gap-1.5">
+          <Link
+            href={`/accounting/transactions?year=${selectedYear}${selectedMonth ? `&month=${selectedMonth}` : ''}`}
+            className={`px-3 py-1 text-[11px] font-medium rounded-full border transition-colors ${
+              !params.fundId
+                ? 'bg-gray-800 text-white border-gray-800'
+                : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
+            }`}>
+            All funds
           </Link>
-        )}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-wrap gap-3">
-        {/* Year */}
-        <div className="flex gap-1">
-          {[currentYear - 1, currentYear].map((y) => (
-            <a key={y}
-              href={`/accounting/transactions?year=${y}${selectedMonth ? `&month=${selectedMonth}` : ''}`}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                y === selectedYear
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
+          {funds.map((f) => (
+            <Link key={f.id}
+              href={`/accounting/transactions?year=${selectedYear}${selectedMonth ? `&month=${selectedMonth}` : ''}&fundId=${f.id}`}
+              className={`px-3 py-1 text-[11px] font-medium rounded-full border transition-colors ${
+                params.fundId === f.id
+                  ? `${FUND_BADGE[f.fund_type]} border-current`
+                  : 'bg-white text-gray-500 border-gray-200 hover:border-gray-300'
               }`}>
-              {y}
-            </a>
+              {f.fund_code}
+            </Link>
           ))}
         </div>
+      )}
 
-        {/* Month */}
-        <div className="flex flex-wrap gap-1">
-          <a href={`/accounting/transactions?year=${selectedYear}`}
-            className={`px-2 py-1 text-[10px] font-medium rounded border transition-colors ${
-              !selectedMonth ? 'bg-gray-800 text-white border-gray-800' : 'bg-white text-gray-500 border-gray-200'
-            }`}>All</a>
-          {MONTHS.map((m, i) => (
-            <a key={m}
-              href={`/accounting/transactions?year=${selectedYear}&month=${i + 1}`}
-              className={`px-2 py-1 text-[10px] font-medium rounded border transition-colors ${
-                selectedMonth === i + 1
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'
-              }`}>
-              {m}
-            </a>
-          ))}
-        </div>
-
-        {/* Fund filter */}
-        {funds && funds.length > 0 && (
-          <div className="flex flex-wrap gap-1">
-            <a href={`/accounting/transactions?year=${selectedYear}`}
-              className={`px-2 py-1 text-[10px] font-medium rounded border ${
-                !params.fundId ? 'bg-gray-100 text-gray-700 border-gray-300' : 'bg-white text-gray-400 border-gray-200'
-              }`}>All funds</a>
-            {funds.map((f) => (
-              <a key={f.id}
-                href={`/accounting/transactions?year=${selectedYear}&fundId=${f.id}`}
-                className={`px-2 py-1 text-[10px] font-medium rounded border ${
-                  params.fundId === f.id
-                    ? `${FUND_BADGE[f.fund_type]} border-current`
-                    : 'bg-white text-gray-400 border-gray-200'
-                }`}>
-                {f.fund_code}
-              </a>
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Summary strip */}
+      {/* ── Summary strip ── */}
       <div className="grid grid-cols-3 gap-3">
-        <div className="rounded-md border border-gray-200 bg-white px-4 py-3">
+        <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide">Entries</p>
           <p className="text-xl font-bold text-gray-800">{filteredEntries.length}</p>
         </div>
-        <div className="rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3">
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3">
           <p className="text-[10px] text-emerald-600 uppercase tracking-wide">Total credits (in)</p>
           <p className="text-xl font-bold text-emerald-700">
             RM {grandCredits.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
           </p>
         </div>
-        <div className="rounded-md border border-red-200 bg-red-50 px-4 py-3">
+        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3">
           <p className="text-[10px] text-red-500 uppercase tracking-wide">Total debits (out)</p>
           <p className="text-xl font-bold text-red-600">
             RM {grandDebits.toLocaleString('en-MY', { minimumFractionDigits: 2 })}
@@ -205,11 +174,11 @@ export default async function TransactionsPage({
         </div>
       </div>
 
-      {/* Ledger table */}
+      {/* ── Ledger ── */}
       {filteredEntries.length > 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
-          {/* Table header */}
-          <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
+          <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200
+                          text-[10px] font-semibold text-gray-500 uppercase tracking-wide">
             <div className="col-span-2">Date</div>
             <div className="col-span-4">Description</div>
             <div className="col-span-2">Account</div>
@@ -219,15 +188,13 @@ export default async function TransactionsPage({
             <div className="col-span-1 text-center">Status</div>
           </div>
 
-          {/* Entries */}
           {filteredEntries.map((entry) => {
-            const lines = (entry.journal_lines as Line[]) ?? [];
-            const totalIn  = lines.reduce((s, l) => s + Number(l.credit_amount), 0);
-            const totalOut = lines.reduce((s, l) => s + Number(l.debit_amount),  0);
-
+            const lines     = (entry.journal_lines as Line[]) ?? [];
+            const totalIn   = lines.reduce((s, l) => s + Number(l.credit_amount), 0);
+            const totalOut  = lines.reduce((s, l) => s + Number(l.debit_amount),  0);
+            const fundCodes = [...new Set(lines.map((l) => l.funds?.fund_code).filter(Boolean))].join(', ');
             return (
               <div key={entry.id} className="border-b border-gray-100 last:border-0">
-                {/* Entry header row */}
                 <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50/50 items-start">
                   <div className="col-span-2">
                     <p className="text-[11px] font-medium text-gray-700">{entry.entry_date}</p>
@@ -239,12 +206,10 @@ export default async function TransactionsPage({
                       <p className="text-[9px] text-gray-400">{entry.reference_no}</p>
                     )}
                     <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${
-                      entry.entry_type === 'donation' ? 'bg-emerald-100 text-emerald-700' :
+                      entry.entry_type === 'donation'   ? 'bg-emerald-100 text-emerald-700' :
                       entry.entry_type === 'adjustment' ? 'bg-amber-100 text-amber-700' :
                       'bg-gray-100 text-gray-500'
-                    }`}>
-                      {entry.entry_type}
-                    </span>
+                    }`}>{entry.entry_type}</span>
                   </div>
                   <div className="col-span-2 text-[10px] text-gray-400">
                     {lines.length} line{lines.length !== 1 ? 's' : ''}
@@ -252,16 +217,12 @@ export default async function TransactionsPage({
                   <div className="col-span-1" />
                   <div className="col-span-1 text-right">
                     {totalOut > 0 && (
-                      <p className="text-[11px] font-semibold text-red-600">
-                        {fmt(totalOut)}
-                      </p>
+                      <p className="text-[11px] font-semibold text-red-600">{fmt(totalOut)}</p>
                     )}
                   </div>
                   <div className="col-span-1 text-right">
                     {totalIn > 0 && (
-                      <p className="text-[11px] font-semibold text-emerald-700">
-                        {fmt(totalIn)}
-                      </p>
+                      <p className="text-[11px] font-semibold text-emerald-700">{fmt(totalIn)}</p>
                     )}
                   </div>
                   <div className="col-span-1 text-center">
@@ -272,7 +233,6 @@ export default async function TransactionsPage({
                   </div>
                 </div>
 
-                {/* Line items */}
                 {lines.map((line, idx) => (
                   <div key={idx}
                     className="grid grid-cols-12 gap-2 px-4 py-1.5 border-t border-gray-50 pl-8 items-center">
@@ -289,19 +249,18 @@ export default async function TransactionsPage({
                           <p className="text-[10px] text-gray-500 truncate">{line.accounts.account_name}</p>
                           {line.accounts.cost_category && (
                             <span className={`text-[8px] px-1 py-0.5 rounded ${
-                              line.accounts.cost_category === 'programme' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
-                            }`}>
-                              {line.accounts.cost_category}
-                            </span>
+                              line.accounts.cost_category === 'programme'
+                                ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-500'
+                            }`}>{line.accounts.cost_category}</span>
                           )}
                         </div>
                       )}
                     </div>
                     <div className="col-span-1">
                       {line.funds && (
-                        <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${FUND_BADGE[line.funds.fund_type] ?? FUND_BADGE.general}`}>
-                          {line.funds.fund_code}
-                        </span>
+                        <span className={`text-[8px] font-medium px-1.5 py-0.5 rounded-full ${
+                          FUND_BADGE[line.funds.fund_type] ?? FUND_BADGE.general
+                        }`}>{line.funds.fund_code}</span>
                       )}
                     </div>
                     <div className="col-span-1 text-right">
@@ -323,7 +282,7 @@ export default async function TransactionsPage({
         </div>
       ) : (
         <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center">
-          <p className="text-sm text-gray-500">No transactions found for the selected filters.</p>
+          <p className="text-sm text-gray-500">No transactions found for this period.</p>
           {isManager && (
             <Link href="/accounting/transactions/new"
               className="text-[12px] text-emerald-600 hover:underline mt-2 block">

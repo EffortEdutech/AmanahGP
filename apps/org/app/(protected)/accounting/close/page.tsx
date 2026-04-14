@@ -1,16 +1,16 @@
 // apps/org/app/(protected)/accounting/close/page.tsx
-// amanahOS — Monthly Close Workflow
-// 5 phases from amanah_gp_OS.md design:
-//   Phase 1: Collect — transaction count check
-//   Phase 2: Reconcile — bank reconciliation status per account (🟢/🔴)
-//   Phase 3: Governance review — 5 internal control checks
-//   Phase 4: Lock & close — immutable period snapshot
-//   Phase 5: Reports ready — financial statements generated
+// amanahOS — Monthly Close Workflow (Sprint 19 patch — fixed bank recon gate)
+//
+// FIX: allBankReconciled gate now correctly passes when no bank accounts
+//      are configured (N/A case). Original code: `allReconciled && length > 0`
+//      which blocked close when org had zero bank accounts.
+//      Corrected: `length === 0 || allReconciled` (N/A = pass)
 
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { CloseForm }           from '@/components/accounting/close-form';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 
 export const metadata = { title: 'Month close — amanahOS' };
 
@@ -43,11 +43,10 @@ export default async function MonthClosePage({
   const org       = membership.organizations as { id: string; name: string; fund_types: string[] } | null;
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
-  const now          = new Date();
-  const targetYear   = parseInt(sp.year  ?? String(now.getFullYear()));
-  const targetMonth  = parseInt(sp.month ?? String(now.getMonth() + 1)); // default current month
-
-  const monthName = MONTHS[targetMonth - 1];
+  const now         = new Date();
+  const targetYear  = parseInt(sp.year  ?? String(now.getFullYear()));
+  const targetMonth = parseInt(sp.month ?? String(now.getMonth() + 1));
+  const monthName   = MONTHS[targetMonth - 1];
 
   // Check if already closed
   const { data: existingClose } = await service
@@ -60,7 +59,7 @@ export default async function MonthClosePage({
 
   const isAlreadyClosed = !!existingClose;
 
-  // ── PHASE 1: Collect — count transactions ─────────────────────
+  // ── PHASE 1: Collect ────────────────────────────────────────
   const { count: totalEntries } = await service
     .from('journal_entries')
     .select('*', { count: 'exact', head: true })
@@ -76,7 +75,7 @@ export default async function MonthClosePage({
     .eq('period_month', targetMonth)
     .eq('is_locked', false);
 
-  // ── PHASE 2: Reconcile — check bank account status ────────────
+  // ── PHASE 2: Reconcile ──────────────────────────────────────
   const { data: bankAccounts } = await service
     .from('bank_accounts')
     .select('id, account_name, account_type, fund_type')
@@ -93,21 +92,18 @@ export default async function MonthClosePage({
   const reconMap = new Map((reconciliations ?? []).map((r) => [r.bank_account_id, r.status]));
 
   const bankReconStatus = (bankAccounts ?? []).map((ba) => ({
-    id:        ba.id,
-    name:      ba.account_name,
-    type:      ba.account_type,
-    fundType:  ba.fund_type,
-    status:    reconMap.get(ba.id) ?? 'not_started',
+    id:       ba.id,
+    name:     ba.account_name,
+    type:     ba.account_type,
+    fundType: ba.fund_type,
+    status:   reconMap.get(ba.id) ?? 'not_started',
   }));
 
-  const allReconciled = bankReconStatus.every(
-    (b) => b.status === 'reconciled'
-  );
-  const anyDiscrepancy = bankReconStatus.some((b) => b.status === 'discrepancy');
+  const allReconciled  = bankReconStatus.every((b) => b.status === 'reconciled');
+  const anyDiscrepancy = bankReconStatus.some((b)  => b.status === 'discrepancy');
+  const hasNoBankAccts = bankReconStatus.length === 0;
 
-  // ── PHASE 3: Governance — internal controls ───────────────────
-
-  // Control 1: Large transactions (>RM5000) — check if any exist
+  // ── PHASE 3: Governance controls ────────────────────────────
   const LARGE_THRESHOLD = 5000;
   const { data: largeLines } = await service
     .from('journal_lines')
@@ -120,8 +116,6 @@ export default async function MonthClosePage({
     return je?.period_year === targetYear && je?.period_month === targetMonth;
   });
 
-  // Control 2: Restricted fund check — Zakat expenses must be in approved accounts
-  const ZAKAT_APPROVED_EXPENSE_RANGE = ['5110','5120','5130','5140','5150'];
   const { data: zakatFund } = await service
     .from('funds').select('id')
     .eq('organization_id', orgId).eq('fund_type', 'zakat').maybeSingle();
@@ -135,23 +129,23 @@ export default async function MonthClosePage({
       .eq('fund_id', zakatFund.id)
       .gt('debit_amount', 0);
 
+    const ZAKAT_APPROVED = ['5110','5120','5130','5140','5150'];
     zakatViolations = (zakatExpLines ?? []).filter((l) => {
-      const je = l.journal_entries as { period_year: number; period_month: number } | null;
+      const je  = l.journal_entries as { period_year: number; period_month: number } | null;
       const acc = l.accounts as { account_code: string; account_type: string } | null;
       return (
         je?.period_year === targetYear && je?.period_month === targetMonth &&
         acc?.account_type === 'expense' &&
-        !ZAKAT_APPROVED_EXPENSE_RANGE.includes(acc?.account_code ?? '')
+        !ZAKAT_APPROVED.includes(acc?.account_code ?? '')
       );
     }).length;
   }
 
-  // Control 3: Fund count
   const { count: fundCount } = await service
     .from('funds').select('*', { count: 'exact', head: true })
     .eq('organization_id', orgId).eq('is_active', true);
 
-  // Control 4: Compute income/expense totals for this period
+  // Period activities for summary
   const { data: periodActivities } = await service
     .from('statement_of_activities_view')
     .select('account_type, net_amount')
@@ -160,13 +154,10 @@ export default async function MonthClosePage({
     .eq('period_month', targetMonth);
 
   const periodIncome  = (periodActivities ?? [])
-    .filter((r) => r.account_type === 'income')
-    .reduce((s, r) => s + Number(r.net_amount), 0);
+    .filter((r) => r.account_type === 'income').reduce((s, r) => s + Number(r.net_amount), 0);
   const periodExpense = (periodActivities ?? [])
-    .filter((r) => r.account_type === 'expense')
-    .reduce((s, r) => s + Number(r.net_amount), 0);
+    .filter((r) => r.account_type === 'expense').reduce((s, r) => s + Number(r.net_amount), 0);
 
-  // Control 5: History of closes
   const { data: closeHistory } = await service
     .from('fund_period_closes')
     .select('period_year, period_month, closed_at, total_income, total_expense')
@@ -175,13 +166,13 @@ export default async function MonthClosePage({
     .order('period_month', { ascending: false })
     .limit(6);
 
-  // ── Gate summary ──────────────────────────────────────────────
+  // ── Gate evaluation ─────────────────────────────────────────
+  // FIX: hasNoBankAccts = pass (N/A). anyDiscrepancy = hard block.
   const gates = {
-    hasTransactions:    (totalEntries ?? 0) > 0,
-    allBankReconciled:  allReconciled && bankReconStatus.length > 0,
-    noZakatViolation:   zakatViolations === 0,
-    fundsSetup:         (fundCount ?? 0) > 0,
-    noDiscrepancy:      !anyDiscrepancy,
+    hasTransactions:  (totalEntries ?? 0) > 0,
+    bankReconOk:      hasNoBankAccts || (allReconciled && !anyDiscrepancy),
+    noZakatViolation: zakatViolations === 0,
+    fundsSetup:       (fundCount ?? 0) > 0,
   };
 
   const allGatesPassed = Object.values(gates).every(Boolean);
@@ -195,27 +186,27 @@ export default async function MonthClosePage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Month close</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
-            {org?.name} · {monthName} {targetYear}
-          </p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {monthName} {targetYear}</p>
         </div>
-        {/* Month picker */}
-        <div className="flex flex-wrap gap-1">
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-            <a key={m}
-              href={`/accounting/close?year=${targetYear}&month=${m}`}
-              className={`px-2 py-1 text-[9px] font-medium rounded border transition-colors ${
-                m === targetMonth
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
-              }`}>
-              {MONTHS[m-1].slice(0, 3)}
-            </a>
-          ))}
-        </div>
+        <MonthYearPicker
+          selectedYear={targetYear}
+          selectedMonth={targetMonth}
+          basePath="/accounting/close"
+        />
       </div>
 
-      {/* Already closed banner */}
+      {/* Trust event note */}
+      {!isAlreadyClosed && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-3">
+          <span className="text-emerald-500 text-lg">▲</span>
+          <p className="text-[11px] text-emerald-800">
+            Closing this period emits a <strong>fi_period_closed</strong> trust event (+8 pts Financial Integrity)
+            and immediately updates your Amanah Trust Score.
+          </p>
+        </div>
+      )}
+
+      {/* Already closed */}
       {isAlreadyClosed && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -225,63 +216,63 @@ export default async function MonthClosePage({
                 {monthName} {targetYear} is closed
               </p>
               <p className="text-[10px] text-emerald-700">
-                Closed on {new Date(existingClose.closed_at).toLocaleDateString('en-MY')} ·
+                Closed {new Date(existingClose.closed_at).toLocaleDateString('en-MY')} ·
                 In: {fmt(Number(existingClose.total_income))} ·
                 Out: {fmt(Number(existingClose.total_expense))}
               </p>
             </div>
           </div>
-          <a href="/accounting/reports" className="text-[11px] text-emerald-700 hover:underline">
-            View reports →
+          <a href="/trust" className="text-[11px] text-emerald-700 hover:underline">
+            View trust score →
           </a>
         </div>
       )}
 
-      {/* ── PHASE 1: COLLECT ────────────────────────────── */}
-      <PhaseCard
-        number={1}
-        title="Collect transactions"
-        description="All income, expenses, and adjustments for the month recorded."
+      {/* ── Phase 1: Collect ─── */}
+      <PhaseCard number={1} title="Collect transactions"
+        description="All income and expenses for this month recorded in the ledger."
         passed={gates.hasTransactions}>
         <div className="flex gap-6">
-          <Stat label="Total entries" value={String(totalEntries ?? 0)} />
-          <Stat label="Open (unlocked)" value={String(openEntries ?? 0)} />
+          <Stat label="Entries" value={String(totalEntries ?? 0)} />
+          <Stat label="Open" value={String(openEntries ?? 0)} />
           <Stat label="Income" value={fmt(periodIncome)} color="emerald" />
           <Stat label="Expenses" value={fmt(periodExpense)} color="red" />
         </div>
         {!gates.hasTransactions && (
           <p className="text-[11px] text-amber-700 mt-2">
-            No transactions recorded for this period. Record income and expenses before closing.
+            No transactions recorded for {monthName} {targetYear}.
           </p>
         )}
         <a href="/accounting/transactions/new"
           className="text-[11px] text-emerald-600 hover:underline mt-1 block">
-          + New transaction
+          + Record a transaction
         </a>
       </PhaseCard>
 
-      {/* ── PHASE 2: RECONCILE ──────────────────────────── */}
-      <PhaseCard
-        number={2}
-        title="Bank reconciliation"
-        description="All bank accounts must match their statements. Month CANNOT close if any account is 🔴."
-        passed={gates.allBankReconciled && gates.noDiscrepancy}>
+      {/* ── Phase 2: Reconcile ─── */}
+      <PhaseCard number={2} title="Bank reconciliation"
+        description="Bank accounts matched to statements. Month is blocked if any account shows 🔴 discrepancy."
+        passed={gates.bankReconOk}>
 
-        {bankReconStatus.length === 0 ? (
-          <div className="rounded-md bg-amber-50 border border-amber-200 p-3">
-            <p className="text-[11px] text-amber-700">
-              No bank accounts configured. Add bank accounts first.
+        {hasNoBankAccts ? (
+          <div className="rounded-md bg-gray-50 border border-gray-200 p-3">
+            <p className="text-[11px] text-gray-600">
+              No bank accounts configured — reconciliation is N/A.{' '}
+              <a href="/accounting/bank-accounts" className="text-emerald-600 hover:underline">
+                Add a bank account →
+              </a>
             </p>
           </div>
         ) : (
           <div className="space-y-2">
             {bankReconStatus.map((ba) => (
-              <div key={ba.id} className={`flex items-center justify-between p-3 rounded-md border ${
-                ba.status === 'reconciled'   ? 'bg-emerald-50 border-emerald-200' :
-                ba.status === 'discrepancy'  ? 'bg-red-50 border-red-300' :
-                ba.status === 'in_progress'  ? 'bg-amber-50 border-amber-200' :
-                'bg-gray-50 border-gray-200'
-              }`}>
+              <div key={ba.id}
+                className={`flex items-center justify-between p-3 rounded-md border ${
+                  ba.status === 'reconciled'  ? 'bg-emerald-50 border-emerald-200' :
+                  ba.status === 'discrepancy' ? 'bg-red-50 border-red-300' :
+                  ba.status === 'in_progress' ? 'bg-amber-50 border-amber-200' :
+                  'bg-gray-50 border-gray-200'
+                }`}>
                 <div className="flex items-center gap-3">
                   <span className="text-lg">
                     {ba.status === 'reconciled'  ? '🟢' :
@@ -290,10 +281,7 @@ export default async function MonthClosePage({
                   </span>
                   <div>
                     <p className="text-[12px] font-medium text-gray-800">{ba.name}</p>
-                    <p className="text-[9px] text-gray-400 capitalize">
-                      {ba.type} · {ba.fundType ?? 'general'} ·{' '}
-                      <span className="capitalize">{ba.status.replace('_', ' ')}</span>
-                    </p>
+                    <p className="text-[9px] text-gray-400 capitalize">{ba.status.replace('_', ' ')}</p>
                   </div>
                 </div>
                 <a href={`/accounting/bank-accounts/${ba.id}/reconcile?year=${targetYear}&month=${targetMonth}`}
@@ -311,67 +299,54 @@ export default async function MonthClosePage({
         {anyDiscrepancy && (
           <div className="mt-2 rounded-md bg-red-50 border border-red-200 p-3">
             <p className="text-[11px] font-semibold text-red-800">
-              🔴 Discrepancy detected — month close is BLOCKED
-            </p>
-            <p className="text-[11px] text-red-700 mt-0.5">
-              Investigate and resolve the discrepancy before closing this period.
+              🔴 Discrepancy — month close is blocked until resolved
             </p>
           </div>
         )}
       </PhaseCard>
 
-      {/* ── PHASE 3: GOVERNANCE REVIEW ──────────────────── */}
-      <PhaseCard
-        number={3}
-        title="Governance review"
-        description="Internal control checks — segregation of duties, fund integrity, Shariah compliance."
+      {/* ── Phase 3: Governance ─── */}
+      <PhaseCard number={3} title="Governance review"
+        description="Internal control checks — Shariah compliance, fund integrity."
         passed={gates.fundsSetup && gates.noZakatViolation}>
-
         <div className="space-y-2">
-          <ControlRow
-            label="Funds configured"
-            ok={gates.fundsSetup}
+          <ControlRow label="Funds configured" ok={gates.fundsSetup}
             detail={`${fundCount ?? 0} active fund(s)`} />
-          <ControlRow
-            label="Zakat fund integrity"
-            ok={gates.noZakatViolation}
+          <ControlRow label="Zakat fund integrity" ok={gates.noZakatViolation}
             detail={zakatViolations > 0
-              ? `${zakatViolations} expense(s) posted to non-approved Zakat accounts`
+              ? `${zakatViolations} expense(s) in non-approved Zakat accounts`
               : zakatFund ? 'All Zakat expenses in approved accounts (5110–5150)' : 'N/A — no Zakat fund'} />
-          <ControlRow
-            label="Large transactions review"
-            ok={true}
+          <ControlRow label="Large transaction review" ok={true}
             detail={largeTxInPeriod.length > 0
-              ? `${largeTxInPeriod.length} transaction(s) >RM${LARGE_THRESHOLD.toLocaleString()} — ensure all have supporting documentation`
+              ? `${largeTxInPeriod.length} transaction(s) >RM${LARGE_THRESHOLD.toLocaleString()} — confirm documentation`
               : 'No large transactions this period'}
             warning={largeTxInPeriod.length > 0} />
-          <ControlRow
-            label="Segregation of duties"
-            ok={true}
-            detail="Ensure month close is approved by a different person than the data entry user" />
         </div>
       </PhaseCard>
 
-      {/* ── PHASE 4 + 5: CLOSE ──────────────────────────── */}
+      {/* ── Phase 4: Close ─── */}
       {!isAlreadyClosed && isManager && (
-        <PhaseCard
-          number={4}
-          title="Lock & close period"
-          description="Locks all journal entries. Creates financial snapshot. Generates monthly governance pack."
+        <PhaseCard number={4} title="Lock & close period"
+          description="Locks all journal entries. Creates financial snapshot. Emits trust event."
           passed={false}>
-
           {!allGatesPassed ? (
-            <div className="rounded-md bg-red-50 border border-red-200 p-4 space-y-2">
-              <p className="text-[12px] font-semibold text-red-800">
-                Cannot close — prerequisites not met:
-              </p>
-              <ul className="text-[11px] text-red-700 space-y-1">
-                {!gates.hasTransactions      && <li>• No transactions recorded for this period</li>}
-                {!gates.allBankReconciled    && <li>• Bank accounts not fully reconciled</li>}
-                {anyDiscrepancy              && <li>• Bank reconciliation discrepancy exists</li>}
-                {!gates.noZakatViolation     && <li>• Zakat fund integrity check failed</li>}
-                {!gates.fundsSetup           && <li>• No funds configured</li>}
-              </ul>
+            <div className="rounded-md bg-red-50 border border-red-200 p-4 space-y-1.5">
+              <p className="text-[12px] font-semibold text-red-800">Resolve before closing:</p>
+              {!gates.hasTransactions && (
+                <p className="text-[11px] text-red-700">• No transactions for this period</p>
+              )}
+              {!gates.bankReconOk && anyDiscrepancy && (
+                <p className="text-[11px] text-red-700">• Bank reconciliation discrepancy must be resolved</p>
+              )}
+              {!gates.bankReconOk && !anyDiscrepancy && (
+                <p className="text-[11px] text-red-700">• Reconcile all bank accounts first</p>
+              )}
+              {!gates.noZakatViolation && (
+                <p className="text-[11px] text-red-700">• Zakat fund integrity check failed</p>
+              )}
+              {!gates.fundsSetup && (
+                <p className="text-[11px] text-red-700">• No funds configured</p>
+              )}
             </div>
           ) : (
             <CloseForm
@@ -386,19 +361,19 @@ export default async function MonthClosePage({
         </PhaseCard>
       )}
 
-      {/* Phase 5: Reports */}
+      {/* Phase 5 — Reports ready */}
       {isAlreadyClosed && (
-        <PhaseCard number={5} title="Monthly governance pack" description="All reports generated." passed={true}>
+        <PhaseCard number={5} title="Monthly governance pack" description="Reports available." passed={true}>
           <div className="grid grid-cols-2 gap-2">
             {[
+              { href: '/trust', label: '▲  Trust score — see your event' },
               { href: '/accounting/reports/statement-of-activities', label: 'Statement of Activities' },
               { href: '/accounting/reports/statement-of-financial-position', label: 'Financial Position' },
-              { href: '/accounting/reports/fund-changes', label: 'Fund Changes' },
               { href: '/accounting/reports/zakat-utilisation', label: 'Zakat Utilisation' },
             ].map((r) => (
               <a key={r.href} href={r.href}
-                className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-[11px]
-                           font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
+                className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2
+                           text-[11px] font-medium text-emerald-700 hover:bg-emerald-100 transition-colors">
                 {r.label} →
               </a>
             ))}
@@ -438,7 +413,7 @@ export default async function MonthClosePage({
   );
 }
 
-/* ── Local components ─────────────────────────────────────────────── */
+/* ── Sub-components ─────────────────────────────────────────── */
 
 function PhaseCard({ number, title, description, passed, children }: {
   number: number; title: string; description: string; passed: boolean;
