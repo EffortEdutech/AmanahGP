@@ -12,7 +12,7 @@ import { createClient } from '@/lib/supabase/server';
 import { DonateForm }   from '@/components/donation/donate-form';
 import { MiniTrustPanel } from '@/components/ui/trust-panel';
 import { TrustBadgeInline } from '@/components/ui/trust-badge';
-import { getTrustGrade } from '@/app/api/trust/[orgId]/route';
+import { getTrustGrade } from '@/lib/trust-grade';
 
 export const metadata = { title: 'Donate — AmanahHub' };
 

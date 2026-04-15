@@ -1,4 +1,4 @@
-// apps/org/middleware.ts — Sprint 16 Revised
+// apps/org/middleware.ts — Sprint 27-28
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -14,6 +14,14 @@ const PROTECTED_PREFIXES = [
   '/trust',
   '/certification',
   '/members',
+];
+
+// Public routes — accessible without authentication
+const PUBLIC_PREFIXES = [
+  '/login',
+  '/invite',    // Sprint 28: /invite/[token] — invitation accept page
+  '/no-access',
+  '/setup',
 ];
 
 type CookieSetInput = {
@@ -35,10 +43,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/setup', request.url));
   }
 
-  const isNoAccess       = pathname === '/no-access';
-  const isSetup          = pathname === '/setup';
-  const isLoginWithError = pathname === '/login' && searchParams.has('error');
-  if (isNoAccess || isSetup || isLoginWithError) return NextResponse.next();
+  // Always pass through public prefixes
+  const isPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
+  if (isPublic) return NextResponse.next();
 
   let response = NextResponse.next({ request });
 

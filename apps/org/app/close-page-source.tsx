@@ -111,9 +111,7 @@ export default async function MonthClosePage({
     .gte('debit_amount', LARGE_THRESHOLD);
 
   const largeTxInPeriod = (largeLines ?? []).filter((l) => {
-    const jeRaw = l.journal_entries;
-    const je = (Array.isArray(jeRaw) ? jeRaw[0] : jeRaw) as
-      { period_year: number; period_month: number } | null | undefined;
+    const je = l.journal_entries as { period_year: number; period_month: number } | null;
     return je?.period_year === targetYear && je?.period_month === targetMonth;
   });
 
@@ -132,9 +130,7 @@ export default async function MonthClosePage({
 
     const ZAKAT_APPROVED = ['5110','5120','5130','5140','5150'];
     zakatViolations = (zakatExpLines ?? []).filter((l) => {
-      const jeRaw = l.journal_entries;
-      const je  = (Array.isArray(jeRaw) ? jeRaw[0] : jeRaw) as
-        { period_year: number; period_month: number } | null | undefined;
+      const je  = l.journal_entries as { period_year: number; period_month: number } | null;
       const acc = l.accounts as { account_code: string; account_type: string } | null;
       return (
         je?.period_year === targetYear && je?.period_month === targetMonth &&

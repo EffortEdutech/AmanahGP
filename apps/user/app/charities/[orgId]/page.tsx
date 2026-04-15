@@ -17,7 +17,7 @@ import { createClient } from '@/lib/supabase/server';
 import { TrustBadge, TrustBadgeInline } from '@/components/ui/trust-badge';
 import { TrustSnapshotPanel, TrustPillarPanel, MiniTrustPanel } from '@/components/ui/trust-panel';
 import { TrustTimeline } from '@/components/ui/trust-timeline';
-import { getTrustGrade } from '@/app/api/trust/[orgId]/route';
+import { getTrustGrade } from '@/lib/trust-grade';
 
 export const revalidate = 300; // ISR: revalidate every 5 minutes
 

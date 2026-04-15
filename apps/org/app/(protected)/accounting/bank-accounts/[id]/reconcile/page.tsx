@@ -62,7 +62,10 @@ export default async function ReconcilePage({
       .eq('account_id', bankAccount.linked_account_id);
 
     for (const line of (lines ?? [])) {
-      const je = line.journal_entries as { period_year: number; period_month: number } | null;
+      // Supabase infers nested joins as arrays; cast via unknown first
+      const jeRaw = line.journal_entries;
+      const je = (Array.isArray(jeRaw) ? jeRaw[0] : jeRaw) as
+        { period_year: number; period_month: number } | null | undefined;
       // Only include entries up to and including the selected period
       if (je && (je.period_year < year || (je.period_year === year && je.period_month <= month))) {
         bookBalance += Number(line.debit_amount) - Number(line.credit_amount);
