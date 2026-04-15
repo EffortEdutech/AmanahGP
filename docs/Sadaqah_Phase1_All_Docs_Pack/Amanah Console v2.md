@@ -871,3 +871,398 @@ This model enables:
 •	enterprise security 
 •	regulatory compliance 
 
+
+# ADMIN_DEPRECATION_PLAN.md
+Deprecation & Migration Strategy for apps/admin (amanah-hub-console)
+Version: Draft v1
+Status: Approved for execution
+________________________________________
+
+## 1. Purpose of This Document
+The existing admin app (apps/admin) was created early in the project before the platform architecture was fully defined.
+After establishing the AGP 3-layer architecture and Console OS, we have determined that the admin app:
+•	mixes platform and organisation responsibilities 
+•	does not align with multi-tenant SaaS design 
+•	lacks governance and compliance foundations 
+Therefore the admin app will be formally deprecated and replaced by the new AGP Console (apps/console).
+This document explains:
+•	Why we are abandoning it 
+•	What we keep 
+•	What we discard 
+•	How we migrate safely 
+________________________________________
+
+## 2. Official Decision
+/apps/admin  → DEPRECATED (read-only archive)
+/apps/console → NEW PLATFORM CONTROL PLANE
+No new features will be built in /apps/admin.
+All new work moves to /apps/console.
+________________________________________
+## 3. Why Refactoring Was Rejected
+We evaluated refactoring the admin app.
+Refactoring was rejected because the current admin app:
+
+3.1 Was built before tenancy model existed
+The admin app assumes:
+•	single workspace mindset 
+•	weak org boundaries 
+•	unclear role separation 
+Refactoring would require rewriting most logic anyway.
+________________________________________
+
+3.2 Mixed platform & org responsibilities
+The admin app contains logic that belongs to:
+•	User App 
+•	Org App 
+•	Platform Console 
+This creates long-term governance risk.
+________________________________________
+
+3.3 Missing core platform engines
+Admin app lacks:
+•	subscription engine 
+•	audit backbone 
+•	app provisioning 
+•	compliance layer 
+•	role framework 
+Retrofitting these is harder than rebuilding cleanly.
+________________________________________
+
+## 4. Migration Strategy
+We are not migrating the app.
+We are mining the codebase.
+Think:
+Salvage useful assets.
+Rebuild architecture.
+________________________________________
+
+## 5. What We WILL Salvage
+These items are valuable and reusable.
+
+5.1 UI Components
+Candidate for extraction into packages/design-system:
+•	Layout components 
+•	Sidebar components 
+•	Tables 
+•	Forms 
+•	Modals 
+•	Loading states 
+•	Empty states 
+UI should be reused, not rewritten.
+________________________________________
+
+5.2 Utility Functions
+Candidate for shared packages:
+•	API helpers 
+•	Formatting helpers 
+•	Validation utilities 
+•	Hooks not tied to admin logic 
+________________________________________
+
+5.3 Styling & Theme
+•	Tailwind config 
+•	Design tokens 
+•	Colour system 
+•	Typography 
+This ensures visual continuity.
+________________________________________
+
+5.4 API Patterns
+We keep:
+•	request patterns 
+•	error handling patterns 
+•	folder conventions 
+We discard:
+•	business logic tied to old architecture. 
+________________________________________
+
+## 6. What We WILL NOT Migrate
+The following will be rewritten from scratch:
+•	Admin routing structure 
+•	Role & permission logic 
+•	Organisation management logic 
+•	Billing & subscription logic 
+•	Any business logic tied to admin workflows 
+•	Any data models created before tenancy design 
+This prevents legacy technical debt.
+________________________________________
+
+## 7. Archiving Process
+Step 1 — Freeze the admin app
+•	No new commits to /apps/admin 
+Step 2 — Rename internally as legacy
+apps/admin → apps/_legacy_admin
+Step 3 — Mark as read-only in documentation.
+This keeps history for reference without confusion.
+________________________________________
+
+## 8. Console Rebuild Strategy
+We will now build Console using:
+•	AGP Platform Architecture 
+•	AGP Console OS 
+•	Identity & Tenancy Model 
+•	Console MVP Scope 
+This is a greenfield build with salvaged assets.
+________________________________________
+
+## 9. Risk Mitigation
+Rebuilding early prevents:
+•	future migration nightmares 
+•	compliance risks 
+•	permission vulnerabilities 
+•	scaling limitations 
+This is the safest long-term decision.
+________________________________________
+
+## 10. Next Step — Start Building
+Documentation phase is complete.
+Next phase:
+👉 Create Console Technical Architecture & Repo Structure
+Then we begin Sprint 0 implementation.
+________________________________________
+We are now ready to start building the new Console 🚀
+Bismillah... Create Console Technical Architecture & Repo Structure
+Bismillah 🤲
+Now we move from product docs → engineering blueprint.
+This document tells developers exactly how to build the Console app inside the monorepo.
+________________________________________
+
+# AGP_CONSOLE_TECH_ARCHITECTURE.md
+Console Technical Architecture & Repo Structure
+Status: Build Ready
+________________________________________
+
+## 1. Purpose of This Document
+This document defines:
+•	Monorepo structure for Console 
+•	Packages to extract from legacy admin 
+•	Frontend architecture 
+•	Backend/API architecture 
+•	Data model boundaries 
+•	Integration with User & Org apps 
+This is the developer blueprint for Sprint 0 → Sprint 3.
+________________________________________
+
+## 2. Monorepo Evolution
+Current apps:
+apps/
+  user/
+  org/
+  admin/ (deprecated)
+Target structure:
+apps/
+  user/          → Amanah Hub (identity)
+  org/           → Amanah OS (organisation workspace)
+  console/       → AGP Console (platform OS)
+
+packages/
+  design-system/
+  auth/
+  permissions/
+  org-core/
+  billing/
+  audit/
+  notifications/
+  database/
+  api-client/
+Console will be the first app that fully uses shared packages.
+________________________________________
+
+## 3. Tech Stack (Lock This)
+We DO NOT experiment here.
+Layer	Tech
+Framework	Next.js App Router
+Language	TypeScript
+Styling	Tailwind
+UI	shadcn/ui
+Auth	Shared auth package
+DB	Shared Prisma schema
+State	React Query + Server Actions
+Forms	React Hook Form + Zod
+Consistency across apps is critical.
+________________________________________
+
+## 4. Console App Folder Structure
+Inside /apps/console:
+apps/console/
+
+  app/
+    (auth)/
+      login/
+      onboarding/
+
+    (console)/
+      dashboard/
+
+      organisations/
+        new/
+        [orgId]/
+          overview/
+          members/
+          apps/
+          billing/
+          settings/
+
+      plans/
+      audit-log/
+      settings/
+
+  components/
+  features/
+  lib/
+We use feature-based architecture.
+________________________________________
+
+## 5. Feature-Based Architecture
+Inside /apps/console/features:
+features/
+  organisations/
+  memberships/
+  roles/
+  provisioning/
+  billing/
+  audit/
+Each feature contains:
+feature-name/
+  components/
+  hooks/
+  services/
+  types.ts
+This prevents giant messy folders.
+________________________________________
+
+## 6. Shared Packages (VERY IMPORTANT)
+We now extract reusable logic into packages.
+________________________________________
+
+6.1 packages/design-system
+Extract from legacy admin:
+•	Button 
+•	Table 
+•	Modal 
+•	Sidebar 
+•	Page layout 
+•	Form components 
+All apps must use this package.
+________________________________________
+
+6.2 packages/auth
+Shared authentication logic:
+•	getCurrentUser() 
+•	requireAuth() 
+•	session helpers 
+•	auth middleware 
+Used by user, org, and console apps.
+________________________________________
+
+6.3 packages/org-core
+Shared organisation utilities:
+•	getCurrentOrg() 
+•	org context provider 
+•	org switching logic 
+Used by org app and console.
+________________________________________
+
+6.4 packages/permissions
+Platform permission engine.
+Contains:
+•	role definitions 
+•	permission checks 
+•	access guards 
+This package becomes critical later.
+________________________________________
+
+6.5 packages/billing
+Shared billing utilities:
+•	plans config 
+•	subscription helpers 
+•	invoice helpers 
+________________________________________
+
+6.6 packages/audit
+Global audit logging:
+•	logEvent() 
+•	event types 
+•	audit viewer helpers 
+________________________________________
+
+6.7 packages/notifications
+Email & in-app notifications.
+Used across all apps.
+________________________________________
+
+## 7. API Architecture
+We use server actions + shared services.
+Inside Console:
+features/organisations/services/
+  createOrganisation.ts
+  updateOrganisation.ts
+  listOrganisations.ts
+Each service:
+•	validates input with Zod 
+•	talks to Prisma 
+•	writes audit log 
+This pattern must be consistent across features.
+________________________________________
+
+## 8. Database Architecture (Console Scope)
+Console owns platform tables.
+Core tables to create:
+organisations
+memberships
+organisation_invitations
+subscriptions
+plans
+invoices
+app_installations
+audit_logs
+platform_roles
+Org app will have its own tables.
+Separation is critical.
+________________________________________
+## 9. App Routing Map
+Final route map:
+/login
+/dashboard
+
+/organisations
+/organisations/new
+/organisations/[orgId]
+/organisations/[orgId]/members
+/organisations/[orgId]/apps
+/organisations/[orgId]/billing
+
+/plans
+/audit-log
+/settings
+This matches the MVP doc.
+________________________________________
+## 10. Integration with Other Apps
+User App Integration
+Console uses:
+•	shared auth session 
+•	user profile 
+No duplication of user data.
+________________________________________
+Org App Integration
+Console provisions org workspace by:
+1.	Creating organisation record 
+2.	Enabling Amanah OS app 
+3.	Linking org_id across apps 
+This creates seamless access.
+________________________________________
+
+## 11. Sprint 0 Implementation Plan
+We are ready to code.
+Sprint 0 tasks:
+1.	Create /apps/console 
+2.	Setup layout & routing 
+3.	Extract design-system package 
+4.	Setup auth guards 
+5.	Create sidebar & dashboard shell 
+6.	Setup shared packages skeleton 
+After Sprint 0 → we start real features.
+________________________________________
+
+## 12. We Are Now Ready To Build 🚀
+Documentation phase COMPLETE.

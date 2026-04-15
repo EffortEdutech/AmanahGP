@@ -7,12 +7,14 @@
 //   "Will money be used right?" → Financial controls signal
 //   "Are they transparent?"     → Monthly reporting signal
 
-import { notFound }     from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { DonateForm }   from '@/components/donation/donate-form';
 import { MiniTrustPanel } from '@/components/ui/trust-panel';
 import { TrustBadgeInline } from '@/components/ui/trust-badge';
 import { getTrustGrade } from '@/lib/trust-grade';
+import { notFound, redirect } from 'next/navigation';
+import { initiateDonation } from '@/app/actions/donations';
+
 
 export const metadata = { title: 'Donate — AmanahHub' };
 
@@ -85,6 +87,36 @@ export default async function DonatePage({
     { label: 'Certified by Amanah',         detail: 'CTCF evaluation completed by an independent reviewer', ok: isCertified },
   ];
 
+    async function donateAction(formData: FormData) {
+      'use server';
+
+      const amount = Number(formData.get('amount') ?? 0);
+      const donorEmail = String(formData.get('email') ?? '').trim() || undefined;
+      const projectId = String(formData.get('projectId') ?? '').trim() || undefined;
+
+      if (!Number.isFinite(amount) || amount <= 0) {
+        throw new Error('Invalid donation amount');
+      }
+
+      const platformFeeAmount = +(amount * 0.02).toFixed(2);
+
+      const result = await initiateDonation({
+        organizationId: orgId,
+        projectId,
+        amount,
+        platformFeeAmount,
+        currency: 'MYR',
+        donorEmail,
+      });
+
+      if (!result.ok || !result.checkoutUrl) {
+        throw new Error(result.error ?? 'Failed to initiate donation');
+      }
+
+      redirect(result.checkoutUrl);
+    }
+
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-lg mx-auto px-4 py-10 space-y-6">
@@ -128,7 +160,7 @@ export default async function DonatePage({
         )}
 
         {/* Donate form — existing component from Phase 1 */}
-        <DonateForm orgId={orgId} orgName={org.name} />
+        <DonateForm orgId={orgId} orgName={org.name} action={donateAction} />
 
         {/* Non-custodial notice */}
         <div className="rounded-lg bg-gray-100 border border-gray-200 p-4 text-center">
