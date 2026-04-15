@@ -43,7 +43,8 @@ export default async function ProjectsPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId     = membership.organization_id;
-  const org       = membership.organizations as { id: string; name: string } | null;
+  const orgRaw = membership.organizations;
+  const org = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as { id: string; name: string } | null | undefined;
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
   const statusFilter = params.status;

@@ -74,7 +74,8 @@ export default async function InviteAcceptPage({
     return <InviteError message="This invitation has expired. Ask your organisation admin to send a new invitation." />;
   }
 
-  const org      = invitation.organizations as { id: string; name: string; org_type: string | null; state: string | null } | null;
+  const orgRaw   = invitation.organizations;
+  const org      = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as { id: string; name: string; org_type: string | null; state: string | null } | null | undefined;
   const roleInfo = ROLE_LABELS[invitation.org_role] ?? ROLE_LABELS.org_viewer;
 
   // If already logged in as the invited email → auto-accept path

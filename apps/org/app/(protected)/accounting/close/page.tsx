@@ -39,7 +39,9 @@ export default async function MonthClosePage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId     = membership.organization_id;
-  const org       = membership.organizations as { id: string; name: string; fund_types: string[] } | null;
+  const orgRaw    = membership.organizations;
+  const org       = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as
+    { id: string; name: string; fund_types: string[] } | null | undefined;
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
   const now         = new Date();

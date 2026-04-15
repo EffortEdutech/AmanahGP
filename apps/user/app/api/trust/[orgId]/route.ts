@@ -143,7 +143,7 @@ export async function GET(
     score:               Math.round(score * 10) / 10,
     grade:               trustGrade.grade,
     gradeLabel:          trustGrade.label,
-    gradeSublabel:       trustGrade.sublabel,
+    gradeSublabel:       trustGrade.gradeSublabel,
     gradeColor:          trustGrade.color,
     pillarBreakdown,
     certificationStatus: cert?.new_status ?? null,

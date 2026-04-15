@@ -32,8 +32,9 @@ export default async function CompliancePage() {
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId    = membership.organization_id;
-  const org      = membership.organizations as {
-    id: string; name: string; org_type: string | null;
+  const orgRaw = membership.organizations;
+  const org = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as {
+    id: string; name: string; org_type: string | null | undefined;
     oversight_authority: string | null; fund_types: string[];
     registration_no: string | null; contact_email: string | null; state: string | null;
   } | null;

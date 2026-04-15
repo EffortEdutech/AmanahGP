@@ -44,7 +44,8 @@ export default async function ReportsPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId     = membership.organization_id;
-  const org       = membership.organizations as { name: string } | null;
+  const orgRaw = membership.organizations;
+  const org = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as { name: string } | null | undefined;
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
   let query = service
