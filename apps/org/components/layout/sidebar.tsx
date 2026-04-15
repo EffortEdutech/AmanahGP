@@ -94,6 +94,12 @@ export function Sidebar({ user, orgs }: SidebarProps) {
         {/* Dashboard */}
         <NavLink href="/dashboard" label="Dashboard" icon="▣" isActive={exact('/dashboard')} />
 
+        {/* Onboarding — shown when not complete */}
+        {orgId && (
+          <NavLink href="/onboarding" label="Amanah Ready" icon="◉"
+            isActive={active('/onboarding')} badge="Setup" />
+        )}
+
         {/* ══ ACCOUNTING (primary section) ══════════════════════ */}
         {orgId && (
           <>
@@ -106,6 +112,10 @@ export function Sidebar({ user, orgs }: SidebarProps) {
             <NavLink href="/accounting/transactions"
               label="Transactions" icon="⇄"
               isActive={active('/accounting/transactions')} />
+
+            <NavLink href="/accounting/payment-requests"
+              label="Payment requests" icon="✉"
+              isActive={active('/accounting/payment-requests')} />
 
             <NavLink href="/accounting/bank-accounts"
               label="Bank accounts" icon="🏦"

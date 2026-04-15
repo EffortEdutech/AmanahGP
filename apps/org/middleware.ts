@@ -4,8 +4,9 @@ import { NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PREFIXES = [
   '/dashboard',
+  '/onboarding',
   '/profile',
-  '/accounting',      // covers all /accounting/* sub-routes
+  '/accounting',
   '/projects',
   '/reports',
   '/compliance',

@@ -1,151 +1,151 @@
 // apps/user/app/donate/[orgId]/page.tsx
-// AmanahHub — Donation checkout page (Sprint 7 UI uplift)
+// AmanahHub — Donation Page (Sprint 24 — mini trust panel added)
+//
+// The trust panel is shown prominently before the donate form.
+// Answers the 3 donor fears before they reach for their wallet:
+//   "Is this org legit?"       → Certified by Amanah
+//   "Will money be used right?" → Financial controls signal
+//   "Are they transparent?"     → Monthly reporting signal
 
-import { notFound, redirect } from 'next/navigation';
+import { notFound }     from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { DonateForm } from '@/components/donation/donate-form';
-import { initiateDonation } from '@/app/actions/donations';
+import { DonateForm }   from '@/components/donation/donate-form';
+import { MiniTrustPanel } from '@/components/ui/trust-panel';
+import { TrustBadgeInline } from '@/components/ui/trust-badge';
+import { getTrustGrade } from '@/app/api/trust/[orgId]/route';
 
-interface Props {
+export const metadata = { title: 'Donate — AmanahHub' };
+
+const FUND_BADGE: Record<string, string> = {
+  zakat:   'bg-purple-100 text-purple-700',
+  waqf:    'bg-teal-100 text-teal-700',
+  sadaqah: 'bg-emerald-100 text-emerald-700',
+  general: 'bg-gray-100 text-gray-600',
+};
+
+export default async function DonatePage({
+  params,
+}: {
   params: Promise<{ orgId: string }>;
-  searchParams: Promise<{ project?: string }>;
-}
-
-export async function generateMetadata({ params }: Props) {
+}) {
   const { orgId } = await params;
-  const supabase = await createClient();
+  const supabase  = await createClient();
 
-  const { data } = await supabase
-    .from('organizations')
-    .select('name')
-    .eq('id', orgId)
-    .single();
-
-  return {
-    title: `Donate to ${data?.name ?? 'Charity'} | AmanahHub`,
-  };
-}
-
-export default async function DonatePage({ params, searchParams }: Props) {
-  const { orgId } = await params;
-  const { project: projectId } = await searchParams;
-
-  const supabase = await createClient();
-
+  // Only listed orgs
   const { data: org } = await supabase
     .from('organizations')
-    .select('id, name, summary, listing_status')
+    .select('id, name, fund_types, listing_status, summary')
     .eq('id', orgId)
     .eq('listing_status', 'listed')
     .single();
 
   if (!org) notFound();
 
-  const { data: project } = projectId
-    ? await supabase
-        .from('projects')
-        .select('id, title')
-        .eq('id', projectId)
+  const fundTypes = (org.fund_types ?? []) as string[];
+
+  // Trust data for mini panel
+  const [scoreResult, certResult, bankResult, closesResult, policyResult, reportResult] =
+    await Promise.all([
+      supabase.from('amanah_index_history')
+        .select('score_value, computed_at')
         .eq('organization_id', orgId)
-        .eq('is_public', true)
-        .single()
-    : { data: null };
+        .order('computed_at', { ascending: false })
+        .limit(1).maybeSingle(),
 
-  async function donateAction(formData: FormData): Promise<void> {
-    'use server';
+      supabase.from('certification_history')
+        .select('new_status').eq('organization_id', orgId)
+        .order('decided_at', { ascending: false }).limit(1).maybeSingle(),
 
-    const amount = Number(formData.get('amount') ?? 0);
-    const donorEmailRaw = formData.get('email');
-    const donorEmail =
-      typeof donorEmailRaw === 'string' && donorEmailRaw.trim() !== ''
-        ? donorEmailRaw.trim()
-        : undefined;
+      supabase.from('bank_accounts')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId).eq('is_active', true),
 
-    if (!Number.isFinite(amount) || amount <= 0) {
-      throw new Error('Invalid donation amount');
-    }
+      supabase.from('fund_period_closes')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId),
 
-    const platformFeeAmount = Number((amount * 0.02).toFixed(2));
+      supabase.from('trust_events')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId).eq('event_type', 'gov_policy_uploaded'),
 
-    const result = await initiateDonation({
-      organizationId: orgId,
-      projectId: project?.id,
-      amount,
-      platformFeeAmount,
-      currency: 'MYR',
-      donorEmail,
-    });
+      supabase.from('project_reports')
+        .select('*', { count: 'exact', head: true })
+        .eq('organization_id', orgId).eq('submission_status', 'submitted'),
+    ]);
 
-    if (!result.ok || !result.checkoutUrl) {
-      throw new Error(result.error ?? 'Failed to initiate donation');
-    }
+  const score       = Number(scoreResult.data?.score_value ?? 0);
+  const trustGrade  = getTrustGrade(score);
+  const isCertified = certResult.data?.new_status === 'certified';
 
-    redirect(result.checkoutUrl);
-  }
+  const snapshotSignals = [
+    { label: 'Separate bank account',       detail: 'Funds kept separate from personal accounts',         ok: (bankResult.count ?? 0) > 0 },
+    { label: 'Monthly accounts maintained', detail: 'Financial records closed and reviewed each month',    ok: (closesResult.count ?? 0) > 0 },
+    { label: 'Governance policies on file', detail: 'Written policies governing financial controls',       ok: (policyResult.count ?? 0) > 0 },
+    { label: 'Progress reports submitted',  detail: 'Regular reporting on activities and beneficiary impact', ok: (reportResult.count ?? 0) > 0 },
+    { label: 'Certified by Amanah',         detail: 'CTCF evaluation completed by an independent reviewer', ok: isCertified },
+  ];
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-6">
-      <div className="mb-4">
-        <a
-          href={`/charities/${org.id}`}
-          className="text-sm text-gray-500 hover:text-gray-700"
-        >
-          ← Back to {org.name}
-        </a>
-      </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-lg mx-auto px-4 py-10 space-y-6">
 
-      <div className="card p-5 mb-4">
-        <div className="flex items-start gap-3">
-          <div className="w-10 h-10 rounded-lg bg-emerald-100 flex items-center justify-center text-emerald-700 font-bold text-lg flex-shrink-0 select-none">
-            {org.name.charAt(0)}
-          </div>
-
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-gray-900 truncate">
-              {org.name}
-            </p>
-
-            {project && (
-              <p className="text-[11px] text-gray-400 mt-0.5 truncate">
-                for: {project.title}
-              </p>
-            )}
+        {/* Header */}
+        <div className="text-center space-y-2">
+          <h1 className="text-2xl font-bold text-gray-900">Donate to {org.name}</h1>
+          {org.summary && (
+            <p className="text-[13px] text-gray-500 leading-relaxed">{org.summary}</p>
+          )}
+          <div className="flex justify-center gap-1.5 flex-wrap">
+            {fundTypes.map((ft) => (
+              <span key={ft}
+                className={`text-[9px] font-semibold px-2 py-0.5 rounded-full capitalize ${
+                  FUND_BADGE[ft] ?? FUND_BADGE.general
+                }`}>
+                {ft}
+              </span>
+            ))}
           </div>
         </div>
-      </div>
 
-      <div className="flex items-start gap-2 bg-emerald-50 border border-emerald-100 rounded-lg px-3 py-2.5 mb-4">
-        <svg
-          className="w-3.5 h-3.5 text-emerald-600 mt-0.5 flex-shrink-0"
-          fill="none"
-          viewBox="0 0 16 16"
-        >
-          <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
-          <path
-            d="M8 7v5M8 5.5v.5"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
+        {/* Trust badge inline */}
+        {score > 0 && (
+          <div className="flex justify-center">
+            <TrustBadgeInline
+              score={score}
+              grade={trustGrade.grade}
+              gradeLabel={trustGrade.label}
+            />
+          </div>
+        )}
+
+        {/* Mini trust panel — BEFORE the donate form */}
+        {score > 0 && (
+          <MiniTrustPanel
+            signals={snapshotSignals}
+            gradeLabel={trustGrade.label}
+            score={score}
           />
-        </svg>
+        )}
 
-        <p className="text-[11px] text-emerald-700 leading-relaxed">
-          Your donation goes <strong>directly to {org.name}</strong> via ToyyibPay.
-          AmanahHub does not hold your funds at any point.
-        </p>
-      </div>
+        {/* Donate form — existing component from Phase 1 */}
+        <DonateForm orgId={orgId} orgName={org.name} />
 
-      <div className="card p-5">
-        <h1 className="text-[15px] font-semibold text-gray-900 mb-4">
-          Make a donation
-        </h1>
+        {/* Non-custodial notice */}
+        <div className="rounded-lg bg-gray-100 border border-gray-200 p-4 text-center">
+          <p className="text-[11px] text-gray-500 leading-relaxed">
+            🔒 Non-custodial: AmanahHub never holds your funds.
+            Payment goes directly to <strong>{org.name}</strong>'s registered bank account.
+            Your donation receipt will be issued immediately.
+          </p>
+        </div>
 
-        <DonateForm
-          orgId={org.id}
-          orgName={org.name}
-          projectId={project?.id}
-          action={donateAction}
-        />
+        {/* Back link */}
+        <div className="text-center">
+          <a href={`/charities/${orgId}`}
+            className="text-[12px] text-gray-400 hover:text-gray-600 transition-colors">
+            ← Back to {org.name}'s profile
+          </a>
+        </div>
       </div>
     </div>
   );
