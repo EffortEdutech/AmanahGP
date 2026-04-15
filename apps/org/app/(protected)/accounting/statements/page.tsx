@@ -6,6 +6,7 @@
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 
 export const metadata = { title: 'Financial statements — amanahOS' };
 
@@ -104,17 +105,11 @@ export default async function StatementsPage({
           <h1 className="text-xl font-semibold text-gray-900">Financial statements</h1>
           <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {selectedYear}</p>
         </div>
+        <MonthYearPicker
+            selectedYear={selectedYear}
+            basePath="/accounting/statements"
+          />        
         <div className="flex items-center gap-2">
-          {[currentYear - 1, currentYear].map((y) => (
-            <a key={y} href={`/accounting/statements?year=${y}`}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                y === selectedYear
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-              }`}>
-              {y}
-            </a>
-          ))}
           <a href="/accounting/close"
             className="px-3 py-1.5 text-xs font-medium rounded-md border border-gray-300
                        bg-white text-gray-700 hover:bg-gray-50 transition-colors">
@@ -136,8 +131,9 @@ export default async function StatementsPage({
           <div className="bg-emerald-50 px-4 py-2 border-b border-gray-200">
             <p className="text-[11px] font-semibold text-emerald-800 uppercase tracking-wide">Income</p>
           </div>
-          {incomeRows.length > 0 ? incomeRows.map((r) => (
-            <div key={`${r.account_code}-${r.fund_code}`}
+          {incomeRows.length > 0 ? incomeRows.map((r, i) => (
+            /* Added index 'i' to the key below */
+            <div key={`${r.account_code}-${r.fund_code}-${i}`}
               className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
               <div className="flex items-center gap-3">
                 <span className="text-[10px] text-gray-400 font-mono w-10">{r.account_code}</span>
@@ -160,8 +156,9 @@ export default async function StatementsPage({
           <div className="bg-red-50 px-4 py-2 border-b border-gray-200">
             <p className="text-[11px] font-semibold text-red-800 uppercase tracking-wide">Expenses</p>
           </div>
-          {expenseRows.length > 0 ? expenseRows.map((r) => (
-            <div key={`${r.account_code}-${r.fund_code}`}
+          {expenseRows.length > 0 ? expenseRows.map((r, i) => (
+            /* Added index 'i' to the key below */
+            <div key={`${r.account_code}-${r.fund_code}-${i}`}
               className="flex items-center justify-between px-4 py-2.5 border-b border-gray-50">
               <div className="flex items-center gap-3">
                 <span className="text-[10px] text-gray-400 font-mono w-10">{r.account_code}</span>

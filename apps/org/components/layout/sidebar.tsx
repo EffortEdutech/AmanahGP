@@ -1,5 +1,5 @@
 'use client';
-// apps/org/components/layout/sidebar.tsx
+// apps/org/components/layout/sidebar.tsxexpenseRows
 // amanahOS — Sidebar navigation
 //
 // TOP-LEVEL SECTIONS:
@@ -97,7 +97,7 @@ export function Sidebar({ user, orgs }: SidebarProps) {
         {/* Onboarding — shown when not complete */}
         {orgId && (
           <NavLink href="/onboarding" label="Amanah Ready" icon="◉"
-            isActive={active('/onboarding')} badge="Setup" />
+            isActive={active('/onboarding')} />
         )}
 
         {/* ══ ACCOUNTING (primary section) ══════════════════════ */}
@@ -159,9 +159,9 @@ export function Sidebar({ user, orgs }: SidebarProps) {
           <>
             <SectionLabel label="Governance" />
             <NavLink href="/compliance" label="Compliance" icon="☑"
-              isActive={active('/compliance')} badge="Sprint 16" />
+              isActive={active('/compliance')}  />
             <NavLink href="/policy-kit" label="Policy kit" icon="⊞"
-              isActive={active('/policy-kit')} badge="Sprint 17" />
+              isActive={active('/policy-kit')}  />
           </>
         )}
 

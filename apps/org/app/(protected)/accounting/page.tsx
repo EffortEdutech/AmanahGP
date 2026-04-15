@@ -7,6 +7,7 @@ import Link                    from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { QuickEntryForm }      from '@/components/accounting/quick-entry-form';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 
 export const metadata = { title: 'Accounting — amanahOS' };
 
@@ -93,18 +94,10 @@ export default async function AccountingPage({
           <h1 className="text-xl font-semibold text-gray-900">Fund accounting</h1>
           <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {selectedYear}</p>
         </div>
-        <div className="flex items-center gap-2">
-          {[currentYear - 1, currentYear].map((y) => (
-            <a key={y} href={`/accounting?year=${y}`}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                y === selectedYear
-                  ? 'bg-emerald-600 text-white border-emerald-600'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-              }`}>
-              {y}
-            </a>
-          ))}
-        </div>
+        <MonthYearPicker
+            selectedYear={selectedYear}
+            basePath="/accounting"
+          />
       </div>
 
       {/* Period closed banner */}

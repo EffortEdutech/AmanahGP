@@ -6,6 +6,7 @@
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 
 export const metadata = { title: 'Fund changes — amanahOS' };
 
@@ -131,18 +132,10 @@ export default async function FundChangesPage({
           <h1 className="text-xl font-semibold text-gray-900">Statement of Changes in Funds</h1>
           <p className="text-sm text-gray-500 mt-0.5">{org?.name} · Year {selectedYear}</p>
         </div>
-        <div className="flex gap-1">
-          {[currentYear - 1, currentYear].map((y) => (
-            <a key={y} href={`/accounting/reports/fund-changes?year=${y}`}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                y === selectedYear
-                  ? 'bg-purple-600 text-white border-purple-600'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-              }`}>
-              {y}
-            </a>
-          ))}
-        </div>
+        <MonthYearPicker
+            selectedYear={selectedYear}
+            basePath="/accounting/reports/fund-changes"
+          />
       </div>
 
       {/* Main table */}

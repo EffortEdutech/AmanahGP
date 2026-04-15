@@ -10,6 +10,7 @@ import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { CloseForm }           from '@/components/accounting/close-form';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 
 export const metadata = { title: 'Month close — amanahOS' };
 
@@ -39,9 +40,7 @@ export default async function MonthClosePage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId     = membership.organization_id;
-  const orgRaw    = membership.organizations;
-  const org       = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as
-    { id: string; name: string; fund_types: string[] } | null | undefined;
+  const org       = membership.organizations as { id: string; name: string; fund_types: string[] } | null;
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
   const now         = new Date();
@@ -113,9 +112,7 @@ export default async function MonthClosePage({
     .gte('debit_amount', LARGE_THRESHOLD);
 
   const largeTxInPeriod = (largeLines ?? []).filter((l) => {
-    const jeRaw = l.journal_entries;
-    const je = (Array.isArray(jeRaw) ? jeRaw[0] : jeRaw) as
-      { period_year: number; period_month: number } | null | undefined;
+    const je = l.journal_entries as { period_year: number; period_month: number } | null;
     return je?.period_year === targetYear && je?.period_month === targetMonth;
   });
 
@@ -134,9 +131,7 @@ export default async function MonthClosePage({
 
     const ZAKAT_APPROVED = ['5110','5120','5130','5140','5150'];
     zakatViolations = (zakatExpLines ?? []).filter((l) => {
-      const jeRaw = l.journal_entries;
-      const je  = (Array.isArray(jeRaw) ? jeRaw[0] : jeRaw) as
-        { period_year: number; period_month: number } | null | undefined;
+      const je  = l.journal_entries as { period_year: number; period_month: number } | null;
       const acc = l.accounts as { account_code: string; account_type: string } | null;
       return (
         je?.period_year === targetYear && je?.period_month === targetMonth &&
@@ -193,19 +188,11 @@ export default async function MonthClosePage({
           <h1 className="text-xl font-semibold text-gray-900">Month close</h1>
           <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {monthName} {targetYear}</p>
         </div>
-        <div className="flex flex-wrap gap-1">
-          {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-            <a key={m}
-              href={`/accounting/close?year=${targetYear}&month=${m}`}
-              className={`px-2 py-1 text-[9px] font-medium rounded border transition-colors ${
-                m === targetMonth
-                  ? 'bg-gray-800 text-white border-gray-800'
-                  : 'bg-white text-gray-400 border-gray-200 hover:bg-gray-50'
-              }`}>
-              {MONTHS[m - 1].slice(0, 3)}
-            </a>
-          ))}
-        </div>
+        <MonthYearPicker
+          selectedYear={targetYear}
+          selectedMonth={targetMonth}
+          basePath="/accounting/close"
+        />
       </div>
 
       {/* Trust event note */}
