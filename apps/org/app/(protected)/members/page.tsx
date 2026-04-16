@@ -1,10 +1,17 @@
-// apps/org/app/(protected)/members/page.tsx
+﻿// apps/org/app/(protected)/members/page.tsx
 // amanahOS — Members (Sprint 25 — full invite flow, no Console link)
 
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { MemberInviteForm }    from '@/components/members/member-invite-form';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Members — amanahOS' };
 
@@ -66,7 +73,7 @@ export default async function MembersPage() {
       <div className={`rounded-lg border p-4 flex items-start gap-3 ${
         hasMinTeam ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
       }`}>
-        <span className="text-xl flex-shrink-0">{hasMinTeam ? '✓' : '⚠'}</span>
+        <span className="text-xl flex-shrink-0">{hasMinTeam ? '✓' : 'âš '}</span>
         <div>
           <p className={`text-[12px] font-semibold ${hasMinTeam ? 'text-emerald-800' : 'text-amber-800'}`}>
             {hasMinTeam
@@ -76,7 +83,7 @@ export default async function MembersPage() {
           <p className={`text-[11px] mt-0.5 ${hasMinTeam ? 'text-emerald-600' : 'text-amber-600'}`}>
             {hasMinTeam
               ? 'Different users must create and approve payment requests. SoD enforced.'
-              : 'CTCF Layer 1 governance gate and onboarding step 5 require ≥ 2 active members.'}
+              : 'CTCF Layer 1 governance gate and onboarding step 5 require â‰¥ 2 active members.'}
           </p>
         </div>
       </div>
@@ -88,7 +95,7 @@ export default async function MembersPage() {
         </h2>
         <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100 overflow-hidden">
           {activeMembers.map((member) => {
-            const u   = member.users as { id: string; display_name: string | null; email: string } | null;
+            const u   = relationOne<{ id: string; display_name: string | null; email: string }>(member.users);
             const rc  = ROLE_CONFIG[member.org_role] ?? ROLE_CONFIG.org_viewer;
             const isMe = u?.id === platformUser.id;
             return (
@@ -175,9 +182,10 @@ export default async function MembersPage() {
         </div>
         <p className="text-[10px] text-gray-400 pt-1">
           SoD rule: the person who creates a payment request cannot approve it.
-          Always maintain ≥ 2 active members.
+          Always maintain â‰¥ 2 active members.
         </p>
       </div>
     </div>
   );
 }
+

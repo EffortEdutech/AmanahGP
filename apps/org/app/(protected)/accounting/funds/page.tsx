@@ -1,10 +1,17 @@
-// apps/org/app/(protected)/accounting/funds/page.tsx
+﻿// apps/org/app/(protected)/accounting/funds/page.tsx
 // amanahOS — Islamic Fund Registry
 // Manage Zakat, Waqf, Sadaqah, General, Project funds.
 
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Funds — amanahOS' };
 
@@ -35,7 +42,7 @@ export default async function FundsPage() {
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId = membership.organization_id;
-  const org   = membership.organizations as { name: string; fund_types: string[] } | null;
+  const org   = relationOne<{ name: string; fund_types: string[] }>(membership.organizations);
 
   const { data: funds } = await service
     .from('funds')
@@ -60,7 +67,7 @@ export default async function FundsPage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Islamic fund registry</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} · {(funds ?? []).filter((f) => f.is_active).length} active funds
+          {org?.name} Â· {(funds ?? []).filter((f) => f.is_active).length} active funds
         </p>
       </div>
 
@@ -138,3 +145,4 @@ export default async function FundsPage() {
     </div>
   );
 }
+

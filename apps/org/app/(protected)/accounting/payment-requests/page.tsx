@@ -1,17 +1,24 @@
-// apps/org/app/(protected)/accounting/payment-requests/page.tsx
+﻿// apps/org/app/(protected)/accounting/payment-requests/page.tsx
 // amanahOS — Payment Requests
 // "Awaiting My Approval" dashboard — full approval workflow UI.
 //
 // Statuses: draft → pending_review → pending_approval → approved → paid | rejected | cancelled
 //
 // Segregation of Duties rule (enforced in API + UI):
-//   created_by_user_id ≠ approved_by_user_id
+//   created_by_user_id â‰  approved_by_user_id
 //   Violation → gov_payment_self_approved trust event (-15 pts)
 
 import { redirect } from 'next/navigation';
 import Link         from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Payment requests — amanahOS' };
 
@@ -61,7 +68,7 @@ export default async function PaymentRequestsPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId     = membership.organization_id;
-  const org       = membership.organizations as { id: string; name: string } | null;
+  const org       = relationOne<{ id: string; name: string }>(membership.organizations);
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
   // Build status filter
@@ -145,12 +152,12 @@ export default async function PaymentRequestsPage({
 
       {/* Governance note */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
-        <span className="text-blue-500 flex-shrink-0">⚖</span>
+        <span className="text-blue-500 flex-shrink-0">âš–</span>
         <p className="text-[11px] text-blue-800">
           <strong>Segregation of duties enforced.</strong> The person who creates a payment request
           cannot be the same person who approves it. Dual approval emits a{' '}
           <strong>+4 Governance</strong> trust event. Self-approval triggers a{' '}
-          <strong>−15 Governance</strong> penalty.
+          <strong>âˆ’15 Governance</strong> penalty.
         </p>
       </div>
 
@@ -192,8 +199,8 @@ export default async function PaymentRequestsPage({
       {requests && requests.length > 0 ? (
         <div className="space-y-3">
           {requests.map((req) => {
-            const fund    = req.funds    as FundShape;
-            const acct    = req.accounts as AccountShape;
+            const fund    = relationOne<NonNullable<FundShape>>(req.funds);
+            const acct    = relationOne<NonNullable<AccountShape>>(req.accounts);
             const creator = (req as unknown as { created_by: UserShape }).created_by;
             const approver = (req as unknown as { approved_by: UserShape }).approved_by;
             const sc      = STATUS_CONFIG[req.status] ?? STATUS_CONFIG.draft;
@@ -216,7 +223,7 @@ export default async function PaymentRequestsPage({
                       </span>
                       {req.is_large_transaction && (
                         <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-                          ⚠ Large transaction
+                          âš  Large transaction
                         </span>
                       )}
                     </div>
@@ -245,11 +252,11 @@ export default async function PaymentRequestsPage({
 
                     <div className="flex items-center gap-4 text-[10px] text-gray-400">
                       <span>By {creator?.display_name ?? 'Unknown'}</span>
-                      <span>·</span>
+                      <span>Â·</span>
                       <span>{new Date(req.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       {req.payment_date && (
                         <>
-                          <span>·</span>
+                          <span>Â·</span>
                           <span>Pay by {req.payment_date}</span>
                         </>
                       )}
@@ -282,7 +289,7 @@ export default async function PaymentRequestsPage({
                           ? 'bg-amber-50 text-amber-600 border border-amber-200'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {isMine ? '⚠ SoD — cannot self-approve' : '→ Approval needed'}
+                        {isMine ? 'âš  SoD — cannot self-approve' : '→ Approval needed'}
                       </span>
                     )}
                     {req.status === 'approved' && (
@@ -315,3 +322,5 @@ export default async function PaymentRequestsPage({
     </div>
   );
 }
+
+

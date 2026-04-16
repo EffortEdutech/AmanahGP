@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/layout.tsx
+﻿// apps/org/app/(protected)/layout.tsx
 // amanahOS — Protected layout
 //
 // UUID mapping (seed data reality on hosted Supabase):
@@ -24,6 +24,13 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { Sidebar } from '@/components/layout/sidebar';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export default async function ProtectedLayout({
   children,
@@ -84,10 +91,10 @@ export default async function ProtectedLayout({
   }
 
   const orgs = (memberships ?? []).map((m) => {
-    const org = m.organizations as {
+    const org = relationOne<{
       id: string; name: string;
       onboarding_status: string; listing_status: string;
-    } | null;
+    }>(m.organizations);
     return {
       organization_id:   m.organization_id,
       org_name:          org?.name              ?? 'Unnamed org',
@@ -118,3 +125,4 @@ export default async function ProtectedLayout({
     </div>
   );
 }
+

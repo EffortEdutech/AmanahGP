@@ -4,6 +4,12 @@
 // Reads session cookies; respects RLS as the authenticated user.
 
 import { createServerClient } from '@supabase/ssr';
+
+type ServerCookieToSet = {
+  name: string;
+  value: string;
+  options?: Parameters<Awaited<ReturnType<typeof cookies>>['set']>[2];
+};
 import { cookies } from 'next/headers';
 
 export async function createClient() {
@@ -17,7 +23,7 @@ export async function createClient() {
         getAll() {
           return cookieStore.getAll();
         },
-        setAll(cookiesToSet) {
+        setAll(cookiesToSet: ServerCookieToSet[]) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)

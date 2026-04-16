@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/reports/project-fund/page.tsx
+﻿// apps/org/app/(protected)/accounting/reports/project-fund/page.tsx
 // amanahOS — Project Fund Report
 // Income, expenses, and balance per project.
 
@@ -6,6 +6,13 @@ import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { MonthYearPicker }     from '@/components/ui/month-year-picker';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Project fund report — amanahOS' };
 
@@ -32,7 +39,7 @@ export default async function ProjectFundPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId        = membership.organization_id;
-  const org          = membership.organizations as { name: string } | null;
+  const org          = relationOne<{ name: string }>(membership.organizations);
   const currentYear  = new Date().getFullYear();
   const selectedYear = parseInt(params.year ?? String(currentYear));
 
@@ -67,20 +74,20 @@ export default async function ProjectFundPage({
   // Build project summary
   const projectSummary = projects.map((project) => {
     const projectLines = (allLines ?? []).filter((l) => {
-      const je = l.journal_entries as { period_year: number } | null;
+      const je = relationOne<{ period_year: number }>(l.journal_entries);
       return l.project_id === project.id && je?.period_year === selectedYear;
     });
 
     const income   = projectLines
       .filter((l) => {
-        const acc = l.accounts as { account_type: string } | null;
+        const acc = relationOne<{ account_type: string }>(l.accounts);
         return acc?.account_type === 'income';
       })
       .reduce((s, l) => s + Number(l.credit_amount) - Number(l.debit_amount), 0);
 
     const expenses = projectLines
       .filter((l) => {
-        const acc = l.accounts as { account_type: string } | null;
+        const acc = relationOne<{ account_type: string }>(l.accounts);
         return acc?.account_type === 'expense';
       })
       .reduce((s, l) => s + Number(l.debit_amount) - Number(l.credit_amount), 0);
@@ -89,7 +96,7 @@ export default async function ProjectFundPage({
 
     // Funds used
     const fundsUsed = [...new Set(projectLines.map((l) => {
-      const f = l.funds as { fund_code: string; fund_name: string; fund_type: string } | null;
+      const f = relationOne<{ fund_code: string; fund_name: string; fund_type: string }>(l.funds);
       return f ? `${f.fund_code} — ${f.fund_name}` : null;
     }).filter(Boolean))];
 
@@ -107,7 +114,7 @@ export default async function ProjectFundPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Project Fund Report</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}
@@ -206,3 +213,4 @@ export default async function ProjectFundPage({
     </div>
   );
 }
+

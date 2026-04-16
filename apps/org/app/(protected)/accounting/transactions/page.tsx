@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/transactions/page.tsx
+﻿// apps/org/app/(protected)/accounting/transactions/page.tsx
 // amanahOS — Transaction Ledger (picker update)
 
 import { redirect }            from 'next/navigation';
@@ -6,6 +6,27 @@ import Link                    from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { MonthYearPicker }     from '@/components/ui/month-year-picker';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+function relationMany<T extends Record<string, unknown>>(
+  value: unknown,
+  nestedOneKeys: (keyof T)[] = []
+): T[] {
+  const rows = Array.isArray(value) ? value : value ? [value] : [];
+  return rows.map((row) => {
+    const obj = { ...(row as Record<string, unknown>) };
+    for (const key of nestedOneKeys) {
+      obj[key as string] = relationOne(obj[key as string]);
+    }
+    return obj as T;
+  });
+}
+
+
 
 export const metadata = { title: 'Transactions — amanahOS' };
 
@@ -33,7 +54,7 @@ export default async function TransactionsPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId       = membership.organization_id;
-  const org         = membership.organizations as { id: string; name: string } | null;
+  const org         = relationOne<{ id: string; name: string }>(membership.organizations);
   const isManager   = ['org_admin', 'org_manager'].includes(membership.org_role);
   const currentYear = new Date().getFullYear();
   const selectedYear  = parseInt(params.year  ?? String(currentYear));
@@ -67,7 +88,7 @@ export default async function TransactionsPage({
 
   const filteredEntries = params.fundId
     ? (entries ?? []).filter((e) =>
-        (e.journal_lines as Array<{ fund_id: string }>).some((l) => l.fund_id === params.fundId)
+        relationMany<{ fund_id: string }>(e.journal_lines).some((l) => l.fund_id === params.fundId)
       )
     : (entries ?? []);
 
@@ -80,7 +101,7 @@ export default async function TransactionsPage({
 
   let grandDebits = 0; let grandCredits = 0;
   for (const e of filteredEntries) {
-    for (const l of (e.journal_lines as Line[])) {
+    for (const l of relationMany<Line>(e.journal_lines, ['accounts', 'funds'])) {
       grandDebits  += Number(l.debit_amount);
       grandCredits += Number(l.credit_amount);
     }
@@ -103,7 +124,7 @@ export default async function TransactionsPage({
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-5">
 
-      {/* ── Header ── */}
+      {/* â”€â”€ Header â”€â”€ */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Transaction ledger</h1>
@@ -128,7 +149,7 @@ export default async function TransactionsPage({
         </div>
       </div>
 
-      {/* ── Fund filter pills ── */}
+      {/* â”€â”€ Fund filter pills â”€â”€ */}
       {funds && funds.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           <Link
@@ -154,7 +175,7 @@ export default async function TransactionsPage({
         </div>
       )}
 
-      {/* ── Summary strip ── */}
+      {/* â”€â”€ Summary strip â”€â”€ */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide">Entries</p>
@@ -174,7 +195,7 @@ export default async function TransactionsPage({
         </div>
       </div>
 
-      {/* ── Ledger ── */}
+      {/* â”€â”€ Ledger â”€â”€ */}
       {filteredEntries.length > 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
           <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200
@@ -189,7 +210,7 @@ export default async function TransactionsPage({
           </div>
 
           {filteredEntries.map((entry) => {
-            const lines     = (entry.journal_lines as Line[]) ?? [];
+            const lines     = relationMany<Line>(entry.journal_lines, ['accounts', 'funds']);
             const totalIn   = lines.reduce((s, l) => s + Number(l.credit_amount), 0);
             const totalOut  = lines.reduce((s, l) => s + Number(l.debit_amount),  0);
             const fundCodes = [...new Set(lines.map((l) => l.funds?.fund_code).filter(Boolean))].join(', ');
@@ -228,7 +249,7 @@ export default async function TransactionsPage({
                   <div className="col-span-1 text-center">
                     {entry.is_locked
                       ? <span className="text-[9px] text-gray-400">🔒</span>
-                      : <span className="text-[9px] text-gray-300">○</span>
+                      : <span className="text-[9px] text-gray-300">â—‹</span>
                     }
                   </div>
                 </div>
@@ -294,3 +315,5 @@ export default async function TransactionsPage({
     </div>
   );
 }
+
+

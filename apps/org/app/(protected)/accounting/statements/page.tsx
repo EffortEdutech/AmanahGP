@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/statements/page.tsx
+﻿// apps/org/app/(protected)/accounting/statements/page.tsx
 // Sprint 16 — Financial Statements
 // Statement of Activities (income/expense) + Fund Balance Report
 // Reads from statement_of_activities_view and fund_balances_view
@@ -7,6 +7,13 @@ import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { MonthYearPicker }     from '@/components/ui/month-year-picker';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Financial statements — amanahOS' };
 
@@ -35,12 +42,12 @@ export default async function StatementsPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId = membership.organization_id;
-  const org   = membership.organizations as { id: string; name: string; fund_types: string[] } | null;
+  const org   = relationOne<{ id: string; name: string; fund_types: string[] }>(membership.organizations);
 
   const currentYear  = new Date().getFullYear();
   const selectedYear = parseInt(params.year ?? String(currentYear));
 
-  // ── Statement of Activities ──────────────────────────────────
+  // â”€â”€ Statement of Activities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: activities } = await service
     .from('statement_of_activities_view')
     .select('account_type, account_code, account_name, cost_category, fund_code, fund_name, fund_type, net_amount')
@@ -49,21 +56,21 @@ export default async function StatementsPage({
     .order('account_type')
     .order('account_code');
 
-  // ── Fund Balances ────────────────────────────────────────────
+  // â”€â”€ Fund Balances â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: fundBalances } = await service
     .from('fund_balances_view')
     .select('fund_code, fund_name, fund_type, restriction_level, current_balance, total_debits, total_credits, currency')
     .eq('organization_id', orgId)
     .order('fund_code');
 
-  // ── Programme/Admin breakdown ────────────────────────────────
+  // â”€â”€ Programme/Admin breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: breakdown } = await service
     .from('programme_admin_breakdown_view')
     .select('cost_category, total_amount')
     .eq('organization_id', orgId)
     .eq('period_year', selectedYear);
 
-  // ── Period close history ─────────────────────────────────────
+  // â”€â”€ Period close history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: closes } = await service
     .from('fund_period_closes')
     .select('period_year, period_month, closed_at, total_income, total_expense, net_movement, notes')
@@ -103,7 +110,7 @@ export default async function StatementsPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Financial statements</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}
@@ -118,7 +125,7 @@ export default async function StatementsPage({
         </div>
       </div>
 
-      {/* ── Statement of Activities ── */}
+      {/* â”€â”€ Statement of Activities â”€â”€ */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700">Statement of Activities — {selectedYear}</h2>
@@ -185,13 +192,13 @@ export default async function StatementsPage({
           <div className={`flex items-center justify-between px-4 py-3 ${netMovement >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
             <span className="text-[12px] font-bold text-gray-800">Net movement for {selectedYear}</span>
             <span className={`text-[14px] font-bold ${netMovement >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-              {netMovement >= 0 ? '+' : '−'}{fmt(netMovement)}
+              {netMovement >= 0 ? '+' : 'âˆ’'}{fmt(netMovement)}
             </span>
           </div>
         </div>
       </section>
 
-      {/* ── Programme/Admin breakdown (CTCF L2) ── */}
+      {/* â”€â”€ Programme/Admin breakdown (CTCF L2) â”€â”€ */}
       {(Number(programmeAmt) > 0 || Number(adminAmt) > 0) && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
@@ -224,14 +231,14 @@ export default async function StatementsPage({
               </div>
             )}
             <p className="text-[10px] text-gray-400">
-              Programme ratio ≥ 70% is considered strong. CTCF reviewers assess this criterion
+              Programme ratio â‰¥ 70% is considered strong. CTCF reviewers assess this criterion
               when evaluating Layer 2 financial transparency.
             </p>
           </div>
         </section>
       )}
 
-      {/* ── Fund Balance Report ── */}
+      {/* â”€â”€ Fund Balance Report â”€â”€ */}
       {fundBalances && fundBalances.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Fund balance report</h2>
@@ -268,7 +275,7 @@ export default async function StatementsPage({
         </section>
       )}
 
-      {/* ── Period close history ── */}
+      {/* â”€â”€ Period close history â”€â”€ */}
       {closes && closes.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Period close history</h2>
@@ -282,7 +289,7 @@ export default async function StatementsPage({
                   </p>
                   <p className="text-[10px] text-gray-400 mt-0.5">
                     Closed {new Date(String(c.closed_at)).toLocaleDateString('en-MY')}
-                    {c.notes && ` · ${c.notes}`}
+                    {c.notes && ` Â· ${c.notes}`}
                   </p>
                 </div>
                 <div className="text-right">
@@ -311,3 +318,4 @@ export default async function StatementsPage({
     </div>
   );
 }
+

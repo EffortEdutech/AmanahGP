@@ -1,10 +1,17 @@
-// apps/org/app/(protected)/reports/page.tsx
+﻿// apps/org/app/(protected)/reports/page.tsx
 // amanahOS — Reports (Sprint 25 — full create/submit, no Console link)
 
 import { redirect }            from 'next/navigation';
 import Link                    from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Reports — amanahOS' };
 
@@ -113,7 +120,7 @@ export default async function ReportsPage({
       </div>
 
       <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2.5 flex items-center gap-2">
-        <span className="text-blue-500 text-sm flex-shrink-0">ℹ</span>
+        <span className="text-blue-500 text-sm flex-shrink-0">â„¹</span>
         <p className="text-[11px] text-blue-700">
           Submit reports here. A platform reviewer will verify them — verified reports
           count toward your <strong>CTCF Layer 3</strong> certification score.
@@ -124,7 +131,7 @@ export default async function ReportsPage({
       {reports && reports.length > 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
           {reports.map((report) => {
-            const project = report.projects as { id: string; title: string } | null;
+            const project = relationOne<{ id: string; title: string }>(report.projects);
             const sc  = SUBMIT_CONFIG[report.submission_status] ?? SUBMIT_CONFIG.draft;
             const vc  = VERIFY_COLOR[report.verification_status] ?? VERIFY_COLOR.pending;
             return (
@@ -161,7 +168,7 @@ export default async function ReportsPage({
         </div>
       ) : (
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <p className="text-2xl mb-2">✎</p>
+          <p className="text-2xl mb-2">âœŽ</p>
           <p className="text-sm font-medium text-gray-600">No reports yet</p>
           <p className="text-[12px] text-gray-400 mt-1 max-w-xs mx-auto">
             Progress reports document your programme activities and beneficiary impact.
@@ -182,3 +189,4 @@ export default async function ReportsPage({
 }
 
 const SUBMIT_CONFIG = SUBMIT_COLOR;
+

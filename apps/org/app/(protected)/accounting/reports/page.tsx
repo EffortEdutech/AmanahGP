@@ -1,10 +1,17 @@
-// apps/org/app/(protected)/accounting/reports/page.tsx
+﻿// apps/org/app/(protected)/accounting/reports/page.tsx
 // amanahOS — Financial Reports Hub
 // Links to all 6 Islamic nonprofit financial reports.
 
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Reports — amanahOS' };
 
@@ -21,7 +28,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/statement-of-activities',
-    icon:     '≡',
+    icon:     'â‰¡',
     label:    'Statement of Activities',
     sub:      'Income & expenditure — programme vs admin ratio',
     badge:    null,
@@ -31,7 +38,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/fund-changes',
-    icon:     '◎',
+    icon:     'â—Ž',
     label:    'Statement of Changes in Funds',
     sub:      'How each fund moved — opening → income → expenses → closing',
     badge:    null,
@@ -41,7 +48,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/zakat-utilisation',
-    icon:     '★',
+    icon:     'â˜…',
     label:    'Zakat Utilisation Report',
     sub:      'Zakat received, distributed, balance — MAIN/JAKIM ready',
     badge:    'Signature',
@@ -51,7 +58,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/cash-flow',
-    icon:     '⇄',
+    icon:     'â‡„',
     label:    'Statement of Cash Flow',
     sub:      'Cash movements — bank accounts 1101–1140',
     badge:    null,
@@ -88,14 +95,14 @@ export default async function ReportsPage() {
     .order('created_at', { ascending: true }).limit(1).single();
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
-  const org = membership.organizations as { name: string } | null;
+  const org = relationOne<{ name: string }>(membership.organizations);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Financial reports</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} · Auto-generated from your journal entries
+          {org?.name} Â· Auto-generated from your journal entries
         </p>
       </div>
 
@@ -139,3 +146,4 @@ export default async function ReportsPage() {
     </div>
   );
 }
+

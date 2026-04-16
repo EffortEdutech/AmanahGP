@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/policy-kit/page.tsx
+﻿// apps/org/app/(protected)/policy-kit/page.tsx
 // amanahOS — Policy Kit
 // Sprint 22
 //
@@ -11,6 +11,13 @@ import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PolicyCard }          from '@/components/policy-kit/policy-card';
 import { POLICY_TEMPLATES }    from '@/lib/policy-templates';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Policy kit — amanahOS' };
 
@@ -34,7 +41,7 @@ export default async function PolicyKitPage() {
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId     = membership.organization_id;
-  const org       = membership.organizations as { id: string; name: string; fund_types: string[] } | null;
+  const org       = relationOne<{ id: string; name: string; fund_types: string[] }>(membership.organizations);
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
   const fundTypes = org?.fund_types ?? [];
 
@@ -79,7 +86,7 @@ export default async function PolicyKitPage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Governance Policy Kit</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} · Auditors always ask for policies. Most orgs have none. Upload yours.
+          {org?.name} Â· Auditors always ask for policies. Most orgs have none. Upload yours.
         </p>
       </div>
 
@@ -121,7 +128,7 @@ export default async function PolicyKitPage() {
           : 'border-amber-200 bg-amber-50'
       }`}>
         <div className="flex items-start gap-3">
-          <span className="text-lg flex-shrink-0">{hasCOI ? '✓' : '⚠'}</span>
+          <span className="text-lg flex-shrink-0">{hasCOI ? '✓' : 'âš '}</span>
           <div>
             <p className={`text-[12px] font-semibold ${hasCOI ? 'text-emerald-800' : 'text-amber-800'}`}>
               CTCF Layer 1 Gate — {hasCOI ? 'Conflict of Interest Policy uploaded ✓' : 'Conflict of Interest Policy required'}
@@ -139,7 +146,7 @@ export default async function PolicyKitPage() {
       {/* Trust event note */}
       {isManager && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
-          <span className="text-blue-500 flex-shrink-0">▲</span>
+          <span className="text-blue-500 flex-shrink-0">â–²</span>
           <p className="text-[11px] text-blue-800">
             Each uploaded policy emits a <strong>gov_policy_uploaded</strong> trust event
             (+15 Governance). These are idempotent — uploading the same policy type again
@@ -194,3 +201,4 @@ export default async function PolicyKitPage() {
     </div>
   );
 }
+

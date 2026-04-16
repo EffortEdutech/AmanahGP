@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/page.tsx
+﻿// apps/org/app/(protected)/accounting/page.tsx
 // amanahOS — Fund Accounting Dashboard (Sprint 16 update)
 // Adds: Statements link, Close period link, expense cost_category display
 
@@ -8,6 +8,27 @@ import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { QuickEntryForm }      from '@/components/accounting/quick-entry-form';
 import { MonthYearPicker }     from '@/components/ui/month-year-picker';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+function relationMany<T extends Record<string, unknown>>(
+  value: unknown,
+  nestedOneKeys: (keyof T)[] = []
+): T[] {
+  const rows = Array.isArray(value) ? value : value ? [value] : [];
+  return rows.map((row) => {
+    const obj = { ...(row as Record<string, unknown>) };
+    for (const key of nestedOneKeys) {
+      obj[key as string] = relationOne(obj[key as string]);
+    }
+    return obj as T;
+  });
+}
+
+
 
 export const metadata = { title: 'Accounting — amanahOS' };
 
@@ -36,7 +57,7 @@ export default async function AccountingPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId      = membership.organization_id;
-  const org        = membership.organizations as { id: string; name: string; fund_types: string[] } | null;
+  const org        = relationOne<{ id: string; name: string; fund_types: string[] }>(membership.organizations);
   const isManager  = ['org_admin', 'org_manager'].includes(membership.org_role);
   const currentYear = new Date().getFullYear();
   const selectedYear = parseInt(params.year ?? String(currentYear));
@@ -92,7 +113,7 @@ export default async function AccountingPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Fund accounting</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}
@@ -106,7 +127,7 @@ export default async function AccountingPage({
           <div className="flex items-center gap-2">
             <span className="text-emerald-600 text-sm">✓</span>
             <p className="text-[12px] font-medium text-emerald-800">
-              Year {selectedYear} is closed · {new Date(String(yearClose.closed_at)).toLocaleDateString('en-MY')}
+              Year {selectedYear} is closed Â· {new Date(String(yearClose.closed_at)).toLocaleDateString('en-MY')}
             </p>
           </div>
           <a href="/accounting/statements"
@@ -121,20 +142,20 @@ export default async function AccountingPage({
         <Link href="/accounting/statements"
           className="rounded-lg border border-gray-200 bg-white p-4 hover:border-emerald-300
                      hover:shadow-sm transition-all flex items-center gap-3">
-          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">≡</div>
+          <div className="w-8 h-8 rounded-md bg-blue-50 flex items-center justify-center text-blue-600 flex-shrink-0">â‰¡</div>
           <div>
             <p className="text-[12px] font-semibold text-gray-800">Financial statements</p>
-            <p className="text-[10px] text-gray-400">Statement of Activities · Fund Balance</p>
+            <p className="text-[10px] text-gray-400">Statement of Activities Â· Fund Balance</p>
           </div>
         </Link>
         {isManager && !yearClose && (
           <Link href="/accounting/close"
             className="rounded-lg border border-gray-200 bg-white p-4 hover:border-emerald-300
                        hover:shadow-sm transition-all flex items-center gap-3">
-            <div className="w-8 h-8 rounded-md bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">⊠</div>
+            <div className="w-8 h-8 rounded-md bg-amber-50 flex items-center justify-center text-amber-600 flex-shrink-0">âŠ </div>
             <div>
               <p className="text-[12px] font-semibold text-gray-800">Close period</p>
-              <p className="text-[10px] text-gray-400">Lock entries · Generate CTCF Layer 2 data</p>
+              <p className="text-[10px] text-gray-400">Lock entries Â· Generate CTCF Layer 2 data</p>
             </div>
           </Link>
         )}
@@ -145,7 +166,7 @@ export default async function AccountingPage({
         <SummaryCard label="Total income"   value={periodIncome}  color="emerald" />
         <SummaryCard label="Total expenses" value={periodExpense} color="red" />
         <SummaryCard label="Net movement"   value={periodNet}
-          color={periodNet >= 0 ? 'emerald' : 'red'} prefix={periodNet >= 0 ? '+' : '−'} />
+          color={periodNet >= 0 ? 'emerald' : 'red'} prefix={periodNet >= 0 ? '+' : 'âˆ’'} />
       </div>
 
       {/* Fund balances */}
@@ -205,7 +226,7 @@ export default async function AccountingPage({
           <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
             {recentEntries.map((entry) => {
               type Line = { fund_id: string; debit_amount: number; credit_amount: number; funds: { fund_code: string } | null };
-              const lines  = (entry.journal_lines as Line[]) ?? [];
+              const lines  = relationMany<Line>(entry.journal_lines, ['funds']);
               const totalIn  = lines.reduce((s, l) => s + Number(l.credit_amount), 0);
               const totalOut = lines.reduce((s, l) => s + Number(l.debit_amount),  0);
               const fundCodes = [...new Set(lines.map((l) => l.funds?.fund_code).filter(Boolean))].join(', ');
@@ -215,7 +236,7 @@ export default async function AccountingPage({
                     <p className="text-[12px] font-medium text-gray-800 truncate">{entry.description}</p>
                     <div className="flex items-center gap-2 mt-0.5 flex-wrap">
                       <span className="text-[10px] text-gray-400">{entry.entry_date}</span>
-                      {entry.reference_no && <span className="text-[10px] text-gray-400">· {entry.reference_no}</span>}
+                      {entry.reference_no && <span className="text-[10px] text-gray-400">Â· {entry.reference_no}</span>}
                       {fundCodes && (
                         <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-medium">
                           {fundCodes}
@@ -228,7 +249,7 @@ export default async function AccountingPage({
                   </div>
                   <div className="text-right flex-shrink-0">
                     {totalIn  > 0 && <p className="text-[12px] font-semibold text-emerald-700">+{fmt(totalIn)}</p>}
-                    {totalOut > 0 && <p className="text-[12px] font-semibold text-red-600">−{fmt(totalOut)}</p>}
+                    {totalOut > 0 && <p className="text-[12px] font-semibold text-red-600">âˆ’{fmt(totalOut)}</p>}
                   </div>
                 </div>
               );
@@ -270,3 +291,5 @@ function SummaryCard({ label, value, color, prefix }: {
     </div>
   );
 }
+
+

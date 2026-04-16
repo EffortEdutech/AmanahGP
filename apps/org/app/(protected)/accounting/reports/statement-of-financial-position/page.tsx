@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/reports/statement-of-financial-position/page.tsx
+﻿// apps/org/app/(protected)/accounting/reports/statement-of-financial-position/page.tsx
 // amanahOS — Statement of Financial Position (Balance Sheet for NGOs)
 // Assets = Liabilities + Fund Balances. Auto-validates balance.
 // Formula from amanah_gp_OS.md design.
@@ -6,6 +6,13 @@
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Statement of Financial Position — amanahOS' };
 
@@ -27,7 +34,7 @@ export default async function SoFPPage() {
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId = membership.organization_id;
-  const org   = membership.organizations as { name: string } | null;
+  const org   = relationOne<{ name: string }>(membership.organizations);
   const today = new Date().toISOString().split('T')[0];
 
   // Load all account balances from the SoFP view
@@ -85,7 +92,7 @@ export default async function SoFPPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Statement of Financial Position</h1>
-        <p className="text-sm text-gray-500 mt-0.5">As at {today} · {org?.name}</p>
+        <p className="text-sm text-gray-500 mt-0.5">As at {today} Â· {org?.name}</p>
       </div>
 
       {/* Balance check banner */}
@@ -191,3 +198,4 @@ function TotalRow({ label, amount, bold }: { label: string; amount: number; bold
     </div>
   );
 }
+

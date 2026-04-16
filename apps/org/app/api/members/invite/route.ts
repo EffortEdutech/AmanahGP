@@ -3,6 +3,13 @@
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { NextRequest, NextResponse } from 'next/server';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -42,7 +49,7 @@ export async function POST(request: NextRequest) {
     .select('id, users(email)')
     .eq('organization_id', orgId).eq('status', 'active').limit(50);
   const alreadyMember = (existingMember ?? []).some(
-    (m) => (m.users as { email: string } | null)?.email?.toLowerCase() === email.toLowerCase()
+    (m) => relationOne<{ email: string }>(m.users)?.email?.toLowerCase() === email.toLowerCase()
   );
   if (alreadyMember) return NextResponse.json({ error: 'This person is already a member of your organisation.' }, { status: 400 });
 

@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/certification/page.tsx
+﻿// apps/org/app/(protected)/certification/page.tsx
 // amanahOS — Certification Application (Sprint 23)
 //
 // The org-facing certification journey:
@@ -14,6 +14,13 @@ import Link                    from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { CertificationApplyForm } from '@/components/org/certification-apply-form';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Certification — amanahOS' };
 
@@ -51,14 +58,14 @@ export default async function CertificationPage() {
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId     = membership.organization_id;
-  const org       = membership.organizations as {
+  const org       = relationOne<{
     id: string; name: string; registration_no: string | null;
     address_text: string | null; contact_email: string | null;
     fund_types: string[]; onboarding_status: string;
-  } | null;
+  }>(membership.organizations);
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
-  // ── Load all data in parallel ──────────────────────────────
+  // â”€â”€ Load all data in parallel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [
     latestScoreResult,
     bankCountResult,
@@ -138,7 +145,7 @@ export default async function CertificationPage() {
   const latestCert = history[0] ?? null;
   const isCertified = latestCert?.new_status === 'certified';
 
-  // ── Readiness checks ──────────────────────────────────────
+  // â”€â”€ Readiness checks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const checks = [
     {
       id: 'profile',
@@ -164,7 +171,7 @@ export default async function CertificationPage() {
     {
       id: 'team',
       label: 'At least 2 team members',
-      detail: 'Segregation of duties (Layer 1 governance gate) requires ≥ 2 people.',
+      detail: 'Segregation of duties (Layer 1 governance gate) requires â‰¥ 2 people.',
       ok: memberCount >= 2,
       href: '/members',
     },
@@ -223,14 +230,14 @@ export default async function CertificationPage() {
           CTCF Certification
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Charity Transparency Certification Framework · {org?.name}
+          Charity Transparency Certification Framework Â· {org?.name}
         </p>
       </div>
 
       {/* Current certification status */}
       {isCertified && (
         <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-6 text-center space-y-2">
-          <p className="text-4xl">🏆</p>
+          <p className="text-4xl">ðŸ†</p>
           <p className="text-lg font-bold text-emerald-800">Certified Organisation</p>
           <p className="text-[12px] text-emerald-700">
             Valid from {latestCert.valid_from}
@@ -325,9 +332,9 @@ export default async function CertificationPage() {
           </p>
         </div>
         <div className="text-right text-[11px] text-gray-500 space-y-1">
-          <p>≥55 → Silver certification</p>
-          <p>≥70 → Gold certification</p>
-          <p>≥85 → Platinum certification</p>
+          <p>â‰¥55 → Silver certification</p>
+          <p>â‰¥70 → Gold certification</p>
+          <p>â‰¥85 → Platinum certification</p>
         </div>
       </div>
 
@@ -429,9 +436,10 @@ export default async function CertificationPage() {
           ))}
         </div>
         <p className="text-[10px] text-gray-400">
-          Certification threshold: ≥55/100 (Silver). Layer 2 minimum: ≥10/20.
+          Certification threshold: â‰¥55/100 (Silver). Layer 2 minimum: â‰¥10/20.
         </p>
       </div>
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/close/page.tsx
+﻿// apps/org/app/(protected)/accounting/close/page.tsx
 // amanahOS — Monthly Close Workflow (Sprint 19 patch — fixed bank recon gate)
 //
 // FIX: allBankReconciled gate now correctly passes when no bank accounts
@@ -48,9 +48,7 @@ export default async function MonthClosePage({
 
   const orgId     = membership.organization_id;
   const orgRaw = membership.organizations;
-  const org = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as
-    | { id: string; name: string; fund_types: string[] }
-    | null;
+  const org = relationOne<{ id: string; name: string; fund_types: string[] }>(orgRaw);
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
   const now         = new Date();
@@ -69,7 +67,7 @@ export default async function MonthClosePage({
 
   const isAlreadyClosed = !!existingClose;
 
-  // ── PHASE 1: Collect ────────────────────────────────────────
+  // â”€â”€ PHASE 1: Collect â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { count: totalEntries } = await service
     .from('journal_entries')
     .select('*', { count: 'exact', head: true })
@@ -85,7 +83,7 @@ export default async function MonthClosePage({
     .eq('period_month', targetMonth)
     .eq('is_locked', false);
 
-  // ── PHASE 2: Reconcile ──────────────────────────────────────
+  // â”€â”€ PHASE 2: Reconcile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: bankAccounts } = await service
     .from('bank_accounts')
     .select('id, account_name, account_type, fund_type')
@@ -113,7 +111,7 @@ export default async function MonthClosePage({
   const anyDiscrepancy = bankReconStatus.some((b)  => b.status === 'discrepancy');
   const hasNoBankAccts = bankReconStatus.length === 0;
 
-  // ── PHASE 3: Governance controls ────────────────────────────
+  // â”€â”€ PHASE 3: Governance controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const LARGE_THRESHOLD = 5000;
   const { data: largeLines } = await service
     .from('journal_lines')
@@ -176,7 +174,7 @@ export default async function MonthClosePage({
     .order('period_month', { ascending: false })
     .limit(6);
 
-  // ── Gate evaluation ─────────────────────────────────────────
+  // â”€â”€ Gate evaluation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   // FIX: hasNoBankAccts = pass (N/A). anyDiscrepancy = hard block.
   const gates = {
     hasTransactions:  (totalEntries ?? 0) > 0,
@@ -196,7 +194,7 @@ export default async function MonthClosePage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Month close</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {monthName} {targetYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· {monthName} {targetYear}</p>
         </div>
         <MonthYearPicker
           selectedYear={targetYear}
@@ -208,7 +206,7 @@ export default async function MonthClosePage({
       {/* Trust event note */}
       {!isAlreadyClosed && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-3">
-          <span className="text-emerald-500 text-lg">▲</span>
+          <span className="text-emerald-500 text-lg">â–²</span>
           <p className="text-[11px] text-emerald-800">
             Closing this period emits a <strong>fi_period_closed</strong> trust event (+8 pts Financial Integrity)
             and immediately updates your Amanah Trust Score.
@@ -226,8 +224,8 @@ export default async function MonthClosePage({
                 {monthName} {targetYear} is closed
               </p>
               <p className="text-[10px] text-emerald-700">
-                Closed {new Date(existingClose.closed_at).toLocaleDateString('en-MY')} ·
-                In: {fmt(Number(existingClose.total_income))} ·
+                Closed {new Date(existingClose.closed_at).toLocaleDateString('en-MY')} Â·
+                In: {fmt(Number(existingClose.total_income))} Â·
                 Out: {fmt(Number(existingClose.total_expense))}
               </p>
             </div>
@@ -238,7 +236,7 @@ export default async function MonthClosePage({
         </div>
       )}
 
-      {/* ── Phase 1: Collect ─── */}
+      {/* â”€â”€ Phase 1: Collect â”€â”€â”€ */}
       <PhaseCard number={1} title="Collect transactions"
         description="All income and expenses for this month recorded in the ledger."
         passed={gates.hasTransactions}>
@@ -259,9 +257,9 @@ export default async function MonthClosePage({
         </a>
       </PhaseCard>
 
-      {/* ── Phase 2: Reconcile ─── */}
+      {/* â”€â”€ Phase 2: Reconcile â”€â”€â”€ */}
       <PhaseCard number={2} title="Bank reconciliation"
-        description="Bank accounts matched to statements. Month is blocked if any account shows 🔴 discrepancy."
+        description="Bank accounts matched to statements. Month is blocked if any account shows ðŸ”´ discrepancy."
         passed={gates.bankReconOk}>
 
         {hasNoBankAccts ? (
@@ -285,9 +283,9 @@ export default async function MonthClosePage({
                 }`}>
                 <div className="flex items-center gap-3">
                   <span className="text-lg">
-                    {ba.status === 'reconciled'  ? '🟢' :
-                     ba.status === 'discrepancy' ? '🔴' :
-                     ba.status === 'in_progress' ? '🟡' : '⚪'}
+                    {ba.status === 'reconciled'  ? 'ðŸŸ¢' :
+                     ba.status === 'discrepancy' ? 'ðŸ”´' :
+                     ba.status === 'in_progress' ? 'ðŸŸ¡' : 'âšª'}
                   </span>
                   <div>
                     <p className="text-[12px] font-medium text-gray-800">{ba.name}</p>
@@ -309,13 +307,13 @@ export default async function MonthClosePage({
         {anyDiscrepancy && (
           <div className="mt-2 rounded-md bg-red-50 border border-red-200 p-3">
             <p className="text-[11px] font-semibold text-red-800">
-              🔴 Discrepancy — month close is blocked until resolved
+              ðŸ”´ Discrepancy — month close is blocked until resolved
             </p>
           </div>
         )}
       </PhaseCard>
 
-      {/* ── Phase 3: Governance ─── */}
+      {/* â”€â”€ Phase 3: Governance â”€â”€â”€ */}
       <PhaseCard number={3} title="Governance review"
         description="Internal control checks — Shariah compliance, fund integrity."
         passed={gates.fundsSetup && gates.noZakatViolation}>
@@ -334,7 +332,7 @@ export default async function MonthClosePage({
         </div>
       </PhaseCard>
 
-      {/* ── Phase 4: Close ─── */}
+      {/* â”€â”€ Phase 4: Close â”€â”€â”€ */}
       {!isAlreadyClosed && isManager && (
         <PhaseCard number={4} title="Lock & close period"
           description="Locks all journal entries. Creates financial snapshot. Emits trust event."
@@ -376,7 +374,7 @@ export default async function MonthClosePage({
         <PhaseCard number={5} title="Monthly governance pack" description="Reports available." passed={true}>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { href: '/trust', label: '▲  Trust score — see your event' },
+              { href: '/trust', label: 'â–²  Trust score — see your event' },
               { href: '/accounting/reports/statement-of-activities', label: 'Statement of Activities' },
               { href: '/accounting/reports/statement-of-financial-position', label: 'Financial Position' },
               { href: '/accounting/reports/zakat-utilisation', label: 'Zakat Utilisation' },
@@ -423,7 +421,7 @@ export default async function MonthClosePage({
   );
 }
 
-/* ── Sub-components ─────────────────────────────────────────── */
+/* â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function PhaseCard({ number, title, description, passed, children }: {
   number: number; title: string; description: string; passed: boolean;
@@ -470,7 +468,7 @@ function ControlRow({ label, ok, detail, warning }: {
       'bg-gray-50 border border-gray-100'
     }`}>
       <span className="text-sm flex-shrink-0 mt-0.5">
-        {!ok ? '🔴' : warning ? '🟡' : '🟢'}
+        {!ok ? 'ðŸ”´' : warning ? 'ðŸŸ¡' : 'ðŸŸ¢'}
       </span>
       <div>
         <p className="text-[12px] font-medium text-gray-800">{label}</p>
@@ -479,3 +477,4 @@ function ControlRow({ label, ok, detail, warning }: {
     </div>
   );
 }
+

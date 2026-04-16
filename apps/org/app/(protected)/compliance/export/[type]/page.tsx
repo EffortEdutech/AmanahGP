@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/compliance/export/[type]/page.tsx
+﻿// apps/org/app/(protected)/compliance/export/[type]/page.tsx
 // amanahOS — Compliance Export Page (Sprint 26)
 //
 // Server-rendered print-optimized page for each compliance pack.
@@ -11,6 +11,13 @@ import { redirect, notFound }  from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PrintButton }         from '@/components/compliance/print-button';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Export report — amanahOS' };
 
@@ -61,7 +68,7 @@ export default async function ComplianceExportPage({
   const dateStr = now.toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' });
   const yearStr = String(now.getFullYear());
 
-  // ── Load all data in parallel ──────────────────────────────
+  // â”€â”€ Load all data in parallel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const [
     membersResult,
     closesResult,
@@ -239,12 +246,12 @@ export default async function ComplianceExportPage({
               <div>
                 <p className="sub">Amanah Governance Platform</p>
                 <h1>{pack.title}</h1>
-                <p className="org-detail">{org?.name} · {dateStr}</p>
+                <p className="org-detail">{org?.name} Â· {dateStr}</p>
               </div>
               <div style={{ textAlign: 'right' }}>
                 {latestCert?.new_status === 'certified' && (
                   <span className="badge" style={{ background: '#a7f3d0', color: '#064e3b', fontSize: '8.5pt' }}>
-                    ★ CTCF Certified
+                    â˜… CTCF Certified
                   </span>
                 )}
                 {score && (
@@ -256,7 +263,7 @@ export default async function ComplianceExportPage({
             </div>
           </div>
 
-          {/* ── Section 1: Organisation Profile ── */}
+          {/* â”€â”€ Section 1: Organisation Profile â”€â”€ */}
           <h2>1. Organisation Profile</h2>
           <table>
             <tbody>
@@ -288,7 +295,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* ── Section 2: Committee / Members ── */}
+          {/* â”€â”€ Section 2: Committee / Members â”€â”€ */}
           <h2>2. Committee Members</h2>
           {members.length > 0 ? (
             <table>
@@ -297,7 +304,7 @@ export default async function ComplianceExportPage({
               </thead>
               <tbody>
                 {members.map((m, i) => {
-                  const u = m.users as { display_name: string | null; email: string } | null;
+                  const u = relationOne<{ display_name: string | null; email: string }>(m.users);
                   return (
                     <tr key={i}>
                       <td>{u?.display_name ?? '—'}</td>
@@ -310,7 +317,7 @@ export default async function ComplianceExportPage({
             </table>
           ) : <p>No active members recorded.</p>}
 
-          {/* ── Section 3: Financial Summary ── */}
+          {/* â”€â”€ Section 3: Financial Summary â”€â”€ */}
           <h2>3. Financial Summary — {yearStr}</h2>
 
           {closes.length > 0 ? (
@@ -363,7 +370,7 @@ export default async function ComplianceExportPage({
             </p>
           )}
 
-          {/* ── Zakat section — MAIN pack only ── */}
+          {/* â”€â”€ Zakat section — MAIN pack only â”€â”€ */}
           {type === 'main' && hasZakat && (
             <>
               <div className="page-break" />
@@ -396,7 +403,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* ── Waqf section ── */}
+          {/* â”€â”€ Waqf section â”€â”€ */}
           {type === 'main' && hasWaqf && (
             <>
               <h2>{hasZakat ? '5.' : '4.'} Waqf Assets — Summary</h2>
@@ -421,7 +428,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* ── Section: Programmes / Activity Report ── */}
+          {/* â”€â”€ Section: Programmes / Activity Report â”€â”€ */}
           <div className="page-break" />
           <h2>{type === 'main' ? (hasZakat || hasWaqf ? '6.' : '4.') : type === 'donor' ? '4.' : '4.'} Programme Activity</h2>
 
@@ -453,7 +460,7 @@ export default async function ComplianceExportPage({
                 </thead>
                 <tbody>
                   {reports.map((r, i) => {
-                    const b = r.report_body as { beneficiaries_reached?: number } | null;
+                    const b = relationOne<{ beneficiaries_reached?: number }>(r.report_body);
                     const vc = r.verification_status;
                     return (
                       <tr key={i}>
@@ -473,7 +480,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* ── Section: Governance & Compliance ── */}
+          {/* â”€â”€ Section: Governance & Compliance â”€â”€ */}
           <h2>5. Governance &amp; Compliance</h2>
 
           <h3>Policies on file</h3>
@@ -521,7 +528,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* ── Declaration ── */}
+          {/* â”€â”€ Declaration â”€â”€ */}
           <div className="page-break" />
           <h2>6. Declaration</h2>
           <p>
@@ -551,8 +558,8 @@ export default async function ComplianceExportPage({
 
           {/* Watermark */}
           <div className="watermark">
-            Generated by Amanah Governance Platform · {dateStr} ·
-            This document is auto-generated from verified operational data. ·
+            Generated by Amanah Governance Platform Â· {dateStr} Â·
+            This document is auto-generated from verified operational data. Â·
             amanahgp.com
           </div>
         </div>
@@ -560,3 +567,4 @@ export default async function ComplianceExportPage({
     </>
   );
 }
+

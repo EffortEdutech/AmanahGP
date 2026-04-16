@@ -1,10 +1,17 @@
-// apps/org/app/(protected)/accounting/reports/cash-flow/page.tsx
+﻿// apps/org/app/(protected)/accounting/reports/cash-flow/page.tsx
 // Cash Flow derived from bank accounts 1101–1140 per amanah_gp_OS.md design.
 
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { MonthYearPicker }     from '@/components/ui/month-year-picker';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Cash flow — amanahOS' };
 
@@ -33,7 +40,7 @@ export default async function CashFlowPage({
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId        = membership.organization_id;
-  const org          = membership.organizations as { name: string } | null;
+  const org          = relationOne<{ name: string }>(membership.organizations);
   const currentYear  = new Date().getFullYear();
   const selectedYear = parseInt(params.year ?? String(currentYear));
 
@@ -58,7 +65,7 @@ export default async function CashFlowPage({
   let yearOutflows = 0;
 
   for (const line of (openingLines ?? [])) {
-    const je = line.journal_entries as { period_year: number } | null;
+    const je = relationOne<{ period_year: number }>(line.journal_entries);
     const net = Number(line.debit_amount) - Number(line.credit_amount);
     if (je && je.period_year < selectedYear) {
       openingCash += net;
@@ -94,7 +101,7 @@ export default async function CashFlowPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Statement of Cash Flow</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · Year {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· Year {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}
@@ -125,7 +132,7 @@ export default async function CashFlowPage({
           </div>
           <div className="flex items-center justify-between py-3 border-b border-gray-200">
             <span className="text-[12px] text-gray-700">Less: Cash outflows (expenses, payments made)</span>
-            <span className="text-[13px] font-semibold text-red-600">−{fmt(yearOutflows)}</span>
+            <span className="text-[13px] font-semibold text-red-600">âˆ’{fmt(yearOutflows)}</span>
           </div>
 
           <div className={`flex items-center justify-between py-3 border-b border-gray-200 ${
@@ -133,7 +140,7 @@ export default async function CashFlowPage({
           }`}>
             <span className="text-[12px] font-semibold text-gray-800">Net cash movement</span>
             <span className={`text-[13px] font-bold ${netChange >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-              {netChange >= 0 ? '+' : '−'}{fmt(netChange)}
+              {netChange >= 0 ? '+' : 'âˆ’'}{fmt(netChange)}
             </span>
           </div>
 
@@ -169,3 +176,4 @@ export default async function CashFlowPage({
     </div>
   );
 }
+

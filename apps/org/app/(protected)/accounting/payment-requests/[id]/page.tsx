@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/payment-requests/[id]/page.tsx
+﻿// apps/org/app/(protected)/accounting/payment-requests/[id]/page.tsx
 // amanahOS — Payment Request Detail
 // Full approval workflow: Review → Approve/Reject → Pay
 // Segregation of Duties enforced throughout.
@@ -7,6 +7,13 @@ import { redirect, notFound } from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { PaymentRequestActions } from '@/components/accounting/payment-request-actions';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Payment request — amanahOS' };
 
@@ -92,10 +99,10 @@ export default async function PaymentRequestDetailPage({
   const reviewedBy  = (req as unknown as { reviewed_by: UserShape }).reviewed_by;
   const approvedBy  = (req as unknown as { approved_by: UserShape }).approved_by;
   const rejectedBy  = (req as unknown as { rejected_by: UserShape }).rejected_by;
-  const fund        = req.funds        as { fund_code: string; fund_name: string; fund_type: string; restriction_level: string } | null;
-  const acct        = req.accounts     as { account_code: string; account_name: string } | null;
-  const bankAcct    = req.bank_accounts as { account_name: string; bank_name: string | null } | null;
-  const project     = req.projects     as { title: string } | null;
+  const fund        = relationOne<{ fund_code: string; fund_name: string; fund_type: string; restriction_level: string }>(req.funds);
+  const acct        = relationOne<{ account_code: string; account_name: string }>(req.accounts);
+  const bankAcct    = relationOne<{ account_name: string; bank_name: string | null }>(req.bank_accounts);
+  const project     = relationOne<{ title: string }>(req.projects);
 
   return (
     <div className="p-6 max-w-4xl mx-auto space-y-6">
@@ -120,7 +127,7 @@ export default async function PaymentRequestDetailPage({
           </span>
           {req.is_large_transaction && (
             <span className="block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-              ⚠ Large transaction &gt; RM5,000
+              âš  Large transaction &gt; RM5,000
             </span>
           )}
         </div>
@@ -129,14 +136,14 @@ export default async function PaymentRequestDetailPage({
       {/* SoD warning */}
       {sodViolation && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-          <span className="text-red-500 text-lg flex-shrink-0">⚠</span>
+          <span className="text-red-500 text-lg flex-shrink-0">âš </span>
           <div>
             <p className="text-[12px] font-semibold text-red-800">
               Segregation of Duties — you cannot approve your own request
             </p>
             <p className="text-[11px] text-red-700 mt-0.5">
               You created this payment request. Another org_admin or org_manager must review and approve it.
-              Self-approval triggers a −15 Governance trust event.
+              Self-approval triggers a âˆ’15 Governance trust event.
             </p>
           </div>
         </div>
@@ -144,7 +151,7 @@ export default async function PaymentRequestDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-        {/* ── LEFT: Payment details ── */}
+        {/* â”€â”€ LEFT: Payment details â”€â”€ */}
         <div className="lg:col-span-2 space-y-5">
 
           {/* Details card */}
@@ -199,7 +206,7 @@ export default async function PaymentRequestDetailPage({
           )}
         </div>
 
-        {/* ── RIGHT: Fund balance + approval trail ── */}
+        {/* â”€â”€ RIGHT: Fund balance + approval trail â”€â”€ */}
         <div className="space-y-5">
 
           {/* Fund balance */}
@@ -228,7 +235,7 @@ export default async function PaymentRequestDetailPage({
               </p>
               {Number(req.amount) > Number(fundBalance.current_balance) && (
                 <p className="text-[11px] text-red-600 font-medium">
-                  ⚠ Payment exceeds current fund balance
+                  âš  Payment exceeds current fund balance
                 </p>
               )}
               <p className="text-[9px] text-gray-400 capitalize">
@@ -279,7 +286,7 @@ export default async function PaymentRequestDetailPage({
             <p className="text-[11px] font-semibold text-blue-800">Trust event on approval</p>
             <p className="text-[10px] text-blue-700 mt-1 leading-relaxed">
               Dual approval (different users): <strong>+4 Governance</strong><br />
-              Self-approval (same user): <strong>−15 Governance</strong>
+              Self-approval (same user): <strong>âˆ’15 Governance</strong>
             </p>
           </div>
         </div>
@@ -288,7 +295,7 @@ export default async function PaymentRequestDetailPage({
   );
 }
 
-/* ── Trail step component ──────────────────────────────────── */
+/* â”€â”€ Trail step component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function TrailStep({
   step, label, by, at, done, active, rejected, rejectedBy, rejectedAt,
 }: {
@@ -323,7 +330,7 @@ function TrailStep({
         {rejected && rejectedBy && (
           <p className="text-[10px] text-red-600">
             Rejected by {rejectedBy}
-            {rejectedAt && ` · ${new Date(rejectedAt).toLocaleDateString('en-MY')}`}
+            {rejectedAt && ` Â· ${new Date(rejectedAt).toLocaleDateString('en-MY')}`}
           </p>
         )}
         {active && !done && !rejected && (
@@ -333,3 +340,4 @@ function TrailStep({
     </div>
   );
 }
+

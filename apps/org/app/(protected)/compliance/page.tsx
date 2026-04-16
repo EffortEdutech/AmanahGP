@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/compliance/page.tsx
+﻿// apps/org/app/(protected)/compliance/page.tsx
 // amanahOS — Compliance Reports (Sprint 29 update — adds export buttons + audit package)
 //
 // Builds on Sprint 25's compliance page.
@@ -9,6 +9,13 @@ import Link                      from 'next/link';
 import { createClient }          from '@/lib/supabase/server';
 import { createServiceClient }   from '@/lib/supabase/service';
 import { AuditPackageButton }    from '@/components/compliance/audit-package-button';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Compliance — amanahOS' };
 
@@ -88,7 +95,7 @@ export default async function CompliancePage() {
   const hasCommittee    = memberCount >= 2;
 
   const latestClose      = (closesResult.data ?? [])[0];
-  const snapshotInputs   = snapshotResult.data?.inputs as Record<string, unknown> | null;
+  const snapshotInputs   = relationOne<Record<string, unknown>>(snapshotResult.data?.inputs);
   const totalIncome      = (closesResult.data ?? []).reduce((s, c) => s + Number(c.total_income),  0);
   const totalExpense     = (closesResult.data ?? []).reduce((s, c) => s + Number(c.total_expense), 0);
 
@@ -98,7 +105,7 @@ export default async function CompliancePage() {
   // Readiness items per pack
   const rosItems = [
     { label: 'Organisation profile complete', ok: hasProfile,    href: '/profile' },
-    { label: 'Committee list (≥2 members)',    ok: hasCommittee,  href: '/members' },
+    { label: 'Committee list (â‰¥2 members)',    ok: hasCommittee,  href: '/members' },
     { label: 'Financial period closed',        ok: closesCount > 0, href: '/accounting/close' },
     { label: 'Annual financial statement',     ok: hasSnapshot,   href: '/accounting/reports/statement-of-activities' },
     { label: 'Activity report (project)',       ok: projectCount > 0 && verifiedReports > 0, href: '/reports' },
@@ -131,7 +138,7 @@ export default async function CompliancePage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Compliance reports</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} · Auto-assembled from your accounting and governance data
+          {org?.name} Â· Auto-assembled from your accounting and governance data
         </p>
       </div>
 
@@ -169,7 +176,7 @@ export default async function CompliancePage() {
       <ReportPack
         title="ROS Annual Return"
         subtitle="For NGOs registered under Registrar of Societies (ROS)"
-        icon="🏛"
+        icon="ðŸ›"
         pct={rosPct}
         applicable={true}
         exportType="ros"
@@ -191,7 +198,7 @@ export default async function CompliancePage() {
       <ReportPack
         title="MAIN / JAKIM Reporting Pack"
         subtitle="For Zakat bodies, Waqf institutions, and mosque organisations"
-        icon="🌙"
+        icon="ðŸŒ™"
         pct={mainPct}
         applicable={isMAIN || hasZakat || hasWaqf}
         exportType="main"
@@ -210,7 +217,7 @@ export default async function CompliancePage() {
       <ReportPack
         title="Donor Transparency Report"
         subtitle="Annual transparency report for donors and grant applications"
-        icon="◎"
+        icon="â—Ž"
         pct={donorPct}
         applicable={true}
         exportType="donor"
@@ -232,7 +239,7 @@ export default async function CompliancePage() {
   );
 }
 
-/* ── Pack component ─────────────────────────────────────────── */
+/* â”€â”€ Pack component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 function ReportPack({ title, subtitle, icon, pct, applicable, notApplicableNote,
   exportType, items, reportLinks, financialSummary }: {
   title: string; subtitle: string; icon: string; pct: number;
@@ -265,7 +272,7 @@ function ReportPack({ title, subtitle, icon, pct, applicable, notApplicableNote,
                 className="inline-flex items-center gap-1 px-3 py-1 text-[10px] font-medium
                            border border-emerald-300 text-emerald-700 bg-emerald-50 rounded-lg
                            hover:bg-emerald-100 transition-colors">
-                ↗ Export PDF
+                â†— Export PDF
               </Link>
             )}
           </div>
@@ -289,7 +296,7 @@ function ReportPack({ title, subtitle, icon, pct, applicable, notApplicableNote,
               <div key={item.label} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className={`text-sm flex-shrink-0 ${item.ok ? 'text-emerald-500' : 'text-gray-300'}`}>
-                    {item.ok ? '✓' : '○'}
+                    {item.ok ? '✓' : 'â—‹'}
                   </span>
                   <p className={`text-[12px] ${item.ok ? 'text-gray-700' : 'text-gray-500'}`}>{item.label}</p>
                 </div>
@@ -333,3 +340,4 @@ function ReportPack({ title, subtitle, icon, pct, applicable, notApplicableNote,
     </div>
   );
 }
+

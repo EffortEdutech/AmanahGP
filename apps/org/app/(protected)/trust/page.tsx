@@ -1,19 +1,26 @@
-// apps/org/app/(protected)/trust/page.tsx
+﻿// apps/org/app/(protected)/trust/page.tsx
 // amanahOS — Trust Score Dashboard (Sprint 19 — Trust Event Engine)
 // Live Amanah Index v2, 5 pillar breakdown, event timeline, gamification.
 
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 
 export const metadata = { title: 'Trust score — amanahOS' };
 
-// ── Pillar config ──────────────────────────────────────────────
+// â”€â”€ Pillar config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const PILLARS = [
   {
     key:   'financial_integrity',
     label: 'Financial Integrity',
-    emoji: '🟢',
+    emoji: 'ðŸŸ¢',
     max:   300,
     color: 'emerald',
     tip:   'Close months on time, reconcile bank accounts, maintain fund segregation.',
@@ -21,7 +28,7 @@ const PILLARS = [
   {
     key:   'governance',
     label: 'Governance & Controls',
-    emoji: '🟡',
+    emoji: 'ðŸŸ¡',
     max:   200,
     color: 'amber',
     tip:   'Use dual approvals for payments, upload policies, document board meetings.',
@@ -29,7 +36,7 @@ const PILLARS = [
   {
     key:   'compliance',
     label: 'Compliance & Regulation',
-    emoji: '🔵',
+    emoji: 'ðŸ”µ',
     max:   200,
     color: 'blue',
     tip:   'Submit annual audit, file regulatory returns, complete Shariah review.',
@@ -37,7 +44,7 @@ const PILLARS = [
   {
     key:   'transparency',
     label: 'Transparency & Disclosure',
-    emoji: '🟣',
+    emoji: 'ðŸŸ£',
     max:   150,
     color: 'purple',
     tip:   'Publish financial statements, release annual reports, maintain public profile.',
@@ -45,14 +52,14 @@ const PILLARS = [
   {
     key:   'impact',
     label: 'Community & Impact',
-    emoji: '🟠',
+    emoji: 'ðŸŸ ',
     max:   150,
     color: 'orange',
     tip:   'Complete programmes, verify beneficiaries, upload impact reports.',
   },
 ] as const;
 
-// ── What-next recommendations (gamification) ──────────────────
+// â”€â”€ What-next recommendations (gamification) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const NEXT_ACTIONS = [
   { condition: (fi: number)  => fi <  60,
     action: 'Close this month\'s accounts',        points: '+8 pts',  pillar: 'financial_integrity', href: '/accounting/close' },
@@ -70,7 +77,7 @@ const NEXT_ACTIONS = [
     action: 'Upload a programme impact report',    points: '+10 pts', pillar: 'impact',              href: '/reports' },
 ];
 
-// ── Event display config ───────────────────────────────────────
+// â”€â”€ Event display config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const EVENT_DISPLAY: Record<string, { label: string; positive: boolean }> = {
   fi_period_closed:            { label: 'Financial period closed on time',        positive: true },
   fi_period_closed_late:       { label: 'Financial period closed late',           positive: false },
@@ -114,7 +121,7 @@ const EVENT_DISPLAY: Record<string, { label: string; positive: boolean }> = {
   complaint_resolved:          { label: 'Complaint resolved',                    positive: true },
 };
 
-// ── Grade config ───────────────────────────────────────────────
+// â”€â”€ Grade config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function getGrade(score: number) {
   if (score >= 85) return { label: 'Platinum',   color: 'text-slate-800',   bg: 'bg-slate-100  border-slate-300',  ring: 'ring-slate-400'  };
   if (score >= 70) return { label: 'Gold',        color: 'text-amber-700',  bg: 'bg-amber-50   border-amber-300',  ring: 'ring-amber-400'  };
@@ -143,9 +150,9 @@ export default async function TrustPage() {
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
   const orgId = membership.organization_id;
-  const org   = membership.organizations as { id: string; name: string; fund_types: string[] } | null;
+  const org   = relationOne<{ id: string; name: string; fund_types: string[] }>(membership.organizations);
 
-  // ── Load latest v2 score ────────────────────────────────────
+  // â”€â”€ Load latest v2 score â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: latestScore } = await service
     .from('amanah_index_history')
     .select('score_value, score_version, computed_at, breakdown, public_summary')
@@ -170,7 +177,7 @@ export default async function TrustPage() {
   const grade     = getGrade(scoreVal);
   const isV2      = score?.score_version === 'amanah_v2_events';
 
-  // ── Load score history (last 10 entries) ───────────────────
+  // â”€â”€ Load score history (last 10 entries) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: history } = await service
     .from('amanah_index_history')
     .select('id, score_value, computed_at, score_version, public_summary')
@@ -178,7 +185,7 @@ export default async function TrustPage() {
     .order('computed_at', { ascending: false })
     .limit(10);
 
-  // ── Load recent trust events (last 20) ─────────────────────
+  // â”€â”€ Load recent trust events (last 20) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const { data: events } = await service
     .from('trust_events')
     .select('id, event_type, pillar, score_delta, occurred_at, source, payload')
@@ -186,7 +193,7 @@ export default async function TrustPage() {
     .order('occurred_at', { ascending: false })
     .limit(20);
 
-  // ── Compute pillar pcts for what-next ──────────────────────
+  // â”€â”€ Compute pillar pcts for what-next â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const getPillarPct = (key: string): number => {
     const p = breakdown[key];
     return p?.pct ?? 0;
@@ -207,7 +214,7 @@ export default async function TrustPage() {
     return false;
   }).slice(0, 3);
 
-  // ── Risk flags ─────────────────────────────────────────────
+  // â”€â”€ Risk flags â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const riskFlags = (breakdown.risk_flags ?? {}) as {
     no_close_3mo?: boolean; segregation_vio?: boolean; audit_overdue?: boolean;
   };
@@ -274,7 +281,7 @@ export default async function TrustPage() {
       {/* Risk flags */}
       {hasRisk && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
-          <p className="text-[12px] font-semibold text-red-800">⚠ Active risk flags — score caps in effect</p>
+          <p className="text-[12px] font-semibold text-red-800">âš  Active risk flags — score caps in effect</p>
           {riskFlags.no_close_3mo && (
             <p className="text-[11px] text-red-700">
               • No monthly close in 3 months — Financial Integrity capped at 60%.
@@ -403,7 +410,7 @@ export default async function TrustPage() {
                           {pillar.emoji} {pillar.label}
                         </span>
                       )}
-                      <span className="text-[9px] text-gray-300">·</span>
+                      <span className="text-[9px] text-gray-300">Â·</span>
                       <span className="text-[9px] text-gray-400">
                         {new Date(event.occurred_at).toLocaleDateString('en-MY', {
                           day: 'numeric', month: 'short', year: 'numeric',
@@ -464,7 +471,7 @@ export default async function TrustPage() {
                       Number(h.score_value) > Number(history[i - 1].score_value)
                         ? 'text-emerald-600' : 'text-red-500'
                     }`}>
-                      {Number(h.score_value) > Number(history[i - 1].score_value) ? '▲' : '▼'}
+                      {Number(h.score_value) > Number(history[i - 1].score_value) ? 'â–²' : 'â–¼'}
                       {Math.abs(Number(h.score_value) - Number(history[i - 1].score_value)).toFixed(1)}
                     </span>
                   )}
@@ -498,3 +505,4 @@ export default async function TrustPage() {
     </div>
   );
 }
+
