@@ -67,7 +67,7 @@ export default async function MonthClosePage({
 
   const isAlreadyClosed = !!existingClose;
 
-  // â”€â”€ PHASE 1: Collect â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── PHASE 1: Collect ────────────────────────────────────────
   const { count: totalEntries } = await service
     .from('journal_entries')
     .select('*', { count: 'exact', head: true })
@@ -83,7 +83,7 @@ export default async function MonthClosePage({
     .eq('period_month', targetMonth)
     .eq('is_locked', false);
 
-  // â”€â”€ PHASE 2: Reconcile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── PHASE 2: Reconcile ──────────────────────────────────────
   const { data: bankAccounts } = await service
     .from('bank_accounts')
     .select('id, account_name, account_type, fund_type')
@@ -111,7 +111,7 @@ export default async function MonthClosePage({
   const anyDiscrepancy = bankReconStatus.some((b)  => b.status === 'discrepancy');
   const hasNoBankAccts = bankReconStatus.length === 0;
 
-  // â”€â”€ PHASE 3: Governance controls â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── PHASE 3: Governance controls ────────────────────────────
   const LARGE_THRESHOLD = 5000;
   const { data: largeLines } = await service
     .from('journal_lines')
@@ -174,7 +174,7 @@ export default async function MonthClosePage({
     .order('period_month', { ascending: false })
     .limit(6);
 
-  // â”€â”€ Gate evaluation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Gate evaluation ─────────────────────────────────────────
   // FIX: hasNoBankAccts = pass (N/A). anyDiscrepancy = hard block.
   const gates = {
     hasTransactions:  (totalEntries ?? 0) > 0,
@@ -206,7 +206,7 @@ export default async function MonthClosePage({
       {/* Trust event note */}
       {!isAlreadyClosed && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 flex items-center gap-3">
-          <span className="text-emerald-500 text-lg">â–²</span>
+          <span className="text-emerald-500 text-lg">▲</span>
           <p className="text-[11px] text-emerald-800">
             Closing this period emits a <strong>fi_period_closed</strong> trust event (+8 pts Financial Integrity)
             and immediately updates your Amanah Trust Score.
@@ -236,7 +236,7 @@ export default async function MonthClosePage({
         </div>
       )}
 
-      {/* â”€â”€ Phase 1: Collect â”€â”€â”€ */}
+      {/* ── Phase 1: Collect ─── */}
       <PhaseCard number={1} title="Collect transactions"
         description="All income and expenses for this month recorded in the ledger."
         passed={gates.hasTransactions}>
@@ -257,7 +257,7 @@ export default async function MonthClosePage({
         </a>
       </PhaseCard>
 
-      {/* â”€â”€ Phase 2: Reconcile â”€â”€â”€ */}
+      {/* ── Phase 2: Reconcile ─── */}
       <PhaseCard number={2} title="Bank reconciliation"
         description="Bank accounts matched to statements. Month is blocked if any account shows 🔴 discrepancy."
         passed={gates.bankReconOk}>
@@ -285,7 +285,7 @@ export default async function MonthClosePage({
                   <span className="text-lg">
                     {ba.status === 'reconciled'  ? '🟢' :
                      ba.status === 'discrepancy' ? '🔴' :
-                     ba.status === 'in_progress' ? '🟡' : 'âšª'}
+                     ba.status === 'in_progress' ? '🟡' : '⚪'}
                   </span>
                   <div>
                     <p className="text-[12px] font-medium text-gray-800">{ba.name}</p>
@@ -313,7 +313,7 @@ export default async function MonthClosePage({
         )}
       </PhaseCard>
 
-      {/* â”€â”€ Phase 3: Governance â”€â”€â”€ */}
+      {/* ── Phase 3: Governance ─── */}
       <PhaseCard number={3} title="Governance review"
         description="Internal control checks — Shariah compliance, fund integrity."
         passed={gates.fundsSetup && gates.noZakatViolation}>
@@ -332,7 +332,7 @@ export default async function MonthClosePage({
         </div>
       </PhaseCard>
 
-      {/* â”€â”€ Phase 4: Close â”€â”€â”€ */}
+      {/* ── Phase 4: Close ─── */}
       {!isAlreadyClosed && isManager && (
         <PhaseCard number={4} title="Lock & close period"
           description="Locks all journal entries. Creates financial snapshot. Emits trust event."
@@ -374,7 +374,7 @@ export default async function MonthClosePage({
         <PhaseCard number={5} title="Monthly governance pack" description="Reports available." passed={true}>
           <div className="grid grid-cols-2 gap-2">
             {[
-              { href: '/trust', label: 'â–²  Trust score — see your event' },
+              { href: '/trust', label: '▲  Trust score — see your event' },
               { href: '/accounting/reports/statement-of-activities', label: 'Statement of Activities' },
               { href: '/accounting/reports/statement-of-financial-position', label: 'Financial Position' },
               { href: '/accounting/reports/zakat-utilisation', label: 'Zakat Utilisation' },
@@ -421,7 +421,7 @@ export default async function MonthClosePage({
   );
 }
 
-/* â”€â”€ Sub-components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Sub-components ─────────────────────────────────────────── */
 
 function PhaseCard({ number, title, description, passed, children }: {
   number: number; title: string; description: string; passed: boolean;

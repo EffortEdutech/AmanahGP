@@ -65,7 +65,7 @@ export default async function CertificationPage() {
   }>(membership.organizations);
   const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
 
-  // â”€â”€ Load all data in parallel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Load all data in parallel ──────────────────────────────
   const [
     latestScoreResult,
     bankCountResult,
@@ -145,7 +145,7 @@ export default async function CertificationPage() {
   const latestCert = history[0] ?? null;
   const isCertified = latestCert?.new_status === 'certified';
 
-  // â”€â”€ Readiness checks â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Readiness checks ──────────────────────────────────────
   const checks = [
     {
       id: 'profile',
@@ -171,7 +171,7 @@ export default async function CertificationPage() {
     {
       id: 'team',
       label: 'At least 2 team members',
-      detail: 'Segregation of duties (Layer 1 governance gate) requires â‰¥ 2 people.',
+      detail: 'Segregation of duties (Layer 1 governance gate) requires ≥ 2 people.',
       ok: memberCount >= 2,
       href: '/members',
     },
@@ -332,9 +332,9 @@ export default async function CertificationPage() {
           </p>
         </div>
         <div className="text-right text-[11px] text-gray-500 space-y-1">
-          <p>â‰¥55 → Silver certification</p>
-          <p>â‰¥70 → Gold certification</p>
-          <p>â‰¥85 → Platinum certification</p>
+          <p>≥55 → Silver certification</p>
+          <p>≥70 → Gold certification</p>
+          <p>≥85 → Platinum certification</p>
         </div>
       </div>
 
@@ -436,7 +436,7 @@ export default async function CertificationPage() {
           ))}
         </div>
         <p className="text-[10px] text-gray-400">
-          Certification threshold: â‰¥55/100 (Silver). Layer 2 minimum: â‰¥10/20.
+          Certification threshold: ≥55/100 (Silver). Layer 2 minimum: ≥10/20.
         </p>
       </div>
     </div>

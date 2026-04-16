@@ -68,7 +68,7 @@ export default async function ComplianceExportPage({
   const dateStr = now.toLocaleDateString('en-MY', { day: 'numeric', month: 'long', year: 'numeric' });
   const yearStr = String(now.getFullYear());
 
-  // â”€â”€ Load all data in parallel â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Load all data in parallel ──────────────────────────────
   const [
     membersResult,
     closesResult,
@@ -263,7 +263,7 @@ export default async function ComplianceExportPage({
             </div>
           </div>
 
-          {/* â”€â”€ Section 1: Organisation Profile â”€â”€ */}
+          {/* ── Section 1: Organisation Profile ── */}
           <h2>1. Organisation Profile</h2>
           <table>
             <tbody>
@@ -295,7 +295,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* â”€â”€ Section 2: Committee / Members â”€â”€ */}
+          {/* ── Section 2: Committee / Members ── */}
           <h2>2. Committee Members</h2>
           {members.length > 0 ? (
             <table>
@@ -317,7 +317,7 @@ export default async function ComplianceExportPage({
             </table>
           ) : <p>No active members recorded.</p>}
 
-          {/* â”€â”€ Section 3: Financial Summary â”€â”€ */}
+          {/* ── Section 3: Financial Summary ── */}
           <h2>3. Financial Summary — {yearStr}</h2>
 
           {closes.length > 0 ? (
@@ -370,7 +370,7 @@ export default async function ComplianceExportPage({
             </p>
           )}
 
-          {/* â”€â”€ Zakat section — MAIN pack only â”€â”€ */}
+          {/* ── Zakat section — MAIN pack only ── */}
           {type === 'main' && hasZakat && (
             <>
               <div className="page-break" />
@@ -403,7 +403,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* â”€â”€ Waqf section â”€â”€ */}
+          {/* ── Waqf section ── */}
           {type === 'main' && hasWaqf && (
             <>
               <h2>{hasZakat ? '5.' : '4.'} Waqf Assets — Summary</h2>
@@ -428,7 +428,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* â”€â”€ Section: Programmes / Activity Report â”€â”€ */}
+          {/* ── Section: Programmes / Activity Report ── */}
           <div className="page-break" />
           <h2>{type === 'main' ? (hasZakat || hasWaqf ? '6.' : '4.') : type === 'donor' ? '4.' : '4.'} Programme Activity</h2>
 
@@ -480,7 +480,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* â”€â”€ Section: Governance & Compliance â”€â”€ */}
+          {/* ── Section: Governance & Compliance ── */}
           <h2>5. Governance &amp; Compliance</h2>
 
           <h3>Policies on file</h3>
@@ -528,7 +528,7 @@ export default async function ComplianceExportPage({
             </>
           )}
 
-          {/* â”€â”€ Declaration â”€â”€ */}
+          {/* ── Declaration ── */}
           <div className="page-break" />
           <h2>6. Declaration</h2>
           <p>

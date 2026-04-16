@@ -168,7 +168,7 @@ export default async function ReportsPage({
         </div>
       ) : (
         <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-10 text-center">
-          <p className="text-2xl mb-2">âœŽ</p>
+          <p className="text-2xl mb-2">✎</p>
           <p className="text-sm font-medium text-gray-600">No reports yet</p>
           <p className="text-[12px] text-gray-400 mt-1 max-w-xs mx-auto">
             Progress reports document your programme activities and beneficiary impact.

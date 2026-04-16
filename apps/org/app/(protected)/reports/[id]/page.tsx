@@ -174,7 +174,7 @@ export default async function ReportDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-        {/* â”€â”€ Left: Report content â”€â”€ */}
+        {/* ── Left: Report content ── */}
         <div className="lg:col-span-2 space-y-5">
 
           {/* Narrative */}
@@ -254,7 +254,7 @@ export default async function ReportDetailPage({
           />
         </div>
 
-        {/* â”€â”€ Right: Actions + meta â”€â”€ */}
+        {/* ── Right: Actions + meta ── */}
         <div className="space-y-4">
 
           {/* Submit / Resubmit */}

@@ -124,7 +124,7 @@ export default async function TransactionsPage({
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-5">
 
-      {/* â”€â”€ Header â”€â”€ */}
+      {/* ── Header ── */}
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Transaction ledger</h1>
@@ -149,7 +149,7 @@ export default async function TransactionsPage({
         </div>
       </div>
 
-      {/* â”€â”€ Fund filter pills â”€â”€ */}
+      {/* ── Fund filter pills ── */}
       {funds && funds.length > 0 && (
         <div className="flex flex-wrap gap-1.5">
           <Link
@@ -175,7 +175,7 @@ export default async function TransactionsPage({
         </div>
       )}
 
-      {/* â”€â”€ Summary strip â”€â”€ */}
+      {/* ── Summary strip ── */}
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-lg border border-gray-200 bg-white px-4 py-3">
           <p className="text-[10px] text-gray-400 uppercase tracking-wide">Entries</p>
@@ -195,7 +195,7 @@ export default async function TransactionsPage({
         </div>
       </div>
 
-      {/* â”€â”€ Ledger â”€â”€ */}
+      {/* ── Ledger ── */}
       {filteredEntries.length > 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
           <div className="grid grid-cols-12 gap-2 px-4 py-2.5 bg-gray-50 border-b border-gray-200
@@ -249,7 +249,7 @@ export default async function TransactionsPage({
                   <div className="col-span-1 text-center">
                     {entry.is_locked
                       ? <span className="text-[9px] text-gray-400">🔒</span>
-                      : <span className="text-[9px] text-gray-300">â—‹</span>
+                      : <span className="text-[9px] text-gray-300">○</span>
                     }
                   </div>
                 </div>

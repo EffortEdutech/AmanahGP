@@ -47,7 +47,7 @@ export default async function StatementsPage({
   const currentYear  = new Date().getFullYear();
   const selectedYear = parseInt(params.year ?? String(currentYear));
 
-  // â”€â”€ Statement of Activities â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Statement of Activities ──────────────────────────────────
   const { data: activities } = await service
     .from('statement_of_activities_view')
     .select('account_type, account_code, account_name, cost_category, fund_code, fund_name, fund_type, net_amount')
@@ -56,21 +56,21 @@ export default async function StatementsPage({
     .order('account_type')
     .order('account_code');
 
-  // â”€â”€ Fund Balances â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Fund Balances ────────────────────────────────────────────
   const { data: fundBalances } = await service
     .from('fund_balances_view')
     .select('fund_code, fund_name, fund_type, restriction_level, current_balance, total_debits, total_credits, currency')
     .eq('organization_id', orgId)
     .order('fund_code');
 
-  // â”€â”€ Programme/Admin breakdown â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Programme/Admin breakdown ────────────────────────────────
   const { data: breakdown } = await service
     .from('programme_admin_breakdown_view')
     .select('cost_category, total_amount')
     .eq('organization_id', orgId)
     .eq('period_year', selectedYear);
 
-  // â”€â”€ Period close history â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Period close history ─────────────────────────────────────
   const { data: closes } = await service
     .from('fund_period_closes')
     .select('period_year, period_month, closed_at, total_income, total_expense, net_movement, notes')
@@ -125,7 +125,7 @@ export default async function StatementsPage({
         </div>
       </div>
 
-      {/* â”€â”€ Statement of Activities â”€â”€ */}
+      {/* ── Statement of Activities ── */}
       <section className="space-y-3">
         <div className="flex items-center justify-between">
           <h2 className="text-sm font-semibold text-gray-700">Statement of Activities — {selectedYear}</h2>
@@ -198,7 +198,7 @@ export default async function StatementsPage({
         </div>
       </section>
 
-      {/* â”€â”€ Programme/Admin breakdown (CTCF L2) â”€â”€ */}
+      {/* ── Programme/Admin breakdown (CTCF L2) ── */}
       {(Number(programmeAmt) > 0 || Number(adminAmt) > 0) && (
         <section className="space-y-3">
           <div className="flex items-center gap-2">
@@ -231,14 +231,14 @@ export default async function StatementsPage({
               </div>
             )}
             <p className="text-[10px] text-gray-400">
-              Programme ratio â‰¥ 70% is considered strong. CTCF reviewers assess this criterion
+              Programme ratio ≥ 70% is considered strong. CTCF reviewers assess this criterion
               when evaluating Layer 2 financial transparency.
             </p>
           </div>
         </section>
       )}
 
-      {/* â”€â”€ Fund Balance Report â”€â”€ */}
+      {/* ── Fund Balance Report ── */}
       {fundBalances && fundBalances.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Fund balance report</h2>
@@ -275,7 +275,7 @@ export default async function StatementsPage({
         </section>
       )}
 
-      {/* â”€â”€ Period close history â”€â”€ */}
+      {/* ── Period close history ── */}
       {closes && closes.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold text-gray-700">Period close history</h2>

@@ -83,7 +83,7 @@ export default async function MembersPage() {
           <p className={`text-[11px] mt-0.5 ${hasMinTeam ? 'text-emerald-600' : 'text-amber-600'}`}>
             {hasMinTeam
               ? 'Different users must create and approve payment requests. SoD enforced.'
-              : 'CTCF Layer 1 governance gate and onboarding step 5 require â‰¥ 2 active members.'}
+              : 'CTCF Layer 1 governance gate and onboarding step 5 require ≥ 2 active members.'}
           </p>
         </div>
       </div>
@@ -182,7 +182,7 @@ export default async function MembersPage() {
         </div>
         <p className="text-[10px] text-gray-400 pt-1">
           SoD rule: the person who creates a payment request cannot approve it.
-          Always maintain â‰¥ 2 active members.
+          Always maintain ≥ 2 active members.
         </p>
       </div>
     </div>

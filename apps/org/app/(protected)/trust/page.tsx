@@ -15,7 +15,7 @@ function relationOne<T>(value: unknown): T | null {
 
 export const metadata = { title: 'Trust score — amanahOS' };
 
-// â”€â”€ Pillar config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Pillar config ──────────────────────────────────────────────
 const PILLARS = [
   {
     key:   'financial_integrity',
@@ -59,7 +59,7 @@ const PILLARS = [
   },
 ] as const;
 
-// â”€â”€ What-next recommendations (gamification) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── What-next recommendations (gamification) ──────────────────
 const NEXT_ACTIONS = [
   { condition: (fi: number)  => fi <  60,
     action: 'Close this month\'s accounts',        points: '+8 pts',  pillar: 'financial_integrity', href: '/accounting/close' },
@@ -77,7 +77,7 @@ const NEXT_ACTIONS = [
     action: 'Upload a programme impact report',    points: '+10 pts', pillar: 'impact',              href: '/reports' },
 ];
 
-// â”€â”€ Event display config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Event display config ───────────────────────────────────────
 const EVENT_DISPLAY: Record<string, { label: string; positive: boolean }> = {
   fi_period_closed:            { label: 'Financial period closed on time',        positive: true },
   fi_period_closed_late:       { label: 'Financial period closed late',           positive: false },
@@ -121,7 +121,7 @@ const EVENT_DISPLAY: Record<string, { label: string; positive: boolean }> = {
   complaint_resolved:          { label: 'Complaint resolved',                    positive: true },
 };
 
-// â”€â”€ Grade config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ── Grade config ───────────────────────────────────────────────
 function getGrade(score: number) {
   if (score >= 85) return { label: 'Platinum',   color: 'text-slate-800',   bg: 'bg-slate-100  border-slate-300',  ring: 'ring-slate-400'  };
   if (score >= 70) return { label: 'Gold',        color: 'text-amber-700',  bg: 'bg-amber-50   border-amber-300',  ring: 'ring-amber-400'  };
@@ -152,7 +152,7 @@ export default async function TrustPage() {
   const orgId = membership.organization_id;
   const org   = relationOne<{ id: string; name: string; fund_types: string[] }>(membership.organizations);
 
-  // â”€â”€ Load latest v2 score â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Load latest v2 score ────────────────────────────────────
   const { data: latestScore } = await service
     .from('amanah_index_history')
     .select('score_value, score_version, computed_at, breakdown, public_summary')
@@ -177,7 +177,7 @@ export default async function TrustPage() {
   const grade     = getGrade(scoreVal);
   const isV2      = score?.score_version === 'amanah_v2_events';
 
-  // â”€â”€ Load score history (last 10 entries) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Load score history (last 10 entries) ───────────────────
   const { data: history } = await service
     .from('amanah_index_history')
     .select('id, score_value, computed_at, score_version, public_summary')
@@ -185,7 +185,7 @@ export default async function TrustPage() {
     .order('computed_at', { ascending: false })
     .limit(10);
 
-  // â”€â”€ Load recent trust events (last 20) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Load recent trust events (last 20) ─────────────────────
   const { data: events } = await service
     .from('trust_events')
     .select('id, event_type, pillar, score_delta, occurred_at, source, payload')
@@ -193,7 +193,7 @@ export default async function TrustPage() {
     .order('occurred_at', { ascending: false })
     .limit(20);
 
-  // â”€â”€ Compute pillar pcts for what-next â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Compute pillar pcts for what-next ──────────────────────
   const getPillarPct = (key: string): number => {
     const p = breakdown[key];
     return p?.pct ?? 0;
@@ -214,7 +214,7 @@ export default async function TrustPage() {
     return false;
   }).slice(0, 3);
 
-  // â”€â”€ Risk flags â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Risk flags ─────────────────────────────────────────────
   const riskFlags = (breakdown.risk_flags ?? {}) as {
     no_close_3mo?: boolean; segregation_vio?: boolean; audit_overdue?: boolean;
   };
@@ -471,7 +471,7 @@ export default async function TrustPage() {
                       Number(h.score_value) > Number(history[i - 1].score_value)
                         ? 'text-emerald-600' : 'text-red-500'
                     }`}>
-                      {Number(h.score_value) > Number(history[i - 1].score_value) ? 'â–²' : 'â–¼'}
+                      {Number(h.score_value) > Number(history[i - 1].score_value) ? '▲' : '▼'}
                       {Math.abs(Number(h.score_value) - Number(history[i - 1].score_value)).toFixed(1)}
                     </span>
                   )}

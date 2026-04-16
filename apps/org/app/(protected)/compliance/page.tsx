@@ -105,7 +105,7 @@ export default async function CompliancePage() {
   // Readiness items per pack
   const rosItems = [
     { label: 'Organisation profile complete', ok: hasProfile,    href: '/profile' },
-    { label: 'Committee list (â‰¥2 members)',    ok: hasCommittee,  href: '/members' },
+    { label: 'Committee list (≥2 members)',    ok: hasCommittee,  href: '/members' },
     { label: 'Financial period closed',        ok: closesCount > 0, href: '/accounting/close' },
     { label: 'Annual financial statement',     ok: hasSnapshot,   href: '/accounting/reports/statement-of-activities' },
     { label: 'Activity report (project)',       ok: projectCount > 0 && verifiedReports > 0, href: '/reports' },
@@ -239,7 +239,7 @@ export default async function CompliancePage() {
   );
 }
 
-/* â”€â”€ Pack component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Pack component ─────────────────────────────────────────── */
 function ReportPack({ title, subtitle, icon, pct, applicable, notApplicableNote,
   exportType, items, reportLinks, financialSummary }: {
   title: string; subtitle: string; icon: string; pct: number;
@@ -272,7 +272,7 @@ function ReportPack({ title, subtitle, icon, pct, applicable, notApplicableNote,
                 className="inline-flex items-center gap-1 px-3 py-1 text-[10px] font-medium
                            border border-emerald-300 text-emerald-700 bg-emerald-50 rounded-lg
                            hover:bg-emerald-100 transition-colors">
-                â†— Export PDF
+                ↗ Export PDF
               </Link>
             )}
           </div>
@@ -296,7 +296,7 @@ function ReportPack({ title, subtitle, icon, pct, applicable, notApplicableNote,
               <div key={item.label} className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-2">
                   <span className={`text-sm flex-shrink-0 ${item.ok ? 'text-emerald-500' : 'text-gray-300'}`}>
-                    {item.ok ? '✓' : 'â—‹'}
+                    {item.ok ? '✓' : '○'}
                   </span>
                   <p className={`text-[12px] ${item.ok ? 'text-gray-700' : 'text-gray-500'}`}>{item.label}</p>
                 </div>

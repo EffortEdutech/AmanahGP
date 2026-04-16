@@ -146,7 +146,7 @@ export default async function PolicyKitPage() {
       {/* Trust event note */}
       {isManager && (
         <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
-          <span className="text-blue-500 flex-shrink-0">â–²</span>
+          <span className="text-blue-500 flex-shrink-0">▲</span>
           <p className="text-[11px] text-blue-800">
             Each uploaded policy emits a <strong>gov_policy_uploaded</strong> trust event
             (+15 Governance). These are idempotent — uploading the same policy type again

@@ -134,10 +134,10 @@ export default async function DashboardPage() {
         )}
       </div>
 
-      {/* â”€â”€ Onboarding widget — shown until complete â”€â”€ */}
+      {/* ── Onboarding widget — shown until complete ── */}
       <OnboardingWidget state={onboardingState} />
 
-      {/* â”€â”€ KPI cards â”€â”€ */}
+      {/* ── KPI cards ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiCard
           label="Amanah score" href="/trust"
@@ -160,7 +160,7 @@ export default async function DashboardPage() {
           accent={pendingPayments > 0 ? 'amber' : 'gray'} />
       </div>
 
-      {/* â”€â”€ Quick actions when onboarding done â”€â”€ */}
+      {/* ── Quick actions when onboarding done ── */}
       {onboardingState.isComplete && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
@@ -179,17 +179,17 @@ export default async function DashboardPage() {
         </div>
       )}
 
-      {/* â”€â”€ Module grid â”€â”€ */}
+      {/* ── Module grid ── */}
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Workspace</h2>
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <ModuleCard href="/accounting"           icon="$"  label="Accounting"     description="Fund accounting, transactions, financial statements" />
-          <ModuleCard href="/trust"                icon="â–²"  label="Trust score"    description="Amanah Index breakdown and improvement tips" />
+          <ModuleCard href="/trust"                icon="▲"  label="Trust score"    description="Amanah Index breakdown and improvement tips" />
           <ModuleCard href="/accounting/payment-requests" icon="✉" label="Payment requests" description="Approval workflow — segregation of duties" />
           <ModuleCard href="/projects"             icon="▦"  label="Projects"       description="Create and manage charitable projects" />
           <ModuleCard href="/compliance"           icon="☑"  label="Compliance"     description="ROS, MAIN, and regulatory reports" />
           <ModuleCard href="/policy-kit"           icon="⊞"  label="Policy kit"     description="Governance templates and Zakat SOP" />
-          <ModuleCard href="/onboarding"           icon="â—‰"  label="Amanah Ready"   description={`Setup progress — ${onboardingState.pct}% complete`} />
+          <ModuleCard href="/onboarding"           icon="◉"  label="Amanah Ready"   description={`Setup progress — ${onboardingState.pct}% complete`} />
           <ModuleCard href="/certification"        icon="★"  label="Certification"  description="CTCF certification application" />
           <ModuleCard href="/members"              icon="♟"  label="Team"           description="Members, roles, and invitations" />
         </div>

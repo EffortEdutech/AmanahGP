@@ -151,7 +151,7 @@ export default async function PaymentRequestDetailPage({
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
 
-        {/* â”€â”€ LEFT: Payment details â”€â”€ */}
+        {/* ── LEFT: Payment details ── */}
         <div className="lg:col-span-2 space-y-5">
 
           {/* Details card */}
@@ -206,7 +206,7 @@ export default async function PaymentRequestDetailPage({
           )}
         </div>
 
-        {/* â”€â”€ RIGHT: Fund balance + approval trail â”€â”€ */}
+        {/* ── RIGHT: Fund balance + approval trail ── */}
         <div className="space-y-5">
 
           {/* Fund balance */}
@@ -295,7 +295,7 @@ export default async function PaymentRequestDetailPage({
   );
 }
 
-/* â”€â”€ Trail step component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+/* ── Trail step component ──────────────────────────────────── */
 function TrailStep({
   step, label, by, at, done, active, rejected, rejectedBy, rejectedAt,
 }: {
