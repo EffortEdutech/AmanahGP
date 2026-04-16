@@ -72,7 +72,7 @@ export default async function HomePage() {
 
         <div className="max-w-4xl mx-auto text-center relative z-10">
           {/* Bismillah / Ayah */}
-          <p className="text-emerald-300 text-[12px] font-medium tracking-widest uppercase mb-6">
+          <p className="text-emerald-300 text-[32px] font-medium tracking-widest uppercase mb-6">
             بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم
           </p>
 
