@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/funds/page.tsx
+// apps/org/app/(protected)/accounting/funds/page.tsx
 // amanahOS — Islamic Fund Registry
 // Manage Zakat, Waqf, Sadaqah, General, Project funds.
 
@@ -67,7 +67,7 @@ export default async function FundsPage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Islamic fund registry</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} Â· {(funds ?? []).filter((f) => f.is_active).length} active funds
+          {org?.name} · {(funds ?? []).filter((f) => f.is_active).length} active funds
         </p>
       </div>
 

@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/compliance/page.tsx
+// apps/org/app/(protected)/compliance/page.tsx
 // amanahOS — Compliance Reports (Sprint 29 update — adds export buttons + audit package)
 //
 // Builds on Sprint 25's compliance page.
@@ -138,7 +138,7 @@ export default async function CompliancePage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Compliance reports</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} Â· Auto-assembled from your accounting and governance data
+          {org?.name} · Auto-assembled from your accounting and governance data
         </p>
       </div>
 
@@ -176,7 +176,7 @@ export default async function CompliancePage() {
       <ReportPack
         title="ROS Annual Return"
         subtitle="For NGOs registered under Registrar of Societies (ROS)"
-        icon="ðŸ›"
+        icon="🏛"
         pct={rosPct}
         applicable={true}
         exportType="ros"
@@ -198,7 +198,7 @@ export default async function CompliancePage() {
       <ReportPack
         title="MAIN / JAKIM Reporting Pack"
         subtitle="For Zakat bodies, Waqf institutions, and mosque organisations"
-        icon="ðŸŒ™"
+        icon="🌙"
         pct={mainPct}
         applicable={isMAIN || hasZakat || hasWaqf}
         exportType="main"
@@ -217,7 +217,7 @@ export default async function CompliancePage() {
       <ReportPack
         title="Donor Transparency Report"
         subtitle="Annual transparency report for donors and grant applications"
-        icon="â—Ž"
+        icon="◎"
         pct={donorPct}
         applicable={true}
         exportType="donor"

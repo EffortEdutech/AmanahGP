@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/policy-kit/page.tsx
+// apps/org/app/(protected)/policy-kit/page.tsx
 // amanahOS — Policy Kit
 // Sprint 22
 //
@@ -86,7 +86,7 @@ export default async function PolicyKitPage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Governance Policy Kit</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} Â· Auditors always ask for policies. Most orgs have none. Upload yours.
+          {org?.name} · Auditors always ask for policies. Most orgs have none. Upload yours.
         </p>
       </div>
 
@@ -128,7 +128,7 @@ export default async function PolicyKitPage() {
           : 'border-amber-200 bg-amber-50'
       }`}>
         <div className="flex items-start gap-3">
-          <span className="text-lg flex-shrink-0">{hasCOI ? '✓' : 'âš '}</span>
+          <span className="text-lg flex-shrink-0">{hasCOI ? '✓' : '⚠'}</span>
           <div>
             <p className={`text-[12px] font-semibold ${hasCOI ? 'text-emerald-800' : 'text-amber-800'}`}>
               CTCF Layer 1 Gate — {hasCOI ? 'Conflict of Interest Policy uploaded ✓' : 'Conflict of Interest Policy required'}

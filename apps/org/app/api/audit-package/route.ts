@@ -1,4 +1,4 @@
-﻿// apps/org/app/api/audit-package/route.ts
+// apps/org/app/api/audit-package/route.ts
 // Sprint 29 — Audit-Ready Package Download
 //
 // GET /api/audit-package

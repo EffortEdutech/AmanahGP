@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/payment-requests/page.tsx
+// apps/org/app/(protected)/accounting/payment-requests/page.tsx
 // amanahOS — Payment Requests
 // "Awaiting My Approval" dashboard — full approval workflow UI.
 //
@@ -152,12 +152,12 @@ export default async function PaymentRequestsPage({
 
       {/* Governance note */}
       <div className="rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 flex items-center gap-3">
-        <span className="text-blue-500 flex-shrink-0">âš–</span>
+        <span className="text-blue-500 flex-shrink-0">⚖</span>
         <p className="text-[11px] text-blue-800">
           <strong>Segregation of duties enforced.</strong> The person who creates a payment request
           cannot be the same person who approves it. Dual approval emits a{' '}
           <strong>+4 Governance</strong> trust event. Self-approval triggers a{' '}
-          <strong>âˆ’15 Governance</strong> penalty.
+          <strong>−15 Governance</strong> penalty.
         </p>
       </div>
 
@@ -223,7 +223,7 @@ export default async function PaymentRequestsPage({
                       </span>
                       {req.is_large_transaction && (
                         <span className="text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 border border-amber-200">
-                          âš  Large transaction
+                          ⚠ Large transaction
                         </span>
                       )}
                     </div>
@@ -252,11 +252,11 @@ export default async function PaymentRequestsPage({
 
                     <div className="flex items-center gap-4 text-[10px] text-gray-400">
                       <span>By {creator?.display_name ?? 'Unknown'}</span>
-                      <span>Â·</span>
+                      <span>·</span>
                       <span>{new Date(req.created_at).toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                       {req.payment_date && (
                         <>
-                          <span>Â·</span>
+                          <span>·</span>
                           <span>Pay by {req.payment_date}</span>
                         </>
                       )}
@@ -289,7 +289,7 @@ export default async function PaymentRequestsPage({
                           ? 'bg-amber-50 text-amber-600 border border-amber-200'
                           : 'bg-blue-100 text-blue-700'
                       }`}>
-                        {isMine ? 'âš  SoD — cannot self-approve' : '→ Approval needed'}
+                        {isMine ? '⚠ SoD — cannot self-approve' : '→ Approval needed'}
                       </span>
                     )}
                     {req.status === 'approved' && (

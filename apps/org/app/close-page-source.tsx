@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/close/page.tsx
+// apps/org/app/(protected)/accounting/close/page.tsx
 // amanahOS — Monthly Close Workflow (Sprint 19 patch — fixed bank recon gate)
 //
 // FIX: allBankReconciled gate now correctly passes when no bank accounts
@@ -192,7 +192,7 @@ export default async function MonthClosePage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Month close</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· {monthName} {targetYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {monthName} {targetYear}</p>
         </div>
         <div className="flex flex-wrap gap-1">
           {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
@@ -230,8 +230,8 @@ export default async function MonthClosePage({
                 {monthName} {targetYear} is closed
               </p>
               <p className="text-[10px] text-emerald-700">
-                Closed {new Date(existingClose.closed_at).toLocaleDateString('en-MY')} Â·
-                In: {fmt(Number(existingClose.total_income))} Â·
+                Closed {new Date(existingClose.closed_at).toLocaleDateString('en-MY')} ·
+                In: {fmt(Number(existingClose.total_income))} ·
                 Out: {fmt(Number(existingClose.total_expense))}
               </p>
             </div>
@@ -265,7 +265,7 @@ export default async function MonthClosePage({
 
       {/* â”€â”€ Phase 2: Reconcile â”€â”€â”€ */}
       <PhaseCard number={2} title="Bank reconciliation"
-        description="Bank accounts matched to statements. Month is blocked if any account shows ðŸ”´ discrepancy."
+        description="Bank accounts matched to statements. Month is blocked if any account shows 🔴 discrepancy."
         passed={gates.bankReconOk}>
 
         {hasNoBankAccts ? (
@@ -289,9 +289,9 @@ export default async function MonthClosePage({
                 }`}>
                 <div className="flex items-center gap-3">
                   <span className="text-lg">
-                    {ba.status === 'reconciled'  ? 'ðŸŸ¢' :
-                     ba.status === 'discrepancy' ? 'ðŸ”´' :
-                     ba.status === 'in_progress' ? 'ðŸŸ¡' : 'âšª'}
+                    {ba.status === 'reconciled'  ? '🟢' :
+                     ba.status === 'discrepancy' ? '🔴' :
+                     ba.status === 'in_progress' ? '🟡' : 'âšª'}
                   </span>
                   <div>
                     <p className="text-[12px] font-medium text-gray-800">{ba.name}</p>
@@ -313,7 +313,7 @@ export default async function MonthClosePage({
         {anyDiscrepancy && (
           <div className="mt-2 rounded-md bg-red-50 border border-red-200 p-3">
             <p className="text-[11px] font-semibold text-red-800">
-              ðŸ”´ Discrepancy — month close is blocked until resolved
+              🔴 Discrepancy — month close is blocked until resolved
             </p>
           </div>
         )}
@@ -474,7 +474,7 @@ function ControlRow({ label, ok, detail, warning }: {
       'bg-gray-50 border border-gray-100'
     }`}>
       <span className="text-sm flex-shrink-0 mt-0.5">
-        {!ok ? 'ðŸ”´' : warning ? 'ðŸŸ¡' : 'ðŸŸ¢'}
+        {!ok ? '🔴' : warning ? '🟡' : '🟢'}
       </span>
       <div>
         <p className="text-[12px] font-medium text-gray-800">{label}</p>

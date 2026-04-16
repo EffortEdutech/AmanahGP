@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/members/page.tsx
+// apps/org/app/(protected)/members/page.tsx
 // amanahOS — Members (Sprint 25 — full invite flow, no Console link)
 
 import { redirect }            from 'next/navigation';
@@ -73,7 +73,7 @@ export default async function MembersPage() {
       <div className={`rounded-lg border p-4 flex items-start gap-3 ${
         hasMinTeam ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'
       }`}>
-        <span className="text-xl flex-shrink-0">{hasMinTeam ? '✓' : 'âš '}</span>
+        <span className="text-xl flex-shrink-0">{hasMinTeam ? '✓' : '⚠'}</span>
         <div>
           <p className={`text-[12px] font-semibold ${hasMinTeam ? 'text-emerald-800' : 'text-amber-800'}`}>
             {hasMinTeam

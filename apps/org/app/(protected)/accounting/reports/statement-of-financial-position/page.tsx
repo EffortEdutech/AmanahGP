@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/reports/statement-of-financial-position/page.tsx
+// apps/org/app/(protected)/accounting/reports/statement-of-financial-position/page.tsx
 // amanahOS — Statement of Financial Position (Balance Sheet for NGOs)
 // Assets = Liabilities + Fund Balances. Auto-validates balance.
 // Formula from amanah_gp_OS.md design.
@@ -92,7 +92,7 @@ export default async function SoFPPage() {
       {/* Header */}
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Statement of Financial Position</h1>
-        <p className="text-sm text-gray-500 mt-0.5">As at {today} Â· {org?.name}</p>
+        <p className="text-sm text-gray-500 mt-0.5">As at {today} · {org?.name}</p>
       </div>
 
       {/* Balance check banner */}

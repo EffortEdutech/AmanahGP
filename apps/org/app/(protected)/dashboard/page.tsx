@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/dashboard/page.tsx
+// apps/org/app/(protected)/dashboard/page.tsx
 // amanahOS — Dashboard (Sprint 21 — with Onboarding Widget)
 
 import { redirect }              from 'next/navigation';
@@ -121,7 +121,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-xl font-semibold text-gray-900">{org.name}</h1>
           <p className="text-sm text-gray-500 mt-0.5 capitalize">
-            {org.org_type?.replace(/_/g, ' ')} Â· {org.state}
+            {org.org_type?.replace(/_/g, ' ')} · {org.state}
           </p>
         </div>
         {!onboardingState.isComplete && (
@@ -164,9 +164,9 @@ export default async function DashboardPage() {
       {onboardingState.isComplete && (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            { href: '/accounting/transactions/new',    label: 'Record transaction',  icon: 'â‡„' },
-            { href: '/accounting/payment-requests/new',label: 'Payment request',      icon: 'âœ‰' },
-            { href: '/accounting/close',               label: 'Month close',          icon: 'âŠ ' },
+            { href: '/accounting/transactions/new',    label: 'Record transaction',  icon: '⇄' },
+            { href: '/accounting/payment-requests/new',label: 'Payment request',      icon: '✉' },
+            { href: '/accounting/close',               label: 'Month close',          icon: '⊠' },
             { href: '/accounting/reports',             label: 'Financial reports',    icon: '📊' },
           ].map((a) => (
             <Link key={a.href} href={a.href}
@@ -185,18 +185,18 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <ModuleCard href="/accounting"           icon="$"  label="Accounting"     description="Fund accounting, transactions, financial statements" />
           <ModuleCard href="/trust"                icon="â–²"  label="Trust score"    description="Amanah Index breakdown and improvement tips" />
-          <ModuleCard href="/accounting/payment-requests" icon="âœ‰" label="Payment requests" description="Approval workflow — segregation of duties" />
+          <ModuleCard href="/accounting/payment-requests" icon="✉" label="Payment requests" description="Approval workflow — segregation of duties" />
           <ModuleCard href="/projects"             icon="▦"  label="Projects"       description="Create and manage charitable projects" />
-          <ModuleCard href="/compliance"           icon="â˜‘"  label="Compliance"     description="ROS, MAIN, and regulatory reports" />
+          <ModuleCard href="/compliance"           icon="☑"  label="Compliance"     description="ROS, MAIN, and regulatory reports" />
           <ModuleCard href="/policy-kit"           icon="⊞"  label="Policy kit"     description="Governance templates and Zakat SOP" />
           <ModuleCard href="/onboarding"           icon="â—‰"  label="Amanah Ready"   description={`Setup progress — ${onboardingState.pct}% complete`} />
-          <ModuleCard href="/certification"        icon="â˜…"  label="Certification"  description="CTCF certification application" />
-          <ModuleCard href="/members"              icon="â™Ÿ"  label="Team"           description="Members, roles, and invitations" />
+          <ModuleCard href="/certification"        icon="★"  label="Certification"  description="CTCF certification application" />
+          <ModuleCard href="/members"              icon="♟"  label="Team"           description="Members, roles, and invitations" />
         </div>
       </div>
 
       <p className="text-[11px] text-gray-400 text-center pt-2">
-        amanahOS Â· Amanah Governance Platform Â· Trusted Giving. Transparent Governance.
+        amanahOS · Amanah Governance Platform · Trusted Giving. Transparent Governance.
       </p>
     </div>
   );

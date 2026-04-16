@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/certification/page.tsx
+// apps/org/app/(protected)/certification/page.tsx
 // amanahOS — Certification Application (Sprint 23)
 //
 // The org-facing certification journey:
@@ -230,14 +230,14 @@ export default async function CertificationPage() {
           CTCF Certification
         </h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          Charity Transparency Certification Framework Â· {org?.name}
+          Charity Transparency Certification Framework · {org?.name}
         </p>
       </div>
 
       {/* Current certification status */}
       {isCertified && (
         <div className="rounded-xl border-2 border-emerald-300 bg-emerald-50 p-6 text-center space-y-2">
-          <p className="text-4xl">ðŸ†</p>
+          <p className="text-4xl">🏆</p>
           <p className="text-lg font-bold text-emerald-800">Certified Organisation</p>
           <p className="text-[12px] text-emerald-700">
             Valid from {latestCert.valid_from}

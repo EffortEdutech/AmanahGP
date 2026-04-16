@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/transactions/page.tsx
+// apps/org/app/(protected)/accounting/transactions/page.tsx
 // amanahOS — Transaction Ledger (picker update)
 
 import { redirect }            from 'next/navigation';

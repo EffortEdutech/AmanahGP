@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/reports/page.tsx
+// apps/org/app/(protected)/reports/page.tsx
 // amanahOS — Reports (Sprint 25 — full create/submit, no Console link)
 
 import { redirect }            from 'next/navigation';
@@ -120,7 +120,7 @@ export default async function ReportsPage({
       </div>
 
       <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2.5 flex items-center gap-2">
-        <span className="text-blue-500 text-sm flex-shrink-0">â„¹</span>
+        <span className="text-blue-500 text-sm flex-shrink-0">ℹ</span>
         <p className="text-[11px] text-blue-700">
           Submit reports here. A platform reviewer will verify them — verified reports
           count toward your <strong>CTCF Layer 3</strong> certification score.

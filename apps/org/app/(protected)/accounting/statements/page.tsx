@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/statements/page.tsx
+// apps/org/app/(protected)/accounting/statements/page.tsx
 // Sprint 16 — Financial Statements
 // Statement of Activities (income/expense) + Fund Balance Report
 // Reads from statement_of_activities_view and fund_balances_view
@@ -110,7 +110,7 @@ export default async function StatementsPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Financial statements</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}
@@ -192,7 +192,7 @@ export default async function StatementsPage({
           <div className={`flex items-center justify-between px-4 py-3 ${netMovement >= 0 ? 'bg-emerald-50' : 'bg-red-50'}`}>
             <span className="text-[12px] font-bold text-gray-800">Net movement for {selectedYear}</span>
             <span className={`text-[14px] font-bold ${netMovement >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-              {netMovement >= 0 ? '+' : 'âˆ’'}{fmt(netMovement)}
+              {netMovement >= 0 ? '+' : '−'}{fmt(netMovement)}
             </span>
           </div>
         </div>
@@ -289,7 +289,7 @@ export default async function StatementsPage({
                   </p>
                   <p className="text-[10px] text-gray-400 mt-0.5">
                     Closed {new Date(String(c.closed_at)).toLocaleDateString('en-MY')}
-                    {c.notes && ` Â· ${c.notes}`}
+                    {c.notes && ` · ${c.notes}`}
                   </p>
                 </div>
                 <div className="text-right">

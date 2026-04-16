@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/trust/page.tsx
+// apps/org/app/(protected)/trust/page.tsx
 // amanahOS — Trust Score Dashboard (Sprint 19 — Trust Event Engine)
 // Live Amanah Index v2, 5 pillar breakdown, event timeline, gamification.
 
@@ -20,7 +20,7 @@ const PILLARS = [
   {
     key:   'financial_integrity',
     label: 'Financial Integrity',
-    emoji: 'ðŸŸ¢',
+    emoji: '🟢',
     max:   300,
     color: 'emerald',
     tip:   'Close months on time, reconcile bank accounts, maintain fund segregation.',
@@ -28,7 +28,7 @@ const PILLARS = [
   {
     key:   'governance',
     label: 'Governance & Controls',
-    emoji: 'ðŸŸ¡',
+    emoji: '🟡',
     max:   200,
     color: 'amber',
     tip:   'Use dual approvals for payments, upload policies, document board meetings.',
@@ -36,7 +36,7 @@ const PILLARS = [
   {
     key:   'compliance',
     label: 'Compliance & Regulation',
-    emoji: 'ðŸ”µ',
+    emoji: '🔵',
     max:   200,
     color: 'blue',
     tip:   'Submit annual audit, file regulatory returns, complete Shariah review.',
@@ -44,7 +44,7 @@ const PILLARS = [
   {
     key:   'transparency',
     label: 'Transparency & Disclosure',
-    emoji: 'ðŸŸ£',
+    emoji: '🟣',
     max:   150,
     color: 'purple',
     tip:   'Publish financial statements, release annual reports, maintain public profile.',
@@ -52,7 +52,7 @@ const PILLARS = [
   {
     key:   'impact',
     label: 'Community & Impact',
-    emoji: 'ðŸŸ ',
+    emoji: '🟠',
     max:   150,
     color: 'orange',
     tip:   'Complete programmes, verify beneficiaries, upload impact reports.',
@@ -281,7 +281,7 @@ export default async function TrustPage() {
       {/* Risk flags */}
       {hasRisk && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-2">
-          <p className="text-[12px] font-semibold text-red-800">âš  Active risk flags — score caps in effect</p>
+          <p className="text-[12px] font-semibold text-red-800">⚠ Active risk flags — score caps in effect</p>
           {riskFlags.no_close_3mo && (
             <p className="text-[11px] text-red-700">
               • No monthly close in 3 months — Financial Integrity capped at 60%.
@@ -410,7 +410,7 @@ export default async function TrustPage() {
                           {pillar.emoji} {pillar.label}
                         </span>
                       )}
-                      <span className="text-[9px] text-gray-300">Â·</span>
+                      <span className="text-[9px] text-gray-300">·</span>
                       <span className="text-[9px] text-gray-400">
                         {new Date(event.occurred_at).toLocaleDateString('en-MY', {
                           day: 'numeric', month: 'short', year: 'numeric',

@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/reports/project-fund/page.tsx
+// apps/org/app/(protected)/accounting/reports/project-fund/page.tsx
 // amanahOS — Project Fund Report
 // Income, expenses, and balance per project.
 
@@ -114,7 +114,7 @@ export default async function ProjectFundPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Project Fund Report</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}

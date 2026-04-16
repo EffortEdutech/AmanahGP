@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/reports/page.tsx
+// apps/org/app/(protected)/accounting/reports/page.tsx
 // amanahOS — Financial Reports Hub
 // Links to all 6 Islamic nonprofit financial reports.
 
@@ -28,7 +28,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/statement-of-activities',
-    icon:     'â‰¡',
+    icon:     '≡',
     label:    'Statement of Activities',
     sub:      'Income & expenditure — programme vs admin ratio',
     badge:    null,
@@ -38,7 +38,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/fund-changes',
-    icon:     'â—Ž',
+    icon:     '◎',
     label:    'Statement of Changes in Funds',
     sub:      'How each fund moved — opening → income → expenses → closing',
     badge:    null,
@@ -48,7 +48,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/zakat-utilisation',
-    icon:     'â˜…',
+    icon:     '★',
     label:    'Zakat Utilisation Report',
     sub:      'Zakat received, distributed, balance — MAIN/JAKIM ready',
     badge:    'Signature',
@@ -58,7 +58,7 @@ const REPORTS = [
   },
   {
     href:     '/accounting/reports/cash-flow',
-    icon:     'â‡„',
+    icon:     '⇄',
     label:    'Statement of Cash Flow',
     sub:      'Cash movements — bank accounts 1101–1140',
     badge:    null,
@@ -102,7 +102,7 @@ export default async function ReportsPage() {
       <div>
         <h1 className="text-xl font-semibold text-gray-900">Financial reports</h1>
         <p className="text-sm text-gray-500 mt-0.5">
-          {org?.name} Â· Auto-generated from your journal entries
+          {org?.name} · Auto-generated from your journal entries
         </p>
       </div>
 

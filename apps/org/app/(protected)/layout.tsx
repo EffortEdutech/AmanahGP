@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/layout.tsx
+// apps/org/app/(protected)/layout.tsx
 // amanahOS — Protected layout
 //
 // UUID mapping (seed data reality on hosted Supabase):

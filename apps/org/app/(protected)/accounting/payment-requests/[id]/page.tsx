@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/payment-requests/[id]/page.tsx
+// apps/org/app/(protected)/accounting/payment-requests/[id]/page.tsx
 // amanahOS — Payment Request Detail
 // Full approval workflow: Review → Approve/Reject → Pay
 // Segregation of Duties enforced throughout.
@@ -127,7 +127,7 @@ export default async function PaymentRequestDetailPage({
           </span>
           {req.is_large_transaction && (
             <span className="block mt-1 text-[9px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700">
-              âš  Large transaction &gt; RM5,000
+              ⚠ Large transaction &gt; RM5,000
             </span>
           )}
         </div>
@@ -136,14 +136,14 @@ export default async function PaymentRequestDetailPage({
       {/* SoD warning */}
       {sodViolation && (
         <div className="rounded-lg border border-red-200 bg-red-50 p-4 flex items-start gap-3">
-          <span className="text-red-500 text-lg flex-shrink-0">âš </span>
+          <span className="text-red-500 text-lg flex-shrink-0">⚠</span>
           <div>
             <p className="text-[12px] font-semibold text-red-800">
               Segregation of Duties — you cannot approve your own request
             </p>
             <p className="text-[11px] text-red-700 mt-0.5">
               You created this payment request. Another org_admin or org_manager must review and approve it.
-              Self-approval triggers a âˆ’15 Governance trust event.
+              Self-approval triggers a −15 Governance trust event.
             </p>
           </div>
         </div>
@@ -235,7 +235,7 @@ export default async function PaymentRequestDetailPage({
               </p>
               {Number(req.amount) > Number(fundBalance.current_balance) && (
                 <p className="text-[11px] text-red-600 font-medium">
-                  âš  Payment exceeds current fund balance
+                  ⚠ Payment exceeds current fund balance
                 </p>
               )}
               <p className="text-[9px] text-gray-400 capitalize">
@@ -286,7 +286,7 @@ export default async function PaymentRequestDetailPage({
             <p className="text-[11px] font-semibold text-blue-800">Trust event on approval</p>
             <p className="text-[10px] text-blue-700 mt-1 leading-relaxed">
               Dual approval (different users): <strong>+4 Governance</strong><br />
-              Self-approval (same user): <strong>âˆ’15 Governance</strong>
+              Self-approval (same user): <strong>−15 Governance</strong>
             </p>
           </div>
         </div>
@@ -330,7 +330,7 @@ function TrailStep({
         {rejected && rejectedBy && (
           <p className="text-[10px] text-red-600">
             Rejected by {rejectedBy}
-            {rejectedAt && ` Â· ${new Date(rejectedAt).toLocaleDateString('en-MY')}`}
+            {rejectedAt && ` · ${new Date(rejectedAt).toLocaleDateString('en-MY')}`}
           </p>
         )}
         {active && !done && !rejected && (

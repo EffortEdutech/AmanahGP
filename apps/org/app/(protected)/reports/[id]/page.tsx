@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/reports/[id]/page.tsx
+// apps/org/app/(protected)/reports/[id]/page.tsx
 // amanahOS — Report Detail (Sprint 27)
 //
 // Shows full report content from report_body JSONB.
@@ -121,13 +121,13 @@ export default async function ReportDetailPage({
             <span className={`text-[10px] font-medium ${sc.color}`}>
               {sc.label}
             </span>
-            <span className="text-gray-300">Â·</span>
+            <span className="text-gray-300">·</span>
             <span className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full border ${vc.bg} ${vc.color} ${vc.border}`}>
               {vc.label}
             </span>
             {report.report_date && (
               <>
-                <span className="text-gray-300">Â·</span>
+                <span className="text-gray-300">·</span>
                 <span className="text-[11px] text-gray-500">{report.report_date}</span>
               </>
             )}
@@ -139,7 +139,7 @@ export default async function ReportDetailPage({
       {report.verification_status === 'changes_requested' && report.reviewer_comment && (
         <div className="rounded-xl border-2 border-orange-300 bg-orange-50 p-5">
           <div className="flex items-start gap-3">
-            <span className="text-orange-500 text-lg flex-shrink-0">âš </span>
+            <span className="text-orange-500 text-lg flex-shrink-0">⚠</span>
             <div>
               <p className="text-[12px] font-bold text-orange-800">
                 Reviewer requested changes — please address before resubmitting
@@ -269,7 +269,7 @@ export default async function ReportDetailPage({
             </div>
             {[
               { label: 'Project',   value: project?.title ?? '—' },
-              { label: 'Status',    value: `${sc.label} Â· ${vc.label}` },
+              { label: 'Status',    value: `${sc.label} · ${vc.label}` },
               { label: 'Created',   value: new Date(report.created_at).toLocaleDateString('en-MY') },
               { label: 'Submitted', value: report.submitted_at ? new Date(report.submitted_at).toLocaleDateString('en-MY') : '—' },
               { label: 'Evidence',  value: `${(evidenceFiles ?? []).length} file(s)` },

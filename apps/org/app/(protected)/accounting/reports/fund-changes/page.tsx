@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/reports/fund-changes/page.tsx
+// apps/org/app/(protected)/accounting/reports/fund-changes/page.tsx
 // amanahOS — Statement of Changes in Funds
 // "Auditors LOVE this" — shows how each fund moved during the year.
 // Formula: Opening + Income - Expenses = Closing per fund
@@ -137,7 +137,7 @@ export default async function FundChangesPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Statement of Changes in Funds</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· Year {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · Year {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}
@@ -174,7 +174,7 @@ export default async function FundChangesPage({
             </div>
             <p className="text-[12px] text-gray-600 text-right font-mono">{fmt(openingBalance)}</p>
             <p className="text-[12px] text-emerald-700 text-right font-mono">+{fmt(yearIncome)}</p>
-            <p className="text-[12px] text-red-600 text-right font-mono">âˆ’{fmt(yearExpenses)}</p>
+            <p className="text-[12px] text-red-600 text-right font-mono">−{fmt(yearExpenses)}</p>
             <p className={`text-[13px] font-bold text-right font-mono ${
               closingBalance >= 0 ? 'text-gray-900' : 'text-red-700'
             }`}>
@@ -190,7 +190,7 @@ export default async function FundChangesPage({
           </div>
           <p className="text-[12px] font-bold text-gray-800 text-right font-mono">{fmt(totals.opening)}</p>
           <p className="text-[12px] font-bold text-emerald-700 text-right font-mono">+{fmt(totals.income)}</p>
-          <p className="text-[12px] font-bold text-red-600 text-right font-mono">âˆ’{fmt(totals.expenses)}</p>
+          <p className="text-[12px] font-bold text-red-600 text-right font-mono">−{fmt(totals.expenses)}</p>
           <p className="text-[14px] font-bold text-gray-900 text-right font-mono">{fmt(totals.closing)}</p>
         </div>
       </div>

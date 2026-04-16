@@ -1,4 +1,4 @@
-﻿// apps/org/app/(protected)/accounting/reports/statement-of-activities/page.tsx
+// apps/org/app/(protected)/accounting/reports/statement-of-activities/page.tsx
 // amanahOS — Statement of Activities (Income Statement for NGOs)
 // Formula from amanah_gp_OS.md:
 //   Income  = SUM(accounts 4000–4999)
@@ -104,7 +104,7 @@ export default async function StatementOfActivitiesPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">Statement of Activities</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{org?.name} Â· Year ended 31 December {selectedYear}</p>
+          <p className="text-sm text-gray-500 mt-0.5">{org?.name} · Year ended 31 December {selectedYear}</p>
         </div>
         <MonthYearPicker
             selectedYear={selectedYear}
@@ -126,7 +126,7 @@ export default async function StatementOfActivitiesPage({
                 ? '✓ Strong — CTCF Layer 2 programAdminBreakdown criterion: Full'
                 : programmeRatio >= 50
                 ? 'Moderate — consider reducing admin costs'
-                : 'âš  Below threshold — auditors may question overhead ratio'}
+                : '⚠ Below threshold — auditors may question overhead ratio'}
             </p>
           </div>
           <span className="text-[11px] font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-full border border-blue-200">
@@ -236,7 +236,7 @@ export default async function StatementOfActivitiesPage({
             {surplus >= 0 ? 'Surplus for the year' : 'Deficit for the year'}
           </span>
           <span className={`text-[16px] font-bold ${surplus >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
-            {surplus >= 0 ? '+' : 'âˆ’'}{fmt(surplus)}
+            {surplus >= 0 ? '+' : '−'}{fmt(surplus)}
           </span>
         </div>
       </div>

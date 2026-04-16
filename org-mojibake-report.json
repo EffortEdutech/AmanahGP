@@ -1,0 +1,232 @@
+[
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\close\\page.tsx",
+    "changes": [
+      {
+        "from": "ðŸ”´",
+        "to": "🔴",
+        "count": 4
+      },
+      {
+        "from": "ðŸŸ¢",
+        "to": "🟢",
+        "count": 2
+      },
+      {
+        "from": "ðŸŸ¡",
+        "to": "🟡",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\page.tsx",
+    "changes": [
+      {
+        "from": "âˆ’",
+        "to": "−",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\payment-requests\\page.tsx",
+    "changes": [
+      {
+        "from": "âš–",
+        "to": "⚖",
+        "count": 1
+      },
+      {
+        "from": "âˆ’",
+        "to": "−",
+        "count": 1
+      },
+      {
+        "from": "âš ",
+        "to": "⚠",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\payment-requests\\[id]\\page.tsx",
+    "changes": [
+      {
+        "from": "âˆ’",
+        "to": "−",
+        "count": 2
+      },
+      {
+        "from": "âš ",
+        "to": "⚠",
+        "count": 3
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\reports\\cash-flow\\page.tsx",
+    "changes": [
+      {
+        "from": "âˆ’",
+        "to": "−",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\reports\\fund-changes\\page.tsx",
+    "changes": [
+      {
+        "from": "âˆ’",
+        "to": "−",
+        "count": 2
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\reports\\statement-of-activities\\page.tsx",
+    "changes": [
+      {
+        "from": "âˆ’",
+        "to": "−",
+        "count": 1
+      },
+      {
+        "from": "âš ",
+        "to": "⚠",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\accounting\\statements\\page.tsx",
+    "changes": [
+      {
+        "from": "âˆ’",
+        "to": "−",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\certification\\page.tsx",
+    "changes": [
+      {
+        "from": "ðŸ†",
+        "to": "🏆",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\compliance\\page.tsx",
+    "changes": [
+      {
+        "from": "ðŸ›",
+        "to": "🏛",
+        "count": 1
+      },
+      {
+        "from": "ðŸŒ™",
+        "to": "🌙",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\members\\page.tsx",
+    "changes": [
+      {
+        "from": "âš ",
+        "to": "⚠",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\policy-kit\\page.tsx",
+    "changes": [
+      {
+        "from": "âš ",
+        "to": "⚠",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\reports\\page.tsx",
+    "changes": [
+      {
+        "from": "â„¹",
+        "to": "ℹ",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\reports\\[id]\\page.tsx",
+    "changes": [
+      {
+        "from": "âš ",
+        "to": "⚠",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\(protected)\\trust\\page.tsx",
+    "changes": [
+      {
+        "from": "âš ",
+        "to": "⚠",
+        "count": 1
+      },
+      {
+        "from": "ðŸŸ¢",
+        "to": "🟢",
+        "count": 1
+      },
+      {
+        "from": "ðŸŸ¡",
+        "to": "🟡",
+        "count": 1
+      },
+      {
+        "from": "ðŸ”µ",
+        "to": "🔵",
+        "count": 1
+      },
+      {
+        "from": "ðŸŸ£",
+        "to": "🟣",
+        "count": 1
+      },
+      {
+        "from": "ðŸŸ ",
+        "to": "🟠",
+        "count": 1
+      }
+    ]
+  },
+  {
+    "file": "apps\\org\\app\\close-page-source.tsx",
+    "changes": [
+      {
+        "from": "ðŸ”´",
+        "to": "🔴",
+        "count": 4
+      },
+      {
+        "from": "ðŸŸ¢",
+        "to": "🟢",
+        "count": 2
+      },
+      {
+        "from": "ðŸŸ¡",
+        "to": "🟡",
+        "count": 2
+      }
+    ]
+  }
+]
