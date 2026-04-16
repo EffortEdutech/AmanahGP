@@ -17,6 +17,13 @@ export const metadata = { title: 'Month close — amanahOS' };
 const MONTHS = ['January','February','March','April','May','June',
                 'July','August','September','October','November','December'];
 
+function relationOne<T>(value: unknown): T | null {
+  if (Array.isArray(value)) {
+    return (value[0] as T | undefined) ?? null;
+  }
+  return (value as T | null) ?? null;
+}
+
 export default async function MonthClosePage({
   searchParams,
 }: {
@@ -115,7 +122,7 @@ export default async function MonthClosePage({
     .gte('debit_amount', LARGE_THRESHOLD);
 
   const largeTxInPeriod = (largeLines ?? []).filter((l) => {
-    const je = l.journal_entries as { period_year: number; period_month: number } | null;
+    const je = relationOne<{ period_year: number; period_month: number }>(l.journal_entries);
     return je?.period_year === targetYear && je?.period_month === targetMonth;
   });
 
@@ -134,8 +141,8 @@ export default async function MonthClosePage({
 
     const ZAKAT_APPROVED = ['5110','5120','5130','5140','5150'];
     zakatViolations = (zakatExpLines ?? []).filter((l) => {
-      const je  = l.journal_entries as { period_year: number; period_month: number } | null;
-      const acc = l.accounts as { account_code: string; account_type: string } | null;
+      const je = relationOne<{ period_year: number; period_month: number }>(l.journal_entries);
+      const acc = relationOne<{ account_code: string; account_type: string }>(l.accounts);
       return (
         je?.period_year === targetYear && je?.period_month === targetMonth &&
         acc?.account_type === 'expense' &&

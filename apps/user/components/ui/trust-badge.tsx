@@ -6,8 +6,6 @@
 // Renders as a styled shield with grade, score, and timestamp.
 // All grades are derived from the 0-100 Amanah Index score.
 
-import type { getTrustGrade } from '@/app/api/trust/[orgId]/route';
-
 type Grade = 'platinum' | 'gold' | 'silver' | 'building' | 'none';
 
 interface TrustBadgeProps {
