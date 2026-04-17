@@ -1,245 +1,174 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { requireConsoleAccess } from "@/lib/console/access";
+import { writeAuditLog } from "@/lib/console/server";
 
-const createOrganisationSchema = z.object({
-  legal_name: z.string().trim().min(3, "Legal name is required"),
-  registration_number: z.string().trim().optional(),
-  organisation_type: z.string().trim().optional(),
-  status: z.enum(["draft", "active", "suspended", "archived"]),
+const organizationSchema = z.object({
+  name: z.string().trim().min(2, "Display name is required"),
+  legal_name: z.string().trim().min(2, "Legal name is required"),
+  registration_no: z.string().trim().optional().transform((value) => value || null),
+  org_type: z.string().trim().optional().transform((value) => value || null),
+  website_url: z.string().trim().optional().transform((value) => value || null),
+  contact_email: z.string().trim().optional().transform((value) => value || null),
+  contact_phone: z.string().trim().optional().transform((value) => value || null),
+  address_text: z.string().trim().optional().transform((value) => value || null),
+  country: z.string().trim().min(2).max(2).default("MY"),
+  state: z.string().trim().optional().transform((value) => value || null),
+  oversight_authority: z.string().trim().optional().transform((value) => value || null),
+  summary: z.string().trim().optional().transform((value) => value || null),
+  onboarding_status: z.string().trim().min(1),
+  listing_status: z.string().trim().min(1),
+  workspace_status: z.string().trim().min(1),
+  owner_user_id: z.string().trim().optional().transform((value) => value || null),
 });
 
-const updateStatusSchema = z.object({
-  organisation_id: z.string().uuid(),
-  status: z.enum(["draft", "active", "suspended", "archived"]),
-});
+export async function createOrganizationAction(formData: FormData) {
+  const { supabase, user } = await requireConsoleAccess("organizations.write");
 
-const updateOrganisationDetailsSchema = z.object({
-  organisation_id: z.string().uuid(),
-  legal_name: z.string().trim().min(3, "Legal name is required"),
-  registration_number: z.string().trim().optional(),
-  organisation_type: z.string().trim().optional(),
-});
-
-const assignCurrentUserMembershipSchema = z.object({
-  organisation_id: z.string().uuid(),
-  role: z.enum([
-    "org_owner",
-    "org_admin",
-    "finance_manager",
-    "compliance_officer",
-    "reviewer",
-    "staff",
-  ]),
-});
-
-const createInvitationSchema = z.object({
-  organisation_id: z.string().uuid(),
-  email: z.string().email("Valid email is required"),
-  role: z.enum([
-    "org_owner",
-    "org_admin",
-    "finance_manager",
-    "compliance_officer",
-    "reviewer",
-    "staff",
-  ]),
-});
-
-const revokeInvitationSchema = z.object({
-  organisation_id: z.string().uuid(),
-  invitation_id: z.string().uuid(),
-});
-
-export async function createOrganisationAction(formData: FormData) {
-  const parsed = createOrganisationSchema.safeParse({
+  const parsed = organizationSchema.safeParse({
+    name: formData.get("name"),
     legal_name: formData.get("legal_name"),
-    registration_number: formData.get("registration_number") || undefined,
-    organisation_type: formData.get("organisation_type") || undefined,
-    status: formData.get("status"),
+    registration_no: formData.get("registration_no"),
+    org_type: formData.get("org_type"),
+    website_url: formData.get("website_url"),
+    contact_email: formData.get("contact_email"),
+    contact_phone: formData.get("contact_phone"),
+    address_text: formData.get("address_text"),
+    country: formData.get("country") || "MY",
+    state: formData.get("state"),
+    oversight_authority: formData.get("oversight_authority"),
+    summary: formData.get("summary"),
+    onboarding_status: formData.get("onboarding_status") || "draft",
+    listing_status: formData.get("listing_status") || "private",
+    workspace_status: formData.get("workspace_status") || "draft",
+    owner_user_id: formData.get("owner_user_id"),
   });
 
   if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message || "Invalid form data";
-    redirect(`/organisations/new?error=${encodeURIComponent(message)}`);
+    redirect(`/organisations/new?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid form")}`);
   }
 
-  const supabase = await createClient();
+  const payload = parsed.data;
 
   const { data, error } = await supabase
-    .from("organisations")
+    .from("organizations")
     .insert({
-      legal_name: parsed.data.legal_name,
-      registration_number: parsed.data.registration_number || null,
-      organisation_type: parsed.data.organisation_type || null,
-      status: parsed.data.status,
+      ...payload,
+      updated_at: new Date().toISOString(),
     })
     .select("id")
     .single();
 
   if (error || !data) {
-    redirect(`/organisations/new?error=${encodeURIComponent(error?.message || "Failed to create organisation")}`);
+    redirect(`/organisations/new?error=${encodeURIComponent(error?.message ?? "Unable to create organization")}`);
   }
 
-  revalidatePath("/dashboard");
-  revalidatePath("/organisations");
-  redirect(`/organisations/${data.id}?created=1`);
-}
-
-export async function updateOrganisationStatusAction(formData: FormData) {
-  const parsed = updateStatusSchema.safeParse({
-    organisation_id: formData.get("organisation_id"),
-    status: formData.get("status"),
+  await writeAuditLog(supabase, user.id, {
+    action: "organization.created",
+    entityTable: "organizations",
+    entityId: data.id,
+    organizationId: data.id,
+    metadata: { legal_name: payload.legal_name, workspace_status: payload.workspace_status },
   });
 
-  if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message || "Invalid status update";
-    redirect(`/organisations?error=${encodeURIComponent(message)}`);
-  }
-
-  const supabase = await createClient();
-
-  const { error } = await supabase
-    .from("organisations")
-    .update({ status: parsed.data.status })
-    .eq("id", parsed.data.organisation_id);
-
-  if (error) {
-    redirect(`/organisations/${parsed.data.organisation_id}?error=${encodeURIComponent(error.message)}`);
-  }
-
-  revalidatePath("/dashboard");
   revalidatePath("/organisations");
-  revalidatePath(`/organisations/${parsed.data.organisation_id}`);
-
-  redirect(`/organisations/${parsed.data.organisation_id}?updated=1`);
+  redirect(`/organisations/${data.id}`);
 }
 
-export async function updateOrganisationDetailsAction(formData: FormData) {
-  const parsed = updateOrganisationDetailsSchema.safeParse({
-    organisation_id: formData.get("organisation_id"),
+export async function updateOrganizationAction(formData: FormData) {
+  const { supabase, user } = await requireConsoleAccess("organizations.write");
+  const orgId = String(formData.get("org_id") ?? "");
+
+  const parsed = organizationSchema.safeParse({
+    name: formData.get("name"),
     legal_name: formData.get("legal_name"),
-    registration_number: formData.get("registration_number") || undefined,
-    organisation_type: formData.get("organisation_type") || undefined,
+    registration_no: formData.get("registration_no"),
+    org_type: formData.get("org_type"),
+    website_url: formData.get("website_url"),
+    contact_email: formData.get("contact_email"),
+    contact_phone: formData.get("contact_phone"),
+    address_text: formData.get("address_text"),
+    country: formData.get("country") || "MY",
+    state: formData.get("state"),
+    oversight_authority: formData.get("oversight_authority"),
+    summary: formData.get("summary"),
+    onboarding_status: formData.get("onboarding_status") || "draft",
+    listing_status: formData.get("listing_status") || "private",
+    workspace_status: formData.get("workspace_status") || "draft",
+    owner_user_id: formData.get("owner_user_id"),
   });
 
-  if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message || "Invalid organisation details";
-    redirect(`/organisations/${formData.get("organisation_id")}?error=${encodeURIComponent(message)}`);
+  if (!orgId) {
+    redirect("/organisations?error=Missing organization id");
   }
 
-  const supabase = await createClient();
+  if (!parsed.success) {
+    redirect(`/organisations/${orgId}/edit?error=${encodeURIComponent(parsed.error.issues[0]?.message ?? "Invalid form")}`);
+  }
+
+  const payload = parsed.data;
+
   const { error } = await supabase
-    .from("organisations")
+    .from("organizations")
     .update({
-      legal_name: parsed.data.legal_name,
-      registration_number: parsed.data.registration_number || null,
-      organisation_type: parsed.data.organisation_type || null,
+      ...payload,
+      updated_at: new Date().toISOString(),
     })
-    .eq("id", parsed.data.organisation_id);
+    .eq("id", orgId);
 
   if (error) {
-    redirect(`/organisations/${parsed.data.organisation_id}?error=${encodeURIComponent(error.message)}`);
+    redirect(`/organisations/${orgId}/edit?error=${encodeURIComponent(error.message)}`);
   }
+
+  await writeAuditLog(supabase, user.id, {
+    action: "organization.updated",
+    entityTable: "organizations",
+    entityId: orgId,
+    organizationId: orgId,
+    metadata: { legal_name: payload.legal_name, workspace_status: payload.workspace_status },
+  });
 
   revalidatePath("/organisations");
-  revalidatePath(`/organisations/${parsed.data.organisation_id}`);
-  redirect(`/organisations/${parsed.data.organisation_id}?updated=1`);
+  revalidatePath(`/organisations/${orgId}`);
+  redirect(`/organisations/${orgId}`);
 }
 
-export async function assignCurrentUserMembershipAction(formData: FormData) {
-  const parsed = assignCurrentUserMembershipSchema.safeParse({
-    organisation_id: formData.get("organisation_id"),
-    role: formData.get("role"),
-  });
+export async function updateOrganizationStatusAction(formData: FormData) {
+  const { supabase, user } = await requireConsoleAccess("organizations.write");
+  const orgId = String(formData.get("org_id") ?? "");
+  const workspaceStatus = String(formData.get("workspace_status") ?? "draft");
+  const onboardingStatus = String(formData.get("onboarding_status") ?? "draft");
+  const listingStatus = String(formData.get("listing_status") ?? "private");
 
-  if (!parsed.success) {
-    redirect(`/organisations/${formData.get("organisation_id")}/members?error=${encodeURIComponent("Invalid membership input")}`);
+  if (!orgId) {
+    redirect("/organisations?error=Missing organization id");
   }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect(`/login`);
-  }
-
-  const { error } = await supabase.from("organisation_memberships").upsert(
-    {
-      organisation_id: parsed.data.organisation_id,
-      user_id: user.id,
-      role: parsed.data.role,
-    },
-    { onConflict: "organisation_id,user_id" }
-  );
-
-  if (error) {
-    redirect(`/organisations/${parsed.data.organisation_id}/members?error=${encodeURIComponent(error.message)}`);
-  }
-
-  revalidatePath(`/organisations/${parsed.data.organisation_id}/members`);
-  redirect(`/organisations/${parsed.data.organisation_id}/members?memberAdded=1`);
-}
-
-export async function createOrganisationInvitationAction(formData: FormData) {
-  const parsed = createInvitationSchema.safeParse({
-    organisation_id: formData.get("organisation_id"),
-    email: formData.get("email"),
-    role: formData.get("role"),
-  });
-
-  if (!parsed.success) {
-    const message = parsed.error.issues[0]?.message || "Invalid invitation input";
-    redirect(`/organisations/${formData.get("organisation_id")}/members?error=${encodeURIComponent(message)}`);
-  }
-
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const { error } = await supabase.from("organisation_invitations").insert({
-    organisation_id: parsed.data.organisation_id,
-    email: parsed.data.email,
-    role: parsed.data.role,
-    status: "pending",
-    invited_by_user_id: user?.id ?? null,
-  });
-
-  if (error) {
-    redirect(`/organisations/${parsed.data.organisation_id}/members?error=${encodeURIComponent(error.message)}`);
-  }
-
-  revalidatePath(`/organisations/${parsed.data.organisation_id}/members`);
-  redirect(`/organisations/${parsed.data.organisation_id}/members?inviteCreated=1`);
-}
-
-export async function revokeOrganisationInvitationAction(formData: FormData) {
-  const parsed = revokeInvitationSchema.safeParse({
-    organisation_id: formData.get("organisation_id"),
-    invitation_id: formData.get("invitation_id"),
-  });
-
-  if (!parsed.success) {
-    redirect(`/organisations/${formData.get("organisation_id")}/members?error=${encodeURIComponent("Invalid revoke request")}`);
-  }
-
-  const supabase = await createClient();
 
   const { error } = await supabase
-    .from("organisation_invitations")
-    .update({ status: "revoked", revoked_at: new Date().toISOString() })
-    .eq("id", parsed.data.invitation_id);
+    .from("organizations")
+    .update({
+      workspace_status: workspaceStatus,
+      onboarding_status: onboardingStatus,
+      listing_status: listingStatus,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", orgId);
 
   if (error) {
-    redirect(`/organisations/${parsed.data.organisation_id}/members?error=${encodeURIComponent(error.message)}`);
+    redirect(`/organisations/${orgId}?error=${encodeURIComponent(error.message)}`);
   }
 
-  revalidatePath(`/organisations/${parsed.data.organisation_id}/members`);
-  redirect(`/organisations/${parsed.data.organisation_id}/members?inviteRevoked=1`);
+  await writeAuditLog(supabase, user.id, {
+    action: "organization.status_updated",
+    entityTable: "organizations",
+    entityId: orgId,
+    organizationId: orgId,
+    metadata: { workspace_status: workspaceStatus, onboarding_status: onboardingStatus, listing_status: listingStatus },
+  });
+
+  revalidatePath(`/organisations/${orgId}`);
+  redirect(`/organisations/${orgId}`);
 }

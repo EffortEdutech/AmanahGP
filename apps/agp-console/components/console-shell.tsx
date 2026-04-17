@@ -1,57 +1,66 @@
-import { getCurrentConsoleRole } from "@/lib/console/server";
-import { createClient } from "@/lib/supabase/server";
-import { LogoutButton } from "./logout-button";
-import { ConsoleSidebar } from "./console-sidebar";
+import Link from "next/link";
+import { Building2, ClipboardList, LayoutDashboard, ShieldCheck, Wallet } from "lucide-react";
+import { getPrimaryRoleLabel } from "@/lib/console/access";
+import { LogoutButton } from "@/components/logout-button";
 
-function formatRole(role: string | null) {
-  if (!role) return "unassigned";
-  return role.replaceAll("_", " ");
-}
-
-export async function ConsoleShell({
-  title,
-  children,
-}: {
+type ConsoleShellProps = {
   title: string;
+  description?: string;
+  currentPath: string;
+  roles: string[];
+  userEmail?: string | null;
   children: React.ReactNode;
-}) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+};
 
-  const role = await getCurrentConsoleRole();
+const navItems = [
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/organisations", label: "Organisations", icon: Building2 },
+  { href: "/plans", label: "Plans & Billing", icon: Wallet },
+  { href: "/audit", label: "Audit Log", icon: ClipboardList },
+];
 
+export function ConsoleShell({ title, description, currentPath, roles, userEmail, children }: ConsoleShellProps) {
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900">
-      <div className="flex min-h-screen">
-        <ConsoleSidebar />
+    <div className="page-shell">
+      <div className="sidebar-layout">
+        <aside className="panel sidebar">
+          <div className="kicker">AGP Console</div>
+          <div className="h2" style={{ marginTop: 8 }}>Platform Control Plane</div>
+          <div className="muted" style={{ marginTop: 10 }}>{userEmail ?? "Signed in"}</div>
+          <div className="row" style={{ marginTop: 12 }}>
+            <span className="badge"><ShieldCheck size={14} /> {getPrimaryRoleLabel(roles)}</span>
+          </div>
 
-        <main className="flex-1">
-          <header className="border-b border-emerald-100 bg-white/90 px-8 py-6 backdrop-blur">
-            <div className="flex items-center justify-between gap-4">
+          <nav className="nav-list">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = currentPath === item.href || currentPath.startsWith(`${item.href}/`);
+              return (
+                <Link key={item.href} className="nav-link" href={item.href} data-active={isActive}>
+                  <Icon size={18} />
+                  <span>{item.label}</span>
+                </Link>
+              );
+            })}
+          </nav>
+
+          <div style={{ marginTop: 18 }}>
+            <LogoutButton />
+          </div>
+        </aside>
+
+        <main className="stack">
+          <section className="panel hero">
+            <div className="kicker">Amanah Governance Platform</div>
+            <div className="row-between" style={{ marginTop: 10 }}>
               <div>
-                <div className="text-[11px] uppercase tracking-[0.18em] text-emerald-700/70">
-                  Amanah Governance Platform
-                </div>
-                <h1 className="font-display mt-1 text-2xl font-bold tracking-tight text-slate-900">
-                  {title}
-                </h1>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="hidden items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-800 md:flex">
-                  <span>{user?.email ?? "Not signed in"}</span>
-                  <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[10px] uppercase tracking-wide text-amber-700">
-                    {formatRole(role)}
-                  </span>
-                </div>
-                <LogoutButton />
+                <h1 className="h1">{title}</h1>
+                {description ? <p className="muted" style={{ maxWidth: 860 }}>{description}</p> : null}
               </div>
             </div>
-          </header>
+          </section>
 
-          <div className="p-8">{children}</div>
+          {children}
         </main>
       </div>
     </div>
