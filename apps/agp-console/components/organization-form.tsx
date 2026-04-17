@@ -1,4 +1,4 @@
-import { LISTING_STATUS_OPTIONS, ONBOARDING_STATUS_OPTIONS, ORG_TYPE_OPTIONS, WORKSPACE_STATUS_OPTIONS } from "@/lib/console/constants";
+import { LISTING_STATUS_OPTIONS, ONBOARDING_STATUS_OPTIONS, ORG_TYPE_OPTIONS } from "@/lib/console/constants";
 import type { OrganizationRow } from "@/lib/console/server";
 
 export function OrganizationForm({
@@ -65,20 +65,6 @@ export function OrganizationForm({
         </div>
 
         <div className="field">
-          <label htmlFor="owner_user_id">Owner auth user id</label>
-          <input className="input" id="owner_user_id" name="owner_user_id" defaultValue={organization?.owner_user_id ?? ""} />
-        </div>
-
-        <div className="field">
-          <label htmlFor="workspace_status">Workspace status</label>
-          <select className="select" id="workspace_status" name="workspace_status" defaultValue={organization?.workspace_status ?? "draft"}>
-            {WORKSPACE_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-
-        <div className="field">
           <label htmlFor="onboarding_status">Onboarding</label>
           <select className="select" id="onboarding_status" name="onboarding_status" defaultValue={organization?.onboarding_status ?? "draft"}>
             {ONBOARDING_STATUS_OPTIONS.map((option) => (
@@ -110,6 +96,10 @@ export function OrganizationForm({
       <div className="field">
         <label htmlFor="summary">Summary</label>
         <textarea className="textarea" id="summary" name="summary" defaultValue={organization?.summary ?? ""} />
+      </div>
+
+      <div className="notice">
+        Canonical lifecycle uses only onboarding_status and listing_status. Workspace status and owner_user_id are removed.
       </div>
 
       <div className="row">

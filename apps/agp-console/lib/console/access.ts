@@ -16,6 +16,7 @@ const rolePermissions: Record<string, ConsolePermission[]> = {
     "roles.read",
     "roles.write",
     "audit.read",
+    "notifications.read",
   ],
   platform_admin: [
     "organizations.read",
@@ -27,8 +28,16 @@ const rolePermissions: Record<string, ConsolePermission[]> = {
     "billing.read",
     "billing.write",
     "audit.read",
+    "notifications.read",
   ],
-  platform_auditor: ["organizations.read", "members.read", "apps.read", "billing.read", "audit.read"],
+  platform_auditor: [
+    "organizations.read",
+    "members.read",
+    "apps.read",
+    "billing.read",
+    "audit.read",
+    "notifications.read",
+  ],
 };
 
 export async function requireAuthUser() {

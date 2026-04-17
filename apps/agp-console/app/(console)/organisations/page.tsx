@@ -38,9 +38,9 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
               <tr>
                 <th>Organisation</th>
                 <th>Type</th>
-                <th>Workspace</th>
                 <th>Onboarding</th>
                 <th>Listing</th>
+                <th>Approved</th>
                 <th>Created</th>
                 <th>Actions</th>
               </tr>
@@ -53,9 +53,9 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
                     <div className="muted">{organization.registration_no || organization.name}</div>
                   </td>
                   <td>{titleCase(organization.org_type)}</td>
-                  <td><span className={statusBadgeClass(organization.workspace_status)}>{titleCase(organization.workspace_status)}</span></td>
                   <td><span className={statusBadgeClass(organization.onboarding_status)}>{titleCase(organization.onboarding_status)}</span></td>
                   <td><span className={statusBadgeClass(organization.listing_status)}>{titleCase(organization.listing_status)}</span></td>
+                  <td>{formatDate(organization.approved_at)}</td>
                   <td>{formatDate(organization.created_at)}</td>
                   <td>
                     <div className="row">

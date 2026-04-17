@@ -1,10 +1,14 @@
 import Link from "next/link";
 import { Blocks, Pencil, Users, Wallet } from "lucide-react";
 import { ConsoleShell } from "@/components/console-shell";
+import { OrganizationLifecycleQuickActions } from "@/components/organization-lifecycle-quick-actions";
 import { OrganizationStatusForm } from "@/components/organization-status-form";
-import { updateOrganizationStatusAction } from "@/app/(console)/organisations/actions";
+import {
+  runOrganizationLifecycleAction,
+  updateOrganizationStatusAction,
+} from "@/app/(console)/organisations/actions";
 import { requireConsoleAccess } from "@/lib/console/access";
-import { formatDate, statusBadgeClass, titleCase } from "@/lib/console/mappers";
+import { formatDate, formatDateTime, statusBadgeClass, titleCase } from "@/lib/console/mappers";
 import { getOrganizationById } from "@/lib/console/server";
 
 export default async function OrganisationDetailPage({
@@ -12,10 +16,10 @@ export default async function OrganisationDetailPage({
   searchParams,
 }: {
   params: Promise<{ orgId: string }>;
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; created?: string; updated?: string }>;
 }) {
   const { orgId } = await params;
-  const { error } = await searchParams;
+  const { error, created, updated } = await searchParams;
   const { user, roles } = await requireConsoleAccess("organizations.read");
   const organization = await getOrganizationById(orgId);
 
@@ -28,6 +32,8 @@ export default async function OrganisationDetailPage({
       userEmail={user.email}
     >
       {error ? <div className="notice notice-warning">{decodeURIComponent(error)}</div> : null}
+      {created ? <div className="notice">Organisation created successfully.</div> : null}
+      {updated ? <div className="notice">Organisation updated successfully.</div> : null}
 
       <section className="grid-cards">
         <div className="panel section stack">
@@ -39,7 +45,6 @@ export default async function OrganisationDetailPage({
             </Link>
           </div>
           <div className="row">
-            <span className={statusBadgeClass(organization.workspace_status)}>{titleCase(organization.workspace_status)}</span>
             <span className={statusBadgeClass(organization.onboarding_status)}>{titleCase(organization.onboarding_status)}</span>
             <span className={statusBadgeClass(organization.listing_status)}>{titleCase(organization.listing_status)}</span>
           </div>
@@ -50,7 +55,10 @@ export default async function OrganisationDetailPage({
           <div className="muted">Phone: {organization.contact_phone || "—"}</div>
           <div className="muted">Address: {organization.address_text || "—"}</div>
           <div className="muted">Summary: {organization.summary || "—"}</div>
+          <div className="muted">Onboarding submitted: {formatDateTime(organization.onboarding_submitted_at)}</div>
+          <div className="muted">Approved at: {formatDateTime(organization.approved_at)}</div>
           <div className="muted">Created: {formatDate(organization.created_at)}</div>
+          <div className="muted">Updated: {formatDateTime(organization.updated_at)}</div>
         </div>
 
         <div className="panel section stack">
@@ -61,13 +69,14 @@ export default async function OrganisationDetailPage({
             <Link className="btn btn-secondary" href={`/organisations/${orgId}/billing`}><Wallet size={16} /> Billing</Link>
           </div>
           <div className="notice">
-            This organisation now uses the canonical platform data model only.
+            Canonical organisation lifecycle now uses only onboarding_status and listing_status.
           </div>
         </div>
       </section>
 
       <section className="panel section stack">
         <div className="h2">Lifecycle control</div>
+        <OrganizationLifecycleQuickActions orgId={organization.id} action={runOrganizationLifecycleAction} />
         <OrganizationStatusForm organization={organization} action={updateOrganizationStatusAction} />
       </section>
     </ConsoleShell>

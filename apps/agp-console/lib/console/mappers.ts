@@ -37,6 +37,14 @@ export function statusBadgeClass(status: string | null | undefined) {
   return "badge badge-neutral";
 }
 
+export function notificationBadgeClass(level: string | null | undefined) {
+  const normalized = String(level ?? "").toLowerCase();
+  if (normalized === "danger") return "badge badge-danger";
+  if (normalized === "warning") return "badge badge-warning";
+  if (normalized === "success") return "badge";
+  return "badge badge-neutral";
+}
+
 export function titleCase(value: string | null | undefined) {
   if (!value) return "—";
   return value

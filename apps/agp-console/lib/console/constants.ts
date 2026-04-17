@@ -8,13 +8,6 @@ export const ORG_TYPE_OPTIONS = [
   { value: "other", label: "Other" },
 ] as const;
 
-export const WORKSPACE_STATUS_OPTIONS = [
-  { value: "draft", label: "Draft" },
-  { value: "active", label: "Active" },
-  { value: "suspended", label: "Suspended" },
-  { value: "archived", label: "Archived" },
-] as const;
-
 export const ONBOARDING_STATUS_OPTIONS = [
   { value: "draft", label: "Draft" },
   { value: "submitted", label: "Submitted" },
@@ -55,6 +48,12 @@ export const BILLING_RECORD_STATUS_OPTIONS = [
   { value: "void", label: "Void" },
 ] as const;
 
+export const PLATFORM_USER_ROLE_OPTIONS = [
+  { value: "platform_owner", label: "Platform Owner" },
+  { value: "platform_admin", label: "Platform Admin" },
+  { value: "platform_auditor", label: "Platform Auditor" },
+] as const;
+
 export type ConsolePermission =
   | "organizations.read"
   | "organizations.write"
@@ -66,4 +65,5 @@ export type ConsolePermission =
   | "billing.write"
   | "roles.read"
   | "roles.write"
-  | "audit.read";
+  | "audit.read"
+  | "notifications.read";

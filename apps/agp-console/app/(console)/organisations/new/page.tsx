@@ -11,7 +11,7 @@ export default async function NewOrganisationPage({ searchParams }: { searchPara
   return (
     <ConsoleShell
       title="Create organisation"
-      description="Register a new organisation in public.organizations and set its platform lifecycle fields."
+      description="Register a new organisation in public.organizations using canonical lifecycle fields only."
       currentPath="/organisations"
       roles={roles}
       userEmail={user.email}

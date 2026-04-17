@@ -1,4 +1,4 @@
-import { LISTING_STATUS_OPTIONS, ONBOARDING_STATUS_OPTIONS, WORKSPACE_STATUS_OPTIONS } from "@/lib/console/constants";
+import { LISTING_STATUS_OPTIONS, ONBOARDING_STATUS_OPTIONS } from "@/lib/console/constants";
 import type { OrganizationRow } from "@/lib/console/server";
 
 export function OrganizationStatusForm({
@@ -13,15 +13,6 @@ export function OrganizationStatusForm({
       <input type="hidden" name="org_id" value={organization.id} />
 
       <div className="form-grid">
-        <div className="field">
-          <label htmlFor="workspace_status">Workspace status</label>
-          <select className="select" id="workspace_status" name="workspace_status" defaultValue={organization.workspace_status}>
-            {WORKSPACE_STATUS_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>{option.label}</option>
-            ))}
-          </select>
-        </div>
-
         <div className="field">
           <label htmlFor="onboarding_status">Onboarding status</label>
           <select className="select" id="onboarding_status" name="onboarding_status" defaultValue={organization.onboarding_status}>
@@ -41,7 +32,11 @@ export function OrganizationStatusForm({
         </div>
       </div>
 
-      <button className="btn btn-primary" type="submit">Update statuses</button>
+      <div className="notice">
+        Rule: only approved organisations should be moved to Listed.
+      </div>
+
+      <button className="btn btn-primary" type="submit">Update lifecycle</button>
     </form>
   );
 }
