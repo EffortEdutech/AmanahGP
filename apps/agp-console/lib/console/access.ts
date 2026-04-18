@@ -17,6 +17,8 @@ const rolePermissions: Record<string, ConsolePermission[]> = {
     "roles.write",
     "audit.read",
     "notifications.read",
+    "cases.read",
+    "cases.write",
   ],
   platform_admin: [
     "organizations.read",
@@ -29,6 +31,8 @@ const rolePermissions: Record<string, ConsolePermission[]> = {
     "billing.write",
     "audit.read",
     "notifications.read",
+    "cases.read",
+    "cases.write",
   ],
   platform_auditor: [
     "organizations.read",
@@ -37,6 +41,29 @@ const rolePermissions: Record<string, ConsolePermission[]> = {
     "billing.read",
     "audit.read",
     "notifications.read",
+    "cases.read",
+  ],
+  platform_reviewer: [
+    "organizations.read",
+    "members.read",
+    "audit.read",
+    "notifications.read",
+    "cases.read",
+    "cases.write",
+  ],
+  platform_scholar: [
+    "organizations.read",
+    "audit.read",
+    "notifications.read",
+    "cases.read",
+    "cases.write",
+  ],
+  platform_approver: [
+    "organizations.read",
+    "audit.read",
+    "notifications.read",
+    "cases.read",
+    "cases.write",
   ],
 };
 
@@ -104,6 +131,9 @@ export function hasPermission(roles: string[], permission: ConsolePermission) {
 export function getPrimaryRoleLabel(roles: string[]) {
   if (roles.includes("platform_owner")) return "Platform Owner";
   if (roles.includes("platform_admin")) return "Platform Admin";
+  if (roles.includes("platform_approver")) return "Approver";
+  if (roles.includes("platform_scholar")) return "Scholar";
+  if (roles.includes("platform_reviewer")) return "Reviewer";
   if (roles.includes("platform_auditor")) return "Platform Auditor";
   return "Console User";
 }

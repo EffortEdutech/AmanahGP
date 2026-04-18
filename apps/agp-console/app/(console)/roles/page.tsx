@@ -28,7 +28,7 @@ export default async function RolesPage({
   return (
     <ConsoleShell
       title="Roles & Access"
-      description="Manage platform control-plane access using canonical public.users and public.platform_user_roles only."
+      description="Manage platform control-plane roles for owners, admins, reviewers, scholars, approvers, and auditors using canonical public.platform_user_roles."
       currentPath="/roles"
       roles={roles}
       userEmail={user.email}
@@ -41,6 +41,9 @@ export default async function RolesPage({
         <StatsCard label="active assignments" value={stats.active} note="Currently enabled console roles" />
         <StatsCard label="owners" value={stats.owners} note="Platform owner assignments" />
         <StatsCard label="admins" value={stats.admins} note="Operational admin assignments" />
+        <StatsCard label="reviewers" value={stats.reviewers} note="Assigned governance reviewers" />
+        <StatsCard label="scholars" value={stats.scholars} note="Assigned scholars" />
+        <StatsCard label="approvers" value={stats.approvers} note="Assigned approvers" />
         <StatsCard label="auditors" value={stats.auditors} note="Read-focused oversight assignments" />
       </section>
 
@@ -59,7 +62,7 @@ export default async function RolesPage({
         </form>
 
         <div className="notice">
-          Platform roles are stored in <strong>public.platform_user_roles</strong> using the Auth User ID. This page maps that ID from <strong>public.users.auth_provider_user_id</strong>.
+          Governance workflow users should be granted <strong>Reviewer</strong>, <strong>Scholar</strong>, or <strong>Approver</strong> here before they can be assigned in Governance Cases.
         </div>
 
         <PlatformUserSearchTable users={users as any[]} roleLookup={roleLookup} />

@@ -26,6 +26,130 @@ export type OrganizationRow = {
   updated_at: string;
 };
 
+export type ComplianceOrganizationRow = {
+  id: string;
+  name: string;
+  legal_name: string | null;
+  registration_no: string | null;
+  org_type: string | null;
+  onboarding_status: string;
+  listing_status: string;
+  active_members: number;
+  pending_invites: number;
+  active_apps: number;
+  subscription_status: string | null;
+  open_billing_records: number;
+  last_activity_at: string | null;
+  risk_level: "good" | "warning" | "danger";
+  issues: string[];
+};
+
+export type GovernanceReviewCaseRow = {
+  id: string;
+  case_code: string;
+  organization_id: string;
+  review_type: string;
+  status: string;
+  priority: string;
+  intake_source: string;
+  summary: string | null;
+  due_at: string | null;
+  opened_at: string;
+  submitted_at: string | null;
+  review_started_at: string | null;
+  scholar_started_at: string | null;
+  approval_started_at: string | null;
+  closed_at: string | null;
+  outcome: string | null;
+  created_by_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  organization?: {
+    id: string;
+    name: string | null;
+    legal_name: string | null;
+    registration_no: string | null;
+    org_type: string | null;
+  } | null;
+};
+
+export type GovernanceCaseAssignmentRow = {
+  id: string;
+  case_id: string;
+  assignee_user_id: string;
+  assignment_role: string;
+  status: string;
+  notes: string | null;
+  assigned_by_user_id: string | null;
+  assigned_at: string;
+  responded_at: string | null;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: string;
+    email: string;
+    display_name: string | null;
+    auth_provider_user_id: string;
+    platform_role: string;
+    is_active: boolean;
+  } | null;
+};
+
+
+export type GovernanceCaseFindingRow = {
+  id: string;
+  case_id: string;
+  finding_type: string;
+  severity: string;
+  status: string;
+  title: string;
+  details: string | null;
+  recommendation: string | null;
+  recorded_by_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: string;
+    email: string;
+    display_name: string | null;
+    auth_provider_user_id: string;
+  } | null;
+};
+
+export type GovernanceCaseEvidenceRow = {
+  id: string;
+  case_id: string;
+  finding_id: string | null;
+  evidence_type: string;
+  title: string;
+  evidence_url: string | null;
+  notes: string | null;
+  recorded_by_user_id: string | null;
+  created_at: string;
+  updated_at: string;
+  user?: {
+    id: string;
+    email: string;
+    display_name: string | null;
+    auth_provider_user_id: string;
+  } | null;
+  finding?: {
+    id: string;
+    title: string;
+  } | null;
+};
+
+export type AssignableConsoleUserRow = {
+  id: string;
+  email: string;
+  display_name: string | null;
+  auth_provider_user_id: string;
+  platform_role: string;
+  is_active: boolean;
+  console_roles: string[];
+};
+
 export const getCurrentSession = cache(async () => {
   const supabase = await createSupabaseServerClient();
   const {
@@ -64,11 +188,12 @@ export async function getCurrentPublicUser(supabase: SupabaseClient, authUserId:
 export async function getDashboardStats() {
   const supabase = await createSupabaseServerClient();
 
-  const [orgs, apps, plans, invites] = await Promise.all([
+  const [orgs, apps, plans, invites, cases] = await Promise.all([
     supabase.from("organizations").select("id", { count: "exact", head: true }),
     supabase.from("app_installations").select("id", { count: "exact", head: true }),
     supabase.from("billing_plans").select("id", { count: "exact", head: true }),
     supabase.from("org_invitations").select("id", { count: "exact", head: true }).eq("status", "pending"),
+    supabase.from("governance_review_cases").select("id", { count: "exact", head: true }),
   ]);
 
   return {
@@ -76,6 +201,7 @@ export async function getDashboardStats() {
     installations: apps.count ?? 0,
     plans: plans.count ?? 0,
     pendingInvites: invites.count ?? 0,
+    governanceCases: cases.count ?? 0,
   };
 }
 
@@ -403,7 +529,7 @@ async function getOrganizationLookup(supabase: SupabaseClient, orgIds: string[])
 export async function listConsoleNotifications(limit = 30): Promise<ConsoleNotificationItem[]> {
   const supabase = await createSupabaseServerClient();
 
-  const [invitesResp, billingResp, subsResp, orgsResp] = await Promise.all([
+  const [invitesResp, billingResp, subsResp, orgsResp, casesResp] = await Promise.all([
     supabase
       .from("org_invitations")
       .select("id, organization_id, invited_email, org_role, status, expires_at, created_at")
@@ -428,9 +554,15 @@ export async function listConsoleNotifications(limit = 30): Promise<ConsoleNotif
       .or("onboarding_status.eq.changes_requested,onboarding_status.eq.rejected,listing_status.eq.suspended")
       .order("updated_at", { ascending: false })
       .limit(limit),
+    supabase
+      .from("governance_review_cases")
+      .select("id, case_code, organization_id, status, due_at, priority, updated_at")
+      .in("status", ["submitted", "under_review", "scholar_review", "approval_pending"])
+      .order("updated_at", { ascending: false })
+      .limit(limit),
   ]);
 
-  for (const response of [invitesResp, billingResp, subsResp, orgsResp]) {
+  for (const response of [invitesResp, billingResp, subsResp, orgsResp, casesResp]) {
     if (response.error) {
       throw new Error(response.error.message);
     }
@@ -441,6 +573,7 @@ export async function listConsoleNotifications(limit = 30): Promise<ConsoleNotif
     ...(billingResp.data ?? []).map((row) => row.organization_id),
     ...(subsResp.data ?? []).map((row) => row.organization_id),
     ...(orgsResp.data ?? []).map((row) => row.id),
+    ...(casesResp.data ?? []).map((row) => row.organization_id),
   ];
 
   const orgLookup = await getOrganizationLookup(supabase, orgIds);
@@ -495,7 +628,7 @@ export async function listConsoleNotifications(limit = 30): Promise<ConsoleNotif
   for (const org of orgsResp.data ?? []) {
     let title = "Compliance follow-up";
     let body = "Organisation status requires review.";
-    let level = "warning";
+    let level: "warning" | "danger" = "warning";
 
     if (org.onboarding_status === "changes_requested") {
       title = "Onboarding changes requested";
@@ -522,6 +655,25 @@ export async function listConsoleNotifications(limit = 30): Promise<ConsoleNotif
       metadata: {
         onboarding_status: org.onboarding_status,
         listing_status: org.listing_status,
+      },
+    });
+  }
+
+  for (const reviewCase of casesResp.data ?? []) {
+    notifications.push({
+      id: `case-${reviewCase.id}`,
+      kind: "compliance",
+      level: reviewCase.priority === "urgent" || reviewCase.priority === "high" ? "warning" : "info",
+      title: `Governance case ${reviewCase.case_code} is ${reviewCase.status.replaceAll("_", " ")}`,
+      body: reviewCase.due_at
+        ? `Case is due on ${new Date(reviewCase.due_at).toLocaleDateString("en-MY")}.`
+        : "Governance case needs reviewer follow-up.",
+      occurredAt: reviewCase.updated_at,
+      href: `/cases/${reviewCase.id}`,
+      organization: orgLookup.get(reviewCase.organization_id) ?? null,
+      metadata: {
+        status: reviewCase.status,
+        priority: reviewCase.priority,
       },
     });
   }
@@ -616,6 +768,600 @@ export async function getPlatformRoleStats() {
     owners: assignments.filter((row: any) => row.role === "platform_owner" && row.is_active).length,
     admins: assignments.filter((row: any) => row.role === "platform_admin" && row.is_active).length,
     auditors: assignments.filter((row: any) => row.role === "platform_auditor" && row.is_active).length,
+    reviewers: assignments.filter((row: any) => row.role === "platform_reviewer" && row.is_active).length,
+    scholars: assignments.filter((row: any) => row.role === "platform_scholar" && row.is_active).length,
+    approvers: assignments.filter((row: any) => row.role === "platform_approver" && row.is_active).length,
+  };
+}
+
+function deriveCompliance(input: {
+  onboarding_status: string;
+  listing_status: string;
+  active_members: number;
+  pending_invites: number;
+  active_apps: number;
+  subscription_status: string | null;
+  open_billing_records: number;
+}) {
+  const issues: string[] = [];
+  let riskLevel: ComplianceOrganizationRow["risk_level"] = "good";
+
+  const raiseToWarning = () => {
+    if (riskLevel === "good") riskLevel = "warning";
+  };
+  const raiseToDanger = () => {
+    riskLevel = "danger";
+  };
+
+  if (input.onboarding_status === "changes_requested") {
+    issues.push("Onboarding changes requested");
+    raiseToWarning();
+  }
+  if (input.onboarding_status === "rejected") {
+    issues.push("Onboarding rejected");
+    raiseToDanger();
+  }
+  if (input.listing_status === "suspended") {
+    issues.push("Public listing suspended");
+    raiseToDanger();
+  }
+  if (input.listing_status === "listed" && input.onboarding_status !== "approved") {
+    issues.push("Listed without approved onboarding");
+    raiseToDanger();
+  }
+  if (input.active_members === 0) {
+    issues.push("No active members");
+    raiseToWarning();
+  }
+  if (input.pending_invites > 0) {
+    issues.push(`${input.pending_invites} pending invite${input.pending_invites > 1 ? "s" : ""}`);
+    raiseToWarning();
+  }
+  if (input.active_apps === 0) {
+    issues.push("No active apps installed");
+    raiseToWarning();
+  }
+  if (!input.subscription_status) {
+    issues.push("No subscription assigned");
+    raiseToWarning();
+  } else if (["past_due", "cancelled"].includes(input.subscription_status)) {
+    issues.push(`Subscription ${input.subscription_status.replaceAll("_", " ")}`);
+    raiseToDanger();
+  } else if (input.subscription_status === "draft") {
+    issues.push("Subscription still in draft");
+    raiseToWarning();
+  }
+  if (input.open_billing_records > 0) {
+    issues.push(`${input.open_billing_records} open billing record${input.open_billing_records > 1 ? "s" : ""}`);
+    raiseToWarning();
+  }
+
+  return { riskLevel, issues };
+}
+
+export async function listComplianceOrganizations(): Promise<ComplianceOrganizationRow[]> {
+  const supabase = await createSupabaseServerClient();
+  const [orgsResp, membersResp, invitesResp, appsResp, subsResp, billingResp, auditResp] = await Promise.all([
+    supabase
+      .from("organizations")
+      .select("id, name, legal_name, registration_no, org_type, onboarding_status, listing_status, updated_at")
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("org_members")
+      .select("organization_id, status"),
+    supabase
+      .from("org_invitations")
+      .select("organization_id, status"),
+    supabase
+      .from("app_installations")
+      .select("organization_id, status, updated_at"),
+    supabase
+      .from("organization_subscriptions")
+      .select("organization_id, status, updated_at"),
+    supabase
+      .from("organization_billing_records")
+      .select("organization_id, status, billed_at, created_at"),
+    supabase
+      .from("audit_logs")
+      .select("organization_id, occurred_at")
+      .order("occurred_at", { ascending: false })
+      .limit(500),
+  ]);
+
+  for (const response of [orgsResp, membersResp, invitesResp, appsResp, subsResp, billingResp, auditResp]) {
+    if (response.error) {
+      throw new Error(response.error.message);
+    }
+  }
+
+  const memberCount = new Map<string, number>();
+  const inviteCount = new Map<string, number>();
+  const appCount = new Map<string, number>();
+  const subStatus = new Map<string, { status: string; updated_at: string | null }>();
+  const billingOpenCount = new Map<string, number>();
+  const lastActivity = new Map<string, string>();
+
+  for (const row of membersResp.data ?? []) {
+    if (row.status === "active") {
+      memberCount.set(row.organization_id, (memberCount.get(row.organization_id) ?? 0) + 1);
+    }
+  }
+
+  for (const row of invitesResp.data ?? []) {
+    if (row.status === "pending") {
+      inviteCount.set(row.organization_id, (inviteCount.get(row.organization_id) ?? 0) + 1);
+    }
+  }
+
+  for (const row of appsResp.data ?? []) {
+    if (row.status === "enabled" || row.status === "active") {
+      appCount.set(row.organization_id, (appCount.get(row.organization_id) ?? 0) + 1);
+    }
+    if (row.updated_at) {
+      const existing = lastActivity.get(row.organization_id);
+      if (!existing || new Date(row.updated_at).getTime() > new Date(existing).getTime()) {
+        lastActivity.set(row.organization_id, row.updated_at);
+      }
+    }
+  }
+
+  for (const row of subsResp.data ?? []) {
+    const existing = subStatus.get(row.organization_id);
+    if (!existing || new Date(row.updated_at ?? 0).getTime() > new Date(existing.updated_at ?? 0).getTime()) {
+      subStatus.set(row.organization_id, { status: row.status, updated_at: row.updated_at ?? null });
+    }
+  }
+
+  for (const row of billingResp.data ?? []) {
+    if (["pending", "issued"].includes(row.status)) {
+      billingOpenCount.set(row.organization_id, (billingOpenCount.get(row.organization_id) ?? 0) + 1);
+    }
+    const timestamp = row.billed_at || row.created_at;
+    if (timestamp) {
+      const existing = lastActivity.get(row.organization_id);
+      if (!existing || new Date(timestamp).getTime() > new Date(existing).getTime()) {
+        lastActivity.set(row.organization_id, timestamp);
+      }
+    }
+  }
+
+  for (const row of auditResp.data ?? []) {
+    if (!row.organization_id || !row.occurred_at) continue;
+    const existing = lastActivity.get(row.organization_id);
+    if (!existing || new Date(row.occurred_at).getTime() > new Date(existing).getTime()) {
+      lastActivity.set(row.organization_id, row.occurred_at);
+    }
+  }
+
+  return (orgsResp.data ?? []).map((org) => {
+    const active_members = memberCount.get(org.id) ?? 0;
+    const pending_invites = inviteCount.get(org.id) ?? 0;
+    const active_apps = appCount.get(org.id) ?? 0;
+    const subscription_status = subStatus.get(org.id)?.status ?? null;
+    const open_billing_records = billingOpenCount.get(org.id) ?? 0;
+    const compliance = deriveCompliance({
+      onboarding_status: org.onboarding_status,
+      listing_status: org.listing_status,
+      active_members,
+      pending_invites,
+      active_apps,
+      subscription_status,
+      open_billing_records,
+    });
+
+    return {
+      id: org.id,
+      name: org.name,
+      legal_name: org.legal_name,
+      registration_no: org.registration_no,
+      org_type: org.org_type,
+      onboarding_status: org.onboarding_status,
+      listing_status: org.listing_status,
+      active_members,
+      pending_invites,
+      active_apps,
+      subscription_status,
+      open_billing_records,
+      last_activity_at: lastActivity.get(org.id) ?? org.updated_at ?? null,
+      risk_level: compliance.riskLevel,
+      issues: compliance.issues,
+    } satisfies ComplianceOrganizationRow;
+  });
+}
+
+export async function getComplianceSummary() {
+  const rows = await listComplianceOrganizations();
+  return {
+    total: rows.length,
+    good: rows.filter((row) => row.risk_level === "good").length,
+    warning: rows.filter((row) => row.risk_level === "warning").length,
+    danger: rows.filter((row) => row.risk_level === "danger").length,
+    approved: rows.filter((row) => row.onboarding_status === "approved").length,
+    listed: rows.filter((row) => row.listing_status === "listed").length,
+  };
+}
+
+export async function getOrganizationComplianceOverview(orgId: string) {
+  const rows = await listComplianceOrganizations();
+  return rows.find((row) => row.id === orgId) ?? null;
+}
+
+export async function getOrganizationAuditLogs(orgId: string, limit = 20) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("audit_logs")
+    .select(
+      `
+        id,
+        action,
+        entity_table,
+        entity_id,
+        metadata,
+        occurred_at,
+        actor_role,
+        organization_id,
+        actor:users!audit_logs_actor_user_id_fkey (
+          id,
+          email,
+          display_name
+        )
+      `,
+    )
+    .eq("organization_id", orgId)
+    .order("occurred_at", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data ?? [];
+}
+
+export async function listVerificationQueue() {
+  const rows = await listComplianceOrganizations();
+  return rows
+    .filter(
+      (row) =>
+        row.risk_level !== "good" ||
+        ["submitted", "changes_requested", "rejected"].includes(row.onboarding_status) ||
+        row.listing_status === "suspended",
+    )
+    .sort((a, b) => {
+      const weight = { danger: 3, warning: 2, good: 1 } as const;
+      const riskDiff = weight[b.risk_level] - weight[a.risk_level];
+      if (riskDiff !== 0) return riskDiff;
+      return new Date(b.last_activity_at ?? 0).getTime() - new Date(a.last_activity_at ?? 0).getTime();
+    });
+}
+
+export async function listGovernanceReviewCases(filters?: {
+  organizationId?: string;
+  status?: string;
+}) {
+  const supabase = await createSupabaseServerClient();
+  let query = supabase
+    .from("governance_review_cases")
+    .select(
+      `
+        id,
+        case_code,
+        organization_id,
+        review_type,
+        status,
+        priority,
+        intake_source,
+        summary,
+        due_at,
+        opened_at,
+        submitted_at,
+        review_started_at,
+        scholar_started_at,
+        approval_started_at,
+        closed_at,
+        outcome,
+        created_by_user_id,
+        created_at,
+        updated_at,
+        organization:organizations!governance_review_cases_organization_id_fkey (
+          id,
+          name,
+          legal_name,
+          registration_no,
+          org_type
+        )
+      `,
+    )
+    .order("updated_at", { ascending: false });
+
+  if (filters?.organizationId) {
+    query = query.eq("organization_id", filters.organizationId);
+  }
+
+  if (filters?.status) {
+    query = query.eq("status", filters.status);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return (data ?? []) as GovernanceReviewCaseRow[];
+}
+
+export async function getGovernanceReviewCaseById(caseId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("governance_review_cases")
+    .select(
+      `
+        id,
+        case_code,
+        organization_id,
+        review_type,
+        status,
+        priority,
+        intake_source,
+        summary,
+        due_at,
+        opened_at,
+        submitted_at,
+        review_started_at,
+        scholar_started_at,
+        approval_started_at,
+        closed_at,
+        outcome,
+        created_by_user_id,
+        created_at,
+        updated_at,
+        organization:organizations!governance_review_cases_organization_id_fkey (
+          id,
+          name,
+          legal_name,
+          registration_no,
+          org_type
+        )
+      `,
+    )
+    .eq("id", caseId)
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  return data as GovernanceReviewCaseRow;
+}
+
+export async function listGovernanceCaseAssignments(caseId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("governance_case_assignments")
+    .select(
+      `
+        id,
+        case_id,
+        assignee_user_id,
+        assignment_role,
+        status,
+        notes,
+        assigned_by_user_id,
+        assigned_at,
+        responded_at,
+        completed_at,
+        created_at,
+        updated_at
+      `,
+    )
+    .eq("case_id", caseId)
+    .order("assigned_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const authUserIds = Array.from(new Set((data ?? []).map((row) => String(row.assignee_user_id))));
+  const userResponse = authUserIds.length
+    ? await supabase
+        .from("users")
+        .select("id, auth_provider_user_id, email, display_name, platform_role, is_active")
+        .in("auth_provider_user_id", authUserIds)
+    : { data: [], error: null as any };
+
+  if (userResponse.error) {
+    throw new Error(userResponse.error.message);
+  }
+
+  const userLookup = new Map(
+    (userResponse.data ?? []).map((row: any) => [String(row.auth_provider_user_id), row]),
+  );
+
+  return (data ?? []).map((row) => ({
+    ...row,
+    user: userLookup.get(String(row.assignee_user_id)) ?? null,
+  })) as GovernanceCaseAssignmentRow[];
+}
+
+export async function listAssignableConsoleUsers(): Promise<AssignableConsoleUserRow[]> {
+  const supabase = await createSupabaseServerClient();
+  const { data: roleRows, error: roleError } = await supabase
+    .from("platform_user_roles")
+    .select("user_id, role, is_active")
+    .eq("is_active", true);
+
+  if (roleError) {
+    throw new Error(roleError.message);
+  }
+
+  const authUserIds = Array.from(new Set((roleRows ?? []).map((row) => String(row.user_id))));
+  if (authUserIds.length === 0) {
+    return [];
+  }
+
+  const { data: users, error: userError } = await supabase
+    .from("users")
+    .select("id, auth_provider_user_id, email, display_name, platform_role, is_active")
+    .in("auth_provider_user_id", authUserIds)
+    .eq("is_active", true)
+    .order("email", { ascending: true });
+
+  if (userError) {
+    throw new Error(userError.message);
+  }
+
+  const roleLookup = new Map<string, string[]>();
+  for (const row of roleRows ?? []) {
+    const key = String(row.user_id);
+    roleLookup.set(key, [...(roleLookup.get(key) ?? []), String(row.role)]);
+  }
+
+  return (users ?? []).map((user: any) => ({
+    ...user,
+    console_roles: roleLookup.get(String(user.auth_provider_user_id)) ?? [],
+  })) as AssignableConsoleUserRow[];
+}
+
+export async function getGovernanceCaseSummary() {
+  const cases = await listGovernanceReviewCases();
+  return {
+    total: cases.length,
+    submitted: cases.filter((row) => row.status === "submitted").length,
+    under_review: cases.filter((row) => row.status === "under_review").length,
+    scholar_review: cases.filter((row) => row.status === "scholar_review").length,
+    approval_pending: cases.filter((row) => row.status === "approval_pending").length,
+    approved: cases.filter((row) => row.status === "approved").length,
+    improvement_required: cases.filter((row) => row.status === "improvement_required").length,
+  };
+}
+
+
+export async function listGovernanceCaseFindings(caseId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("governance_case_findings")
+    .select(
+      `
+        id,
+        case_id,
+        finding_type,
+        severity,
+        status,
+        title,
+        details,
+        recommendation,
+        recorded_by_user_id,
+        created_at,
+        updated_at
+      `,
+    )
+    .eq("case_id", caseId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const authUserIds = Array.from(new Set((data ?? []).map((row) => String(row.recorded_by_user_id)).filter(Boolean)));
+  const userResponse = authUserIds.length
+    ? await supabase
+        .from("users")
+        .select("id, auth_provider_user_id, email, display_name")
+        .in("auth_provider_user_id", authUserIds)
+    : { data: [], error: null as any };
+
+  if (userResponse.error) {
+    throw new Error(userResponse.error.message);
+  }
+
+  const userLookup = new Map(
+    (userResponse.data ?? []).map((row: any) => [String(row.auth_provider_user_id), row]),
+  );
+
+  return (data ?? []).map((row) => ({
+    ...row,
+    user: row.recorded_by_user_id ? userLookup.get(String(row.recorded_by_user_id)) ?? null : null,
+  })) as GovernanceCaseFindingRow[];
+}
+
+export async function listGovernanceCaseEvidence(caseId: string) {
+  const supabase = await createSupabaseServerClient();
+  const { data, error } = await supabase
+    .from("governance_case_evidence")
+    .select(
+      `
+        id,
+        case_id,
+        finding_id,
+        evidence_type,
+        title,
+        evidence_url,
+        notes,
+        recorded_by_user_id,
+        created_at,
+        updated_at
+      `,
+    )
+    .eq("case_id", caseId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const authUserIds = Array.from(new Set((data ?? []).map((row) => String(row.recorded_by_user_id)).filter(Boolean)));
+  const findingIds = Array.from(new Set((data ?? []).map((row) => String(row.finding_id)).filter(Boolean)));
+
+  const [userResponse, findingResponse] = await Promise.all([
+    authUserIds.length
+      ? supabase
+          .from("users")
+          .select("id, auth_provider_user_id, email, display_name")
+          .in("auth_provider_user_id", authUserIds)
+      : Promise.resolve({ data: [], error: null as any }),
+    findingIds.length
+      ? supabase
+          .from("governance_case_findings")
+          .select("id, title")
+          .in("id", findingIds)
+      : Promise.resolve({ data: [], error: null as any }),
+  ]);
+
+  if (userResponse.error) {
+    throw new Error(userResponse.error.message);
+  }
+
+  if (findingResponse.error) {
+    throw new Error(findingResponse.error.message);
+  }
+
+  const userLookup = new Map(
+    (userResponse.data ?? []).map((row: any) => [String(row.auth_provider_user_id), row]),
+  );
+  const findingLookup = new Map(
+    (findingResponse.data ?? []).map((row: any) => [String(row.id), row]),
+  );
+
+  return (data ?? []).map((row) => ({
+    ...row,
+    user: row.recorded_by_user_id ? userLookup.get(String(row.recorded_by_user_id)) ?? null : null,
+    finding: row.finding_id ? findingLookup.get(String(row.finding_id)) ?? null : null,
+  })) as GovernanceCaseEvidenceRow[];
+}
+
+export async function getGovernanceCaseFindingsSummary(caseId: string) {
+  const [findings, evidence] = await Promise.all([
+    listGovernanceCaseFindings(caseId),
+    listGovernanceCaseEvidence(caseId),
+  ]);
+
+  return {
+    total_findings: findings.length,
+    open_findings: findings.filter((row) => row.status === "open").length,
+    critical_findings: findings.filter((row) => row.severity === "critical" && row.status !== "resolved" && row.status !== "waived").length,
+    resolved_findings: findings.filter((row) => row.status === "resolved").length,
+    evidence_items: evidence.length,
   };
 }
 

@@ -52,6 +52,87 @@ export const PLATFORM_USER_ROLE_OPTIONS = [
   { value: "platform_owner", label: "Platform Owner" },
   { value: "platform_admin", label: "Platform Admin" },
   { value: "platform_auditor", label: "Platform Auditor" },
+  { value: "platform_reviewer", label: "Reviewer" },
+  { value: "platform_scholar", label: "Scholar" },
+  { value: "platform_approver", label: "Approver" },
+] as const;
+
+export const GOVERNANCE_CASE_TYPE_OPTIONS = [
+  { value: "governance_review", label: "Governance Review" },
+  { value: "onboarding_review", label: "Onboarding Review" },
+  { value: "periodic_review", label: "Periodic Review" },
+  { value: "renewal_review", label: "Renewal Review" },
+  { value: "corrective_review", label: "Corrective Review" },
+] as const;
+
+export const GOVERNANCE_CASE_STATUS_OPTIONS = [
+  { value: "draft", label: "Draft" },
+  { value: "submitted", label: "Submitted" },
+  { value: "under_review", label: "Under Review" },
+  { value: "scholar_review", label: "Scholar Review" },
+  { value: "approval_pending", label: "Approval Pending" },
+  { value: "approved", label: "Approved" },
+  { value: "improvement_required", label: "Improvement Required" },
+  { value: "rejected", label: "Rejected" },
+  { value: "expired", label: "Expired" },
+] as const;
+
+export const GOVERNANCE_CASE_PRIORITY_OPTIONS = [
+  { value: "low", label: "Low" },
+  { value: "normal", label: "Normal" },
+  { value: "high", label: "High" },
+  { value: "urgent", label: "Urgent" },
+] as const;
+
+export const GOVERNANCE_CASE_OUTCOME_OPTIONS = [
+  { value: "approved", label: "Approved" },
+  { value: "conditional", label: "Approved with Conditions" },
+  { value: "improvement_required", label: "Improvement Required" },
+  { value: "rejected", label: "Rejected" },
+  { value: "expired", label: "Expired" },
+] as const;
+
+export const GOVERNANCE_ASSIGNMENT_ROLE_OPTIONS = [
+  { value: "reviewer", label: "Reviewer" },
+  { value: "scholar", label: "Scholar" },
+  { value: "approver", label: "Approver" },
+] as const;
+
+export const GOVERNANCE_ASSIGNMENT_STATUS_OPTIONS = [
+  { value: "assigned", label: "Assigned" },
+  { value: "accepted", label: "Accepted" },
+  { value: "completed", label: "Completed" },
+  { value: "removed", label: "Removed" },
+] as const;
+
+export const GOVERNANCE_FINDING_TYPE_OPTIONS = [
+  { value: "governance", label: "Governance" },
+  { value: "finance", label: "Finance" },
+  { value: "shariah", label: "Shariah" },
+  { value: "operations", label: "Operations" },
+  { value: "documentation", label: "Documentation" },
+  { value: "risk", label: "Risk" },
+] as const;
+
+export const GOVERNANCE_FINDING_SEVERITY_OPTIONS = [
+  { value: "info", label: "Info" },
+  { value: "minor", label: "Minor" },
+  { value: "major", label: "Major" },
+  { value: "critical", label: "Critical" },
+] as const;
+
+export const GOVERNANCE_FINDING_STATUS_OPTIONS = [
+  { value: "open", label: "Open" },
+  { value: "accepted", label: "Accepted" },
+  { value: "resolved", label: "Resolved" },
+  { value: "waived", label: "Waived" },
+] as const;
+
+export const GOVERNANCE_EVIDENCE_TYPE_OPTIONS = [
+  { value: "note", label: "Note" },
+  { value: "link", label: "Link" },
+  { value: "document", label: "Document" },
+  { value: "snapshot", label: "Snapshot" },
 ] as const;
 
 export type ConsolePermission =
@@ -66,4 +147,6 @@ export type ConsolePermission =
   | "roles.read"
   | "roles.write"
   | "audit.read"
-  | "notifications.read";
+  | "notifications.read"
+  | "cases.read"
+  | "cases.write";
