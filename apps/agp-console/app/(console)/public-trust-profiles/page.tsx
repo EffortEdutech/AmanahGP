@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ConsoleShell } from "@/components/console-shell";
 import { PublicTrustProfileTable } from "@/components/public-trust-profile-table";
 import { StatsCard } from "@/components/stats-card";
@@ -29,8 +30,15 @@ export default async function PublicTrustProfilesPage() {
       </section>
 
       <section className="panel section stack">
-        <div className="h2">Feed preview</div>
-        <div className="muted">This page shows what is ready for donor-facing consumption from the canonical publication layer.</div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div className="h2">Feed preview</div>
+            <div className="muted">This page shows what is ready for donor-facing consumption from the canonical publication layer.</div>
+          </div>
+          <Link className="btn-secondary" href="/publication-command">
+            Open Publication Command Center
+          </Link>
+        </div>
         <PublicTrustProfileTable rows={rows} />
       </section>
     </ConsoleShell>

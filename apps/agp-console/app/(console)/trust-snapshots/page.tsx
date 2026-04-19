@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ConsoleShell } from "@/components/console-shell";
 import { StatsCard } from "@/components/stats-card";
 import { TrustSnapshotTable } from "@/components/trust-snapshot-table";
@@ -36,8 +37,15 @@ export default async function TrustSnapshotsPage({
       </section>
 
       <section className="panel section stack">
-        <div className="h2">Published trust snapshots</div>
-        <div className="muted">Use case pages to create snapshots, then use this page as the central publication ledger for donor-facing trust summaries.</div>
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div className="h2">Published trust snapshots</div>
+            <div className="muted">Use case pages to create snapshots, then use this page as the central publication ledger for donor-facing trust summaries.</div>
+          </div>
+          <Link className="btn-secondary" href="/publication-command">
+            Open Publication Command Center
+          </Link>
+        </div>
         <TrustSnapshotTable rows={rows} />
       </section>
     </ConsoleShell>

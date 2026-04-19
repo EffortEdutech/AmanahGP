@@ -9,6 +9,16 @@ function priorityBadgeClass(priority: string) {
   return "badge badge-green";
 }
 
+function workspaceLink(row: GovernanceReviewCaseRow) {
+  return row.current_stage === "approver"
+    ? `/cases/${row.id}/decision`
+    : `/cases/${row.id}/recommendations`;
+}
+
+function workspaceLabel(row: GovernanceReviewCaseRow) {
+  return row.current_stage === "approver" ? "Decision" : "Recommendations";
+}
+
 export function GovernanceCaseTable({ rows }: { rows: GovernanceReviewCaseRow[] }) {
   return (
     <div className="table-wrap">
@@ -42,8 +52,11 @@ export function GovernanceCaseTable({ rows }: { rows: GovernanceReviewCaseRow[] 
               <td>{row.due_at ? formatDate(row.due_at) : "—"}</td>
               <td>{formatDateTime(row.updated_at)}</td>
               <td>
-                <div className="row">
+                <div style={{ display: "grid", gap: 8 }}>
                   <Link className="btn btn-secondary" href={`/cases/${row.id}`}>Open</Link>
+                  <Link className="btn btn-secondary" href={`/cases/${row.id}/assignments`}>Assignments</Link>
+                  <Link className="btn btn-secondary" href={`/cases/${row.id}/dossier`}>Dossier</Link>
+                  <Link className="btn btn-secondary" href={workspaceLink(row)}>{workspaceLabel(row)}</Link>
                   <Link className="btn btn-secondary" href={`/organisations/${row.organization_id}`}>Organisation</Link>
                 </div>
               </td>

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ConsoleShell } from "@/components/console-shell";
 import { PublicationReadinessTable } from "@/components/publication-readiness-table";
 import { StatsCard } from "@/components/stats-card";
@@ -29,9 +30,16 @@ export default async function PublicationReadinessPage() {
       </section>
 
       <section className="panel section stack">
-        <div className="h2">Publication gate</div>
-        <div className="muted">
-          This page helps AGP decide whether an organisation should appear publicly to donors. It keeps the platform focused on reliable trust publication, not just internal workflow completion.
+        <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
+          <div>
+            <div className="h2">Publication gate</div>
+            <div className="muted">
+              This page helps AGP decide whether an organisation should appear publicly to donors. It keeps the platform focused on reliable trust publication, not just internal workflow completion.
+            </div>
+          </div>
+          <Link className="btn-secondary" href="/publication-command">
+            Open Publication Command Center
+          </Link>
         </div>
         <PublicationReadinessTable rows={rows} />
       </section>

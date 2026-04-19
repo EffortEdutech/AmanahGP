@@ -41,6 +41,10 @@ export default async function NotificationsPage() {
               <Bell size={16} />
               Review audit log
             </Link>
+            <Link className="btn btn-secondary" href="/review-alerts">
+              <CircleAlert size={16} />
+              Open review alerts
+            </Link>
           </div>
         </div>
 

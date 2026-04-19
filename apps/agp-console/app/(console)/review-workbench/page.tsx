@@ -1,3 +1,5 @@
+import Link from "next/link";
+import { AlertTriangle } from "lucide-react";
 import { ConsoleShell } from "@/components/console-shell";
 import { ReviewWorkbenchTable } from "@/components/review-workbench-table";
 import { StatsCard } from "@/components/stats-card";
@@ -31,6 +33,17 @@ export default async function ReviewWorkbenchPage() {
         <StatsCard label="reviewer" value={summary.reviewer_stage} note="Cases in reviewer stage" />
         <StatsCard label="scholar" value={summary.scholar_stage} note="Cases in scholar stage" />
         <StatsCard label="approver" value={summary.approver_stage} note="Cases in approval stage" />
+      </section>
+
+      <section className="panel section row-between">
+        <div>
+          <div className="h2">Queue support</div>
+          <p className="muted">Use review alerts to catch blocked assignments, overdue remediation, and publication items without leaving the console workflow.</p>
+        </div>
+        <Link className="btn btn-secondary" href="/review-alerts">
+          <AlertTriangle size={16} />
+          Open review alerts
+        </Link>
       </section>
 
       <ReviewWorkbenchTable rows={myRows} currentUserId={user.id} title="My assigned queue" />

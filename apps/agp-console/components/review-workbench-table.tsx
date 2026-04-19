@@ -22,15 +22,17 @@ function slaBadgeClass(bucket: string) {
   return "badge badge-neutral";
 }
 
-export function ReviewWorkbenchTable({
-  rows,
-  currentUserId,
-  title,
-}: {
-  rows: ReviewWorkbenchRow[];
-  currentUserId: string;
-  title: string;
-}) {
+function workspaceLink(row: ReviewWorkbenchRow) {
+  return row.current_stage === "approver"
+    ? `/cases/${row.case_id}/decision`
+    : `/cases/${row.case_id}/recommendations`;
+}
+
+function workspaceLabel(row: ReviewWorkbenchRow) {
+  return row.current_stage === "approver" ? "Decision" : "Recommendations";
+}
+
+export function ReviewWorkbenchTable({ rows, currentUserId, title }: { rows: ReviewWorkbenchRow[]; currentUserId: string; title: string }) {
   return (
     <section className="panel section stack">
       <div className="h2">{title}</div>
@@ -92,12 +94,11 @@ export function ReviewWorkbenchTable({
                     </td>
                     <td>
                       <div style={{ display: "grid", gap: 8 }}>
-                        <Link className="btn-secondary" href={`/cases/${row.case_id}`}>
-                          Open case
-                        </Link>
-                        <Link className="btn-secondary" href={`/organisations/${row.organization_id}`}>
-                          Organisation
-                        </Link>
+                        <Link className="btn-secondary" href={`/cases/${row.case_id}`}>Open case</Link>
+                        <Link className="btn-secondary" href={`/cases/${row.case_id}/assignments`}>Assignments</Link>
+                        <Link className="btn-secondary" href={workspaceLink(row)}>{workspaceLabel(row)}</Link>
+                        <Link className="btn-secondary" href={`/cases/${row.case_id}/dossier`}>Dossier</Link>
+                        <Link className="btn-secondary" href={`/organisations/${row.organization_id}`}>Organisation</Link>
                       </div>
                     </td>
                   </tr>

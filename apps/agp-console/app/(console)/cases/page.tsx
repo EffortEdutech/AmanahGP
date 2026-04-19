@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Gavel } from "lucide-react";
+import { Gavel, ShieldCheck } from "lucide-react";
 import { ConsoleShell } from "@/components/console-shell";
 import { GovernanceCaseTable } from "@/components/governance-case-table";
 import { StatsCard } from "@/components/stats-card";
@@ -44,10 +44,16 @@ export default async function CasesPage({
             <div className="h2">Case registry</div>
             <p className="muted">Each case represents a real governance review journey for an organisation.</p>
           </div>
-          <Link className="btn btn-primary" href={params.organizationId ? `/cases/new?orgId=${params.organizationId}` : "/cases/new"}>
-            <Gavel size={16} />
-            Open new case
-          </Link>
+          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+            <Link className="btn btn-secondary" href="/approval-board">
+              <ShieldCheck size={16} />
+              Scholar & approval board
+            </Link>
+            <Link className="btn btn-primary" href={params.organizationId ? `/cases/new?orgId=${params.organizationId}` : "/cases/new"}>
+              <Gavel size={16} />
+              Open new case
+            </Link>
+          </div>
         </div>
 
         {params.organizationId ? (
