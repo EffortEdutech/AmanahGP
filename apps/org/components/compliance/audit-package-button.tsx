@@ -1,32 +1,41 @@
 'use client';
 // apps/org/components/compliance/audit-package-button.tsx
-// Sprint 29 — Triggers the /api/audit-package download
 
 import { useState } from 'react';
 
-export function AuditPackageButton() {
+interface AuditPackageButtonProps {
+  orgId?: string;
+}
+
+export function AuditPackageButton({ orgId }: AuditPackageButtonProps) {
   const [loading, setLoading] = useState(false);
   const [error,   setError]   = useState('');
 
   async function handleDownload() {
     setLoading(true); setError('');
     try {
-      const res = await fetch('/api/audit-package');
+      // Only append orgId when it is a real UUID (not undefined / "undefined" / empty)
+      const isValidId = orgId && orgId !== 'undefined' && orgId.length > 8;
+      const url = isValidId
+        ? `/api/audit-package?orgId=${encodeURIComponent(orgId)}`
+        : `/api/audit-package`;
+
+      const res = await fetch(url);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         throw new Error(data.error ?? `Download failed (${res.status})`);
       }
       const blob     = await res.blob();
-      const url      = URL.createObjectURL(blob);
+      const blobUrl  = URL.createObjectURL(blob);
       const a        = document.createElement('a');
       const filename = res.headers.get('content-disposition')
         ?.match(/filename="([^"]+)"/)?.[1] ?? 'amanah-audit-package.zip';
-      a.href     = url;
+      a.href     = blobUrl;
       a.download = filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(blobUrl);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Download failed');
     } finally {

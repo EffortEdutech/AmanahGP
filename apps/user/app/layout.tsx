@@ -42,7 +42,6 @@ export default async function RootLayout({
       </head>
       <body className="bg-white text-gray-900 antialiased">
         <NavbarClient isLoggedIn={!!user} displayName={displayName} />
-        <MissionTaglineBar />
         <main>{children}</main>
         <Footer />
       </body>

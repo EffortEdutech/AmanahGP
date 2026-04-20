@@ -12,6 +12,10 @@ const STAGE_LABELS: Record<string, string> = {
   remediation: 'Improvement in progress',
   approved: 'Approved',
   published: 'Published',
+  published_trust_profile: 'Published trust profile',
+  governance_review_in_progress: 'Governance review in progress',
+  public_organisation_profile: 'Public organisation profile',
+  onboarding_with_agp: 'Onboarding journey',
 };
 
 const STAGE_CLASSES: Record<string, string> = {
@@ -24,6 +28,10 @@ const STAGE_CLASSES: Record<string, string> = {
   remediation: 'bg-violet-50 text-violet-700 ring-violet-200',
   approved: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
   published: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  published_trust_profile: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+  governance_review_in_progress: 'bg-amber-50 text-amber-700 ring-amber-200',
+  public_organisation_profile: 'bg-sky-50 text-sky-700 ring-sky-200',
+  onboarding_with_agp: 'bg-violet-50 text-violet-700 ring-violet-200',
 };
 
 function normalizeStage(stage?: string | null) {

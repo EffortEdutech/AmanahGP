@@ -1,437 +1,394 @@
 // apps/user/app/page.tsx
-// AmanahHub — Home landing page (Sprint 10)
-// Full donor-facing landing with hero, platform stats, featured orgs,
-// how it works, Islamic governance section, donor CTA
+// AmanahHub — Premium Islamic Charity Marketplace Landing (Sprint 25)
+// Donor-first storytelling + stronger trust cues + premium visual hierarchy
 
-import Link             from 'next/link';
+import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { ScoreRing, scoreTier, tierLabel } from '@/components/ui/score-ring';
+import { ScoreRing } from '@/components/ui/score-ring';
+import { CertifiedBadge, TierBadge } from '@/components/ui/badge';
+import { GovernanceStageBadge } from '@/components/charity/governance-stage-badge';
+import {
+  getPublicProfileSummary,
+  groupProfilesByStage,
+  type PublicTrustProfile,
+  type GovernanceJourneyStage,
+  DIRECTORY_STAGE_META,
+} from '@/lib/public-trust';
+
+const FEATURED_STAGE_ORDER: GovernanceJourneyStage[] = [
+  'published_trust_profile',
+  'governance_review_in_progress',
+  'public_organisation_profile',
+];
 
 export const metadata = {
   title: 'AmanahHub — Trusted Giving. Transparent Governance.',
-  description:
-    'Discover verified Malaysian Islamic charities. Every organization is independently evaluated for transparency, governance, and impact before your donation reaches them.',
-};
-
-const ORG_TYPE_LABELS: Record<string, string> = {
-  ngo: 'NGO', mosque_surau: 'Mosque / Surau', waqf_institution: 'Waqf Institution',
-  zakat_body: 'Zakat Body', foundation: 'Foundation', other: 'Other',
 };
 
 export default async function HomePage() {
   const supabase = await createClient();
 
-  // Platform stats
-  const [{ count: orgCount }, { count: reportCount }, { count: donationCount }] =
-    await Promise.all([
-      supabase.from('organizations').select('*', { count: 'exact', head: true }).eq('listing_status', 'listed'),
-      supabase.from('project_reports').select('*', { count: 'exact', head: true }).eq('verification_status', 'verified'),
-      supabase.from('donation_transactions').select('*', { count: 'exact', head: true }).eq('status', 'confirmed'),
-    ]);
+  const [{ data: profiles }, { count: orgCount }, { count: donationCount }] = await Promise.all([
+    supabase
+      .from('v_amanahhub_public_trust_profiles')
+      .select('*')
+      .order('governance_stage_sort', { ascending: true })
+      .order('trust_score', { ascending: false, nullsFirst: false })
+      .order('published_at', { ascending: false, nullsFirst: false })
+      .limit(9),
+    supabase
+      .from('organizations')
+      .select('*', { count: 'exact', head: true })
+      .eq('listing_status', 'listed'),
+    supabase
+      .from('donations')
+      .select('*', { count: 'exact', head: true })
+      .eq('payment_status', 'paid'),
+  ]);
 
-  // Total confirmed donation amount
-  const { data: donationSum } = await supabase
-    .from('donation_transactions')
-    .select('amount')
-    .eq('status', 'confirmed');
-  const totalMYR = (donationSum ?? []).reduce((s, d) => s + Number(d.amount), 0);
-
-  // Featured: top 3 listed orgs by Amanah score
-  const { data: listedOrgs } = await supabase
-    .from('organizations')
-    .select(`
-      id, name, summary, org_type, state, fund_types,
-      amanah_index_history ( score_value, computed_at ),
-      certification_history ( new_status, decided_at )
-    `)
-    .eq('listing_status', 'listed')
-    .order('updated_at', { ascending: false })
-    .limit(12);
-
-  const featured = (listedOrgs ?? [])
-    .map((org) => {
-      const scores = (org.amanah_index_history ?? []) as any[];
-      const certs  = (org.certification_history ?? []) as any[];
-      const latest = scores.sort((a: any, b: any) =>
-        new Date(b.computed_at).getTime() - new Date(a.computed_at).getTime())[0];
-      const cert = certs.sort((a: any, b: any) =>
-        new Date(b.decided_at).getTime() - new Date(a.decided_at).getTime())[0];
-      return { ...org, score: latest ? Number(latest.score_value) : null, certified: cert?.new_status === 'certified' };
-    })
-    .sort((a, b) => (b.score ?? 0) - (a.score ?? 0))
-    .slice(0, 3);
+  const publicProfiles = (profiles ?? []) as PublicTrustProfile[];
+  const grouped = groupProfilesByStage(publicProfiles);
 
   return (
-    <div className="min-h-screen">
+    <div className="bg-white text-gray-900">
+      {/* ───────────────────────── HERO ───────────────────────── */}
+      <section className="relative overflow-hidden border-b border-emerald-100 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%),linear-gradient(to_bottom,_#ffffff,_#f8fafc)]">
+        <div className="absolute inset-0 pointer-events-none opacity-[0.06] [background-image:radial-gradient(circle,_#047857_1px,_transparent_1px)] [background-size:24px_24px]" />
 
-      {/* ── HERO ─────────────────────────────────────────────── */}
-      <section className="pattern-bg text-white py-20 px-4 relative overflow-hidden">
-        {/* Decorative circle */}
-        <div className="absolute right-0 top-0 w-96 h-96 rounded-full bg-white/5 -translate-y-1/2 translate-x-1/3" />
-        <div className="absolute left-0 bottom-0 w-64 h-64 rounded-full bg-white/5 translate-y-1/2 -translate-x-1/3" />
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
+          {/* Left */}
+          <div className="max-w-2xl">
+            <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-[11px] font-medium text-emerald-800 shadow-sm backdrop-blur">
+              <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              Trusted Islamic Giving Marketplace
+            </div>
 
-        <div className="max-w-4xl mx-auto text-center relative z-10">
-          {/* Bismillah / Ayah */}
-          <p className="text-emerald-300 text-[32px] font-medium tracking-widest uppercase mb-6">
-            بِسْمِ اللَّهِ الرَّحْمَنِ الرَّحِيم
-          </p>
+            <h1 className="font-display text-4xl leading-tight tracking-tight text-gray-950 sm:text-5xl lg:text-6xl">
+              Give with <span className="text-emerald-700">clarity</span>, not uncertainty.
+            </h1>
 
-          <h1 className="font-display text-4xl md:text-5xl font-bold text-white leading-tight mb-4">
-            Give with Confidence.<br />
-            <span className="text-emerald-300">Give with Amanah.</span>
-          </h1>
+            <p className="mt-5 max-w-xl text-[15px] leading-8 text-gray-600 sm:text-[16px]">
+              AmanahHub helps donors discover Islamic charities with visible governance signals,
+              independent trust verification, and real operational transparency — so your sadaqah
+              reaches organisations you can support with confidence.
+            </p>
 
-          <p className="text-emerald-100 text-lg max-w-2xl mx-auto mb-3 leading-relaxed">
-            Every charity on AmanahHub has been independently reviewed for governance, financial transparency, and Shariah compliance — so you know your Sadaqah reaches those who need it most.
-          </p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/charities"
+                className="inline-flex items-center justify-center rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
+              >
+                Browse trusted charities
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="inline-flex items-center justify-center rounded-xl border border-gray-300 bg-white px-5 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-50"
+              >
+                How AmanahHub works
+              </Link>
+            </div>
 
-          <p className="text-emerald-200/70 text-[13px] italic mb-8">
-            "Kind speech and forgiveness are better than charity followed by injury." — Al-Baqarah 2:263
-          </p>
+            {/* Trust points */}
+            <div className="mt-8 grid gap-3 sm:grid-cols-3">
+              {[
+                ['Non-custodial', 'Donations go directly to the charity’s own gateway'],
+                ['Visible trust signals', 'Donors see governance and reporting signals publicly'],
+                ['Inclusive growth', 'Organisations are welcomed while improving step by step'],
+              ].map(([title, desc]) => (
+                <div key={title} className="rounded-2xl border border-gray-200 bg-white/90 p-4 shadow-sm">
+                  <p className="text-[12px] font-semibold text-gray-900">{title}</p>
+                  <p className="mt-1 text-[11px] leading-6 text-gray-500">{desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/charities"
-              className="px-8 py-3.5 bg-white text-emerald-800 rounded-lg font-semibold
-                         text-[15px] hover:bg-emerald-50 transition-colors shadow-lg">
-              Browse verified charities →
-            </Link>
-            <Link href="/how-it-works"
-              className="px-8 py-3.5 border border-emerald-400 text-emerald-100
-                         rounded-lg font-medium text-[15px] hover:bg-emerald-700/50 transition-colors">
-              How we verify
-            </Link>
+          {/* Right trust showcase */}
+          <div className="lg:pl-4">
+            <div className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_25px_80px_-35px_rgba(16,185,129,0.35)]">
+              <div className="mb-4 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                    Donor confidence
+                  </p>
+                  <h2 className="mt-1 text-xl font-semibold text-gray-900">What donors can verify</h2>
+                </div>
+                <div className="rounded-full bg-emerald-50 px-3 py-1 text-[10px] font-semibold text-emerald-700">
+                  Live public profile
+                </div>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                {[
+                  ['Governance signals', 'Policies, structure, and accountability activities visible'],
+                  ['Financial stewardship', 'Operational records support trust scoring and reviews'],
+                  ['Reporting discipline', 'Progress and periodic updates show continuity'],
+                  ['Certification journey', 'Organisations can progress toward stronger trust status'],
+                ].map(([title, desc]) => (
+                  <div key={title} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-[12px] font-semibold text-gray-900">{title}</p>
+                    <p className="mt-1 text-[11px] leading-6 text-gray-500">{desc}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                <p className="text-[12px] font-semibold text-emerald-800">
+                  “Trust is not a slogan — it should be visible before a donor gives.”
+                </p>
+                <p className="mt-2 text-[11px] leading-6 text-emerald-700/90">
+                  AmanahHub is designed so donors do not have to guess whether an organisation is
+                  serious about governance, transparency, and stewardship.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      {/* ── PLATFORM STATS ───────────────────────────────────── */}
-      <section className="bg-white border-b border-gray-100 py-10 px-4">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
-          <Stat value={orgCount ?? 0}  unit="" label="Verified organizations" color="emerald" />
-          <Stat value={reportCount ?? 0} unit="" label="Reports verified" color="emerald" />
-          <Stat value={donationCount ?? 0} unit="" label="Donations processed" />
-          <Stat
-            value={totalMYR > 0
-              ? `MYR ${(totalMYR / 1000).toFixed(0)}K`
-              : 'MYR 0'}
-            unit=""
-            label="Channelled to charities"
-            raw
+      {/* ───────────────────────── STATS ───────────────────────── */}
+      <section className="border-b border-gray-100 bg-white">
+        <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:grid-cols-3">
+          <StatCard value={String(orgCount ?? 0)} label="Listed organisations" />
+          <StatCard value={String(donationCount ?? 0)} label="Recorded completed donations" />
+          <StatCard value="100%" label="Non-custodial donation flow" />
+        </div>
+      </section>
+
+      {/* ───────────────────────── WHY AMANAHHUB ───────────────────────── */}
+      <section className="mx-auto max-w-7xl px-4 py-16">
+        <div className="max-w-3xl">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+            Why AmanahHub
+          </p>
+          <h2 className="mt-3 font-display text-3xl leading-tight text-gray-950 sm:text-4xl">
+            A donor experience built around trust before transaction.
+          </h2>
+          <p className="mt-4 text-[15px] leading-8 text-gray-600">
+            Most charity directories only show a name and a donation button. AmanahHub adds the missing layer:
+            a public trust profile, governance journey visibility, and clearer signals that help donors decide with
+            ihsan and prudence.
+          </p>
+        </div>
+
+        <div className="mt-10 grid gap-5 md:grid-cols-3">
+          <FeatureCard
+            title="See trust signals instantly"
+            desc="Donors can view badges, governance stage, trust score, and supporting public transparency signals."
+          />
+          <FeatureCard
+            title="Support organisations on a journey"
+            desc="Not every charity starts perfect. AmanahHub welcomes growth while showing where each organisation stands."
+          />
+          <FeatureCard
+            title="Give directly, safely"
+            desc="AmanahHub is non-custodial. Donations are routed through the charity’s own registered payment flow."
           />
         </div>
       </section>
 
-      {/* ── FEATURED ORGANIZATIONS ───────────────────────────── */}
-      <section className="section bg-gray-50">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-[11px] font-medium text-emerald-700 uppercase tracking-widest mb-2">
-              Trusted organizations
-            </p>
-            <h2 className="font-display text-3xl font-bold text-gray-900 mb-3">
-              Give to verified, transparent charities
-            </h2>
-            <p className="text-gray-500 text-[15px] max-w-xl mx-auto">
-              Every organization has been reviewed against the Charity Transparency Certification Framework (CTCF) and scored on the Amanah Index™.
-            </p>
+      {/* ───────────────────────── FEATURED CHARITIES ───────────────────────── */}
+      <section className="border-y border-gray-100 bg-gray-50/70">
+        <div className="mx-auto max-w-7xl px-4 py-16">
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+                Public charity directory
+              </p>
+              <h2 className="mt-2 text-3xl font-semibold tracking-tight text-gray-950">
+                Explore organisations by trust and governance journey
+              </h2>
+              <p className="mt-2 max-w-2xl text-[14px] leading-7 text-gray-600">
+                Organisations appear across different stages — from published trust profiles to those still
+                progressing in governance and public readiness.
+              </p>
+            </div>
+
+            <Link
+              href="/charities"
+              className="inline-flex items-center text-sm font-semibold text-emerald-700 hover:text-emerald-800"
+            >
+              View full directory →
+            </Link>
           </div>
 
-          {featured.length > 0 ? (
-            <div className="grid md:grid-cols-3 gap-5 mb-8">
-              {featured.map((org) => (
-                <div key={org.id}
-                  className="bg-white rounded-2xl border border-gray-200 p-5
-                             hover:border-emerald-200 hover:shadow-md transition-all group">
-
-                  {/* Score ring + title */}
-                  <div className="flex items-start gap-3 mb-3">
-                    {org.score !== null ? (
-                      <ScoreRing score={org.score} size="md" />
-                    ) : (
-                      <div className="w-14 h-14 rounded-full bg-gray-100 ring-1 ring-gray-200
-                                      flex items-center justify-center text-gray-300 text-xs">—</div>
-                    )}
-                    <div className="min-w-0 flex-1 pt-0.5">
-                      <Link href={`/charities/${org.id}`}
-                        className="text-[13px] font-semibold text-gray-900 hover:text-emerald-800
-                                   transition-colors leading-snug truncate block">
-                        {org.name}
-                      </Link>
-                      <p className="text-[11px] text-gray-400 mt-0.5">
-                        {org.org_type ? ORG_TYPE_LABELS[org.org_type] ?? org.org_type : ''}
-                        {org.state ? ` · ${org.state}` : ''}
-                      </p>
-                      {/* Badges */}
-                      <div className="flex gap-1 mt-1.5 flex-wrap">
-                        {org.certified && (
-                          <span className="badge badge-green">
-                            <svg className="w-2.5 h-2.5 mr-0.5" viewBox="0 0 10 10" fill="none">
-                              <path d="M8.5 2.5L4 7.5 1.5 5" stroke="currentColor" strokeWidth="1.5"
-                                    strokeLinecap="round" strokeLinejoin="round"/>
-                            </svg>
-                            Certified
-                          </span>
-                        )}
-                        {org.score !== null && (
-                          <span className={`badge ${
-                            scoreTier(org.score) === 'platinum' ? 'badge-purple' :
-                            scoreTier(org.score) === 'gold'     ? 'badge-amber'  : 'badge-gray'
-                          }`}>
-                            {tierLabel(scoreTier(org.score))} Amanah
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {org.summary && (
-                    <p className="text-[11px] text-gray-500 leading-relaxed line-clamp-2 mb-3">
-                      {org.summary}
-                    </p>
-                  )}
-
-                  <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                    <Link href={`/charities/${org.id}`}
-                      className="text-[11px] text-emerald-700 font-medium hover:underline">
-                      View profile →
-                    </Link>
-                    <Link href={`/donate/${org.id}`}
-                      className="text-[11px] bg-emerald-700 text-white px-3 py-1 rounded-md
-                                 hover:bg-emerald-800 transition-colors">
-                      Donate
-                    </Link>
-                  </div>
-                </div>
-              ))}
+          {publicProfiles.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">
+              No public profiles yet. Once organisations publish their trust profile, they will appear here.
             </div>
           ) : (
-            <div className="text-center py-8 text-gray-400">
-              <p>No verified organizations yet.</p>
+            <div className="space-y-10">
+              {FEATURED_STAGE_ORDER.map((stageKey) => {
+                const items = grouped[stageKey] ?? [];
+                if (items.length === 0) return null;
+                const meta = DIRECTORY_STAGE_META[stageKey];
+
+                return (
+                  <div key={stageKey} className="space-y-4">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">{meta.label}</h3>
+                        <p className="text-sm text-gray-500">{meta.description}</p>
+                      </div>
+                      <p className="text-xs font-medium text-gray-400">
+                        {items.length} organisation{items.length > 1 ? 's' : ''}
+                      </p>
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                      {items.slice(0, 3).map((org) => {
+                        const isPublished = org.snapshot_status === 'published' && org.review_status === 'approved';
+                        const hasScore = !!org.has_published_snapshot && (org.trust_score ?? 0) > 0;
+                        const summary = getPublicProfileSummary(org);
+
+                        return (
+                          <Link
+                            key={org.organization_id}
+                            href={`/charities/${org.organization_id}`}
+                            className="group rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
+                          >
+                            <div className="flex items-start gap-4">
+                              {hasScore ? (
+                                <ScoreRing score={org.trust_score} size="lg" showLabel />
+                              ) : (
+                                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                                  Amanah
+                                </div>
+                              )}
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap gap-1.5">
+                                  <GovernanceStageBadge stage={org.governance_stage_key} />
+                                  {isPublished ? <CertifiedBadge /> : null}
+                                  {hasScore ? <TierBadge score={org.trust_score ?? 0} /> : null}
+                                </div>
+
+                                <h3 className="mt-3 text-[17px] font-semibold leading-snug text-gray-900 transition group-hover:text-emerald-800">
+                                  {org.name}
+                                </h3>
+
+                                <p className="mt-1 text-[12px] text-gray-500">
+                                  {[org.org_type, org.state].filter(Boolean).join(' · ') || 'Organisation'}
+                                </p>
+
+                                <p className="mt-3 line-clamp-3 text-[13px] leading-6 text-gray-600">
+                                  {summary || meta.description}
+                                </p>
+                              </div>
+                            </div>
+
+                            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
+                              <span className="text-[11px] font-medium text-gray-500">
+                                {org.governance_stage_label ?? meta.label}
+                              </span>
+                              <span className="text-[12px] font-semibold text-emerald-700">View profile →</span>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
-
-          <div className="text-center">
-            <Link href="/charities"
-              className="inline-flex items-center gap-2 px-6 py-3 border border-emerald-200
-                         text-emerald-700 rounded-lg font-medium text-[14px]
-                         hover:bg-emerald-50 transition-colors">
-              Browse all {orgCount ?? 0} verified organizations
-            </Link>
-          </div>
         </div>
       </section>
 
-      {/* ── HOW IT WORKS ─────────────────────────────────────── */}
-      <section className="section bg-white">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-[11px] font-medium text-emerald-700 uppercase tracking-widest mb-2">Simple process</p>
-            <h2 className="font-display text-3xl font-bold text-gray-900">
-              How AmanahHub works
+      {/* ───────────────────────── DONOR EXPLANATION ───────────────────────── */}
+      <section className="mx-auto max-w-7xl px-4 py-16">
+        <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
+              How trust is communicated
+            </p>
+            <h2 className="mt-3 text-3xl font-semibold tracking-tight text-gray-950">
+              We help donors answer three questions before they donate.
             </h2>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '01',
-                title: 'Discover',
-                desc: 'Browse our directory of verified Malaysian Islamic charities. Filter by type, state, or Amanah score to find causes that matter to you.',
-                icon: '🔍',
-                color: 'bg-blue-50 text-blue-700',
-              },
-              {
-                step: '02',
-                title: 'Verify',
-                desc: 'Each charity has a transparent Amanah score backed by real documentation — governance structure, audited financials, project reports, and Shariah compliance.',
-                icon: '✓',
-                color: 'bg-emerald-50 text-emerald-700',
-              },
-              {
-                step: '03',
-                title: 'Give',
-                desc: 'Donate directly to the charity via secure payment. AmanahHub is non-custodial — your funds go straight to them. No middleman holds your money.',
-                icon: '♡',
-                color: 'bg-amber-50 text-amber-700',
-              },
-            ].map((item) => (
-              <div key={item.step} className="relative">
-                <div className={`w-12 h-12 rounded-xl ${item.color} flex items-center justify-center
-                                 text-xl mb-4`}>
-                  {item.icon}
-                </div>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-widest mb-1">
-                  Step {item.step}
-                </p>
-                <h3 className="font-display text-xl font-bold text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-[13px] text-gray-500 leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-10 text-center">
-            <Link href="/how-it-works"
-              className="text-[13px] text-emerald-700 font-medium hover:underline">
-              Learn more about our verification process →
-            </Link>
+          <div className="grid gap-4 sm:grid-cols-3">
+            <QuestionCard
+              q="Is this organisation real and accountable?"
+              a="Public profiles and governance stages show whether the organisation has established visible operational trust signals."
+            />
+            <QuestionCard
+              q="Do they manage funds responsibly?"
+              a="Trust scoring and oversight indicators help donors assess financial discipline and organisational seriousness."
+            />
+            <QuestionCard
+              q="Can I give without uncertainty?"
+              a="AmanahHub keeps donations non-custodial and connects donors directly to the charity’s own payment route."
+            />
           </div>
         </div>
       </section>
 
-      {/* ── AMANAH INDEX EXPLAINER ───────────────────────────── */}
-      <section className="section bg-emerald-900 text-white relative overflow-hidden">
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-10 left-10 w-32 h-32 border border-white rounded-full" />
-          <div className="absolute top-10 left-10 w-48 h-48 border border-white rounded-full" />
-          <div className="absolute bottom-10 right-10 w-24 h-24 border border-white rounded-full" />
-        </div>
-
-        <div className="max-w-5xl mx-auto relative z-10">
-          <div className="grid md:grid-cols-2 gap-12 items-center">
-            <div>
-              <p className="text-emerald-400 text-[11px] font-medium uppercase tracking-widest mb-3">
-                Built on Amanah
+      {/* ───────────────────────── CTA ───────────────────────── */}
+      <section className="mx-auto max-w-7xl px-4 pb-20">
+        <div className="overflow-hidden rounded-[32px] border border-emerald-200 bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 px-6 py-10 text-white shadow-[0_30px_90px_-35px_rgba(4,120,87,0.7)] sm:px-8 lg:px-12 lg:py-12">
+          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
+            <div className="max-w-2xl">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-100">
+                Begin with confidence
               </p>
-              <h2 className="font-display text-3xl font-bold mb-4">
-                The Amanah Index™ — a trust score you can actually understand
+              <h2 className="mt-3 font-display text-3xl leading-tight sm:text-4xl">
+                Browse public trust profiles and support organisations with greater peace of mind.
               </h2>
-              <p className="text-emerald-100 text-[14px] leading-relaxed mb-5">
-                Every organization earns a score from 0 to 100 based on five dimensions. The score is computed from verified data — not self-reporting — and updated whenever a report is verified or certification is renewed.
+              <p className="mt-4 text-[15px] leading-8 text-emerald-50/90">
+                Give your sadaqah where governance, transparency, and public trust are not hidden behind guesswork.
               </p>
-              <Link href="/how-it-works#amanah"
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-emerald-600
-                           hover:bg-emerald-500 rounded-lg text-[13px] font-medium
-                           transition-colors text-white">
-                Understand the scoring →
+            </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row lg:flex-col">
+              <Link
+                href="/charities"
+                className="inline-flex items-center justify-center rounded-xl bg-white px-5 py-3 text-sm font-semibold text-emerald-800 transition hover:bg-emerald-50"
+              >
+                Browse charities
+              </Link>
+              <Link
+                href="/how-it-works"
+                className="inline-flex items-center justify-center rounded-xl border border-emerald-300/40 bg-emerald-800/20 px-5 py-3 text-sm font-semibold text-white transition hover:bg-emerald-800/35"
+              >
+                Learn more
               </Link>
             </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {[
-                { label: 'Governance',    pct: 30, desc: 'Board structure, legal docs, conflict of interest' },
-                { label: 'Financial',     pct: 25, desc: 'Audited accounts, program expense ratio' },
-                { label: 'Project',       pct: 20, desc: 'Geo-verified reports, beneficiary metrics' },
-                { label: 'Impact',        pct: 15, desc: 'KPIs, sustainability, continuity tracking' },
-                { label: 'Shariah',       pct: 15, desc: 'Named advisor, written policy, fund governance' },
-              ].map((dim) => (
-                <div key={dim.label}
-                  className="bg-emerald-800/60 rounded-xl p-3.5 border border-emerald-700/50">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <span className="text-[12px] font-semibold text-white">{dim.label}</span>
-                    <span className="text-[11px] text-emerald-400">{dim.pct}%</span>
-                  </div>
-                  <p className="text-[10px] text-emerald-300 leading-snug">{dim.desc}</p>
-                </div>
-              ))}
-            </div>
           </div>
         </div>
       </section>
-
-      {/* ── ISLAMIC GOVERNANCE SECTION ───────────────────────── */}
-      <section className="section bg-amber-50 border-y border-amber-100">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-10">
-            <p className="text-[11px] font-medium text-amber-700 uppercase tracking-widest mb-2">
-              Grounded in Islamic principles
-            </p>
-            <h2 className="font-display text-3xl font-bold text-gray-900">
-              Amanah is not just a score — it is a covenant
-            </h2>
-            <p className="text-gray-600 text-[14px] max-w-2xl mx-auto mt-3 leading-relaxed">
-              The Quran designates those who manage charity (<em>Al-'Amilina 'Alayha</em>) as a recognised category with specific responsibilities. AmanahHub operationalises these obligations into verifiable, auditable standards.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-6">
-            {[
-              {
-                arabic: 'أمانة',
-                title: 'Amanah — Trustworthiness',
-                ayah: '"And do not consume one another\'s wealth unjustly…"',
-                ref: 'Al-Baqarah 2:188',
-                desc: 'Every charity administrator is a trustee of donor funds. Our governance review verifies that structures exist to protect that trust.',
-              },
-              {
-                arabic: 'شفافية',
-                title: 'Shafafiyyah — Transparency',
-                ayah: '"Kind speech and forgiveness are better than charity followed by injury."',
-                ref: 'Al-Baqarah 2:263',
-                desc: 'We require detailed project reports and financial statements — not for bureaucracy, but to honour the dignity of both donors and recipients.',
-              },
-              {
-                arabic: 'مساءلة',
-                title: "Mas'uliyyah — Accountability",
-                ayah: '"Allah does not burden a soul beyond that it can bear."',
-                ref: 'Al-Baqarah 2:286',
-                desc: 'The Prophet ﷺ held charity collectors accountable for every dirham. Our CTCF framework reflects that same standard in a verifiable form.',
-              },
-            ].map((item) => (
-              <div key={item.title} className="bg-white rounded-2xl p-5 border border-amber-100">
-                <p className="font-display text-3xl text-amber-600 mb-2">{item.arabic}</p>
-                <h3 className="font-semibold text-[13px] text-gray-900 mb-2">{item.title}</h3>
-                <p className="text-[12px] text-gray-500 italic mb-1 leading-relaxed">
-                  {item.ayah}
-                </p>
-                <p className="text-[10px] text-amber-600 mb-3">{item.ref}</p>
-                <p className="text-[12px] text-gray-600 leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── DONATION TRUST BANNER ────────────────────────────── */}
-      <section className="section-tight bg-white">
-        <div className="max-w-4xl mx-auto">
-          <div className="bg-emerald-700 rounded-2xl p-8 text-white text-center relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10"
-              style={{
-                backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 15px, rgba(255,255,255,0.1) 15px, rgba(255,255,255,0.1) 16px)',
-              }}
-            />
-            <div className="relative z-10">
-              <p className="text-emerald-200 text-[12px] uppercase tracking-widest mb-2">
-                Non-custodial platform
-              </p>
-              <h2 className="font-display text-2xl font-bold mb-3">
-                Your donation goes directly to the charity.
-              </h2>
-              <p className="text-emerald-100 text-[14px] max-w-xl mx-auto mb-6 leading-relaxed">
-                AmanahHub never holds your funds. When you donate, your payment goes straight to the organization via ToyyibPay. We only record and verify. Your Sadaqah reaches its destination intact.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                <Link href="/charities"
-                  className="px-7 py-3 bg-white text-emerald-800 rounded-lg font-semibold
-                             text-[14px] hover:bg-emerald-50 transition-colors">
-                  Start giving →
-                </Link>
-                <Link href="/how-it-works#donations"
-                  className="px-7 py-3 border border-emerald-400 text-white rounded-lg
-                             font-medium text-[14px] hover:bg-emerald-600 transition-colors">
-                  How donations work
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
     </div>
   );
 }
 
-function Stat({ value, unit, label, color, raw }: {
-  value: number | string; unit: string; label: string;
-  color?: string; raw?: boolean;
-}) {
+/* ───────────────────────── SMALL COMPONENTS ───────────────────────── */
+
+function StatCard({ value, label }: { value: string; label: string }) {
   return (
-    <div>
-      <p className={`text-3xl font-bold ${color === 'emerald' ? 'text-emerald-700' : 'text-gray-900'}`}>
-        {raw ? value : typeof value === 'number' ? value.toLocaleString() : value}
-        {unit}
-      </p>
-      <p className="text-[12px] text-gray-500 mt-1">{label}</p>
+    <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div className="text-2xl font-semibold text-gray-950 sm:text-3xl">{value}</div>
+      <div className="mt-1 text-sm text-gray-500">{label}</div>
+    </div>
+  );
+}
+
+function FeatureCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
+        ✦
+      </div>
+      <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
+      <p className="mt-2 text-[14px] leading-7 text-gray-600">{desc}</p>
+    </div>
+  );
+}
+
+function QuestionCard({ q, a }: { q: string; a: string }) {
+  return (
+    <div className="rounded-3xl border border-gray-200 bg-white p-5 shadow-sm">
+      <p className="text-[13px] font-semibold leading-6 text-gray-900">{q}</p>
+      <p className="mt-2 text-[13px] leading-7 text-gray-600">{a}</p>
     </div>
   );
 }
