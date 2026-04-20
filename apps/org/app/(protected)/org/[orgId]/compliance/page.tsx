@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/compliance/page.tsx
+// apps/org/app/(protected)/org/[orgId]/compliance/page.tsx
 // amanahOS — Compliance Reports (Sprint 29 update — adds export buttons + audit package)
 //
 // Builds on Sprint 25's compliance page.
@@ -106,28 +106,31 @@ export default async function CompliancePage({
   const fmt = (n: number) =>
     `RM ${Math.abs(n).toLocaleString('en-MY', { minimumFractionDigits: 2 })}`;
 
+  const scoped = (href: string) =>
+    href.startsWith('/org/') ? href : `/org/${orgId}${href}`;
+
   // Readiness items per pack
   const rosItems = [
-    { label: 'Organisation profile complete', ok: hasProfile,    href: '/profile' },
-    { label: 'Committee list (≥2 members)',    ok: hasCommittee,  href: '/members' },
-    { label: 'Financial period closed',        ok: closesCount > 0, href: '/accounting/close' },
-    { label: 'Annual financial statement',     ok: hasSnapshot,   href: '/accounting/reports/statement-of-activities' },
-    { label: 'Activity report (project)',       ok: projectCount > 0 && verifiedReports > 0, href: '/reports' },
-    { label: 'Governance policies on file',    ok: hasPolicies,   href: '/policy-kit' },
+    { label: 'Organisation profile complete', ok: hasProfile,    href: scoped('/profile') },
+    { label: 'Committee list (≥2 members)',    ok: hasCommittee,  href: scoped('/members') },
+    { label: 'Financial period closed',        ok: closesCount > 0, href: scoped('/accounting/close') },
+    { label: 'Annual financial statement',     ok: hasSnapshot,   href: scoped('/accounting/reports/statement-of-activities') },
+    { label: 'Activity report (project)',       ok: projectCount > 0 && verifiedReports > 0, href: scoped('/reports') },
+    { label: 'Governance policies on file',    ok: hasPolicies,   href: scoped('/policy-kit') },
   ];
   const mainItems = [
-    { label: 'Zakat or Waqf fund configured', ok: hasZakat || hasWaqf, href: '/accounting/funds' },
-    { label: 'Bank account linked',            ok: bankCount > 0, href: '/accounting/bank-accounts' },
-    { label: 'Period closed with fund data',   ok: closesCount > 0, href: '/accounting/close' },
-    { label: 'Zakat utilisation report',       ok: closesCount > 0 && hasZakat, href: '/accounting/reports/zakat-utilisation' },
-    { label: 'Beneficiary reports submitted',  ok: verifiedReports > 0, href: '/reports' },
+    { label: 'Zakat or Waqf fund configured', ok: hasZakat || hasWaqf, href: scoped('/accounting/funds') },
+    { label: 'Bank account linked',            ok: bankCount > 0, href: scoped('/accounting/bank-accounts') },
+    { label: 'Period closed with fund data',   ok: closesCount > 0, href: scoped('/accounting/close') },
+    { label: 'Zakat utilisation report',       ok: closesCount > 0 && hasZakat, href: scoped('/accounting/reports/zakat-utilisation') },
+    { label: 'Beneficiary reports submitted',  ok: verifiedReports > 0, href: scoped('/reports') },
   ];
   const donorItems = [
-    { label: 'Amanah Trust Score computed',    ok: closesCount > 0, href: '/trust' },
-    { label: 'Financial data available',        ok: hasSnapshot || closesCount > 0, href: '/accounting/reports' },
-    { label: 'Impact reports verified',         ok: verifiedReports > 0, href: '/reports' },
-    { label: 'Governance policies uploaded',    ok: hasPolicies,   href: '/policy-kit' },
-    { label: 'CTCF certification',             ok: isCertified,   href: '/certification' },
+    { label: 'Amanah Trust Score computed',    ok: closesCount > 0, href: scoped('/trust') },
+    { label: 'Financial data available',        ok: hasSnapshot || closesCount > 0, href: scoped('/accounting/reports') },
+    { label: 'Impact reports verified',         ok: verifiedReports > 0, href: scoped('/reports') },
+    { label: 'Governance policies uploaded',    ok: hasPolicies,   href: scoped('/policy-kit') },
+    { label: 'CTCF certification',             ok: isCertified,   href: scoped('/certification') },
   ];
 
   const rosPct   = Math.round(rosItems.filter((i)  => i.ok).length / rosItems.length  * 100);
@@ -187,10 +190,10 @@ export default async function CompliancePage({
         exportType="ros"
         items={rosItems}
         reportLinks={[
-          { label: 'Committee list (Members)',         href: '/members' },
-          { label: 'Statement of Activities',          href: '/accounting/reports/statement-of-activities' },
-          { label: 'Statement of Financial Position',  href: '/accounting/reports/statement-of-financial-position' },
-          { label: 'Activity summary (Reports)',       href: '/reports' },
+          { label: 'Committee list (Members)',         href: scoped('/members') },
+          { label: 'Statement of Activities',          href: scoped('/accounting/reports/statement-of-activities') },
+          { label: 'Statement of Financial Position',  href: scoped('/accounting/reports/statement-of-financial-position') },
+          { label: 'Activity summary (Reports)',       href: scoped('/reports') },
         ]}
         financialSummary={closesCount > 0 ? {
           income:  fmt(totalIncome),
@@ -211,10 +214,10 @@ export default async function CompliancePage({
         notApplicableNote="This pack applies to organisations handling Zakat or Waqf funds. Update your fund types in Profile if applicable."
         items={mainItems}
         reportLinks={[
-          { label: 'Zakat Utilisation Report',       href: '/accounting/reports/zakat-utilisation' },
-          { label: 'Statement of Changes in Funds',  href: '/accounting/reports/fund-changes' },
-          { label: 'Fund balance report',            href: '/accounting/funds' },
-          { label: 'Beneficiary reports',            href: '/reports' },
+          { label: 'Zakat Utilisation Report',       href: scoped('/accounting/reports/zakat-utilisation') },
+          { label: 'Statement of Changes in Funds',  href: scoped('/accounting/reports/fund-changes') },
+          { label: 'Fund balance report',            href: scoped('/accounting/funds') },
+          { label: 'Beneficiary reports',            href: scoped('/reports') },
         ]}
         financialSummary={null}
       />
@@ -230,11 +233,11 @@ export default async function CompliancePage({
         exportType="donor"
         items={donorItems}
         reportLinks={[
-          { label: 'Amanah Trust Score',             href: '/trust' },
-          { label: 'Statement of Activities',         href: '/accounting/reports/statement-of-activities' },
-          { label: 'Project fund utilisation',        href: '/accounting/reports/project-fund' },
-          { label: 'Governance policies',             href: '/policy-kit' },
-          { label: 'Certification status',            href: '/certification' },
+          { label: 'Amanah Trust Score',             href: scoped('/trust') },
+          { label: 'Statement of Activities',         href: scoped('/accounting/reports/statement-of-activities') },
+          { label: 'Project fund utilisation',        href: scoped('/accounting/reports/project-fund') },
+          { label: 'Governance policies',             href: scoped('/policy-kit') },
+          { label: 'Certification status',            href: scoped('/certification') },
         ]}
         financialSummary={snapshotInputs ? {
           income:  fmt(Number((snapshotInputs as Record<string, number>).total_income  ?? 0)),

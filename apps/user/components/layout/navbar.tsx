@@ -7,6 +7,7 @@
 import Link           from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState }   from 'react';
+import { MissionTaglineBar } from '@/components/site/mission-tagline-bar';
 
 interface NavbarClientProps {
   isLoggedIn:  boolean;
@@ -32,8 +33,8 @@ export function NavbarClient({ isLoggedIn, displayName }: NavbarClientProps) {
 
   return (
     <header className="sticky top-0 z-50 bg-white border-b border-gray-200">
+      <MissionTaglineBar />
       <div className="max-w-6xl mx-auto px-4 h-[52px] flex items-center gap-4">
-
         {/* Brand */}
         <Link href="/" className="flex items-center gap-2 flex-shrink-0 mr-2">
           <div className="w-7 h-7 rounded-md bg-emerald-700 flex items-center justify-center
