@@ -1,4 +1,7 @@
 'use client';
+// apps/org/components/layout/org-shell.tsx
+// amanahOS — App shell (Option A: URL-based org context)
+// Now receives currentOrgId so the Sidebar can build correct /org/[orgId]/... hrefs.
 
 import { useEffect, useState } from 'react';
 import { Sidebar } from '@/components/layout/sidebar';
@@ -12,6 +15,7 @@ interface OrgEntry {
 }
 
 interface OrgShellProps {
+  currentOrgId: string;
   user: { displayName: string; email: string; platformRole: string };
   orgs: OrgEntry[];
   children: React.ReactNode;
@@ -19,36 +23,27 @@ interface OrgShellProps {
 
 const STORAGE_KEY = 'amanahos.sidebar.desktop.open';
 
-export function OrgShell({ user, orgs, children }: OrgShellProps) {
+export function OrgShell({ currentOrgId, user, orgs, children }: OrgShellProps) {
   const [desktopSidebarOpen, setDesktopSidebarOpen] = useState(true);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [mobileSidebarOpen,  setMobileSidebarOpen]  = useState(false);
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored === '0') {
-        setDesktopSidebarOpen(false);
-      }
-    } catch {
-      // Ignore storage errors.
-    }
+      if (stored === '0') setDesktopSidebarOpen(false);
+    } catch { /* ignore */ }
   }, []);
 
   useEffect(() => {
     try {
       window.localStorage.setItem(STORAGE_KEY, desktopSidebarOpen ? '1' : '0');
-    } catch {
-      // Ignore storage errors.
-    }
+    } catch { /* ignore */ }
   }, [desktopSidebarOpen]);
 
   useEffect(() => {
     const handleResize = () => {
-      if (window.innerWidth >= 1024) {
-        setMobileSidebarOpen(false);
-      }
+      if (window.innerWidth >= 1024) setMobileSidebarOpen(false);
     };
-
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
@@ -57,7 +52,7 @@ export function OrgShell({ user, orgs, children }: OrgShellProps) {
     <div className="flex h-screen overflow-hidden bg-gray-50">
       {desktopSidebarOpen && (
         <div className="hidden lg:flex lg:flex-shrink-0">
-          <Sidebar user={user} orgs={orgs} />
+          <Sidebar currentOrgId={currentOrgId} user={user} orgs={orgs} />
         </div>
       )}
 
@@ -76,6 +71,7 @@ export function OrgShell({ user, orgs, children }: OrgShellProps) {
         }`}
       >
         <Sidebar
+          currentOrgId={currentOrgId}
           user={user}
           orgs={orgs}
           showMobileClose
@@ -97,7 +93,7 @@ export function OrgShell({ user, orgs, children }: OrgShellProps) {
 
           <button
             type="button"
-            onClick={() => setDesktopSidebarOpen((value) => !value)}
+            onClick={() => setDesktopSidebarOpen((v) => !v)}
             aria-label={desktopSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
             title={desktopSidebarOpen ? 'Hide sidebar' : 'Show sidebar'}
             className="hidden h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-sm text-gray-700 hover:bg-gray-100 lg:inline-flex"

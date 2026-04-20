@@ -1,0 +1,224 @@
+// apps/org/app/(protected)/projects/[id]/page.tsx
+// amanahOS — Project Detail (view + edit + reports)
+
+import { redirect, notFound }  from 'next/navigation';
+import Link                    from 'next/link';
+import { createClient }        from '@/lib/supabase/server';
+import { createServiceClient } from '@/lib/supabase/service';
+import { ProjectForm }         from '@/components/projects/project-form';
+
+export const metadata = { title: 'Project — amanahOS' };
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
+  draft:     { label: 'Draft',     color: 'text-gray-600',   bg: 'bg-gray-100' },
+  active:    { label: 'Active',    color: 'text-emerald-700',bg: 'bg-emerald-100' },
+  completed: { label: 'Completed', color: 'text-blue-700',   bg: 'bg-blue-100' },
+  archived:  { label: 'Archived',  color: 'text-gray-400',   bg: 'bg-gray-100' },
+};
+
+const VERIFY_CONFIG: Record<string, { label: string; color: string }> = {
+  pending:           { label: 'Pending review',   color: 'text-amber-700' },
+  verified:          { label: 'Verified ✓',        color: 'text-emerald-700' },
+  changes_requested: { label: 'Changes requested', color: 'text-orange-700' },
+  rejected:          { label: 'Rejected',          color: 'text-red-700' },
+};
+
+export default async function ProjectDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ orgId: string; id: string }>;
+  searchParams: Promise<{ edit?: string }>;
+}) {
+  const { orgId, id } = await params;
+  const supabase = await createClient();
+  const service  = createServiceClient();
+  const sp       = await searchParams;
+
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const { data: platformUser } = await supabase
+    .from('users').select('id')
+    .eq('auth_provider_user_id', user.id).single();
+  if (!platformUser) redirect('/no-access?reason=no_user_record');
+
+  const { data: membership } = await service
+    .from('org_members').select('organization_id, org_role')
+    .eq('organization_id', orgId)
+    .eq('user_id', platformUser.id).eq('status', 'active')
+    .single();
+  if (!membership) redirect('/no-access?reason=not_member_of_org');
+  const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
+
+  const { data: project } = await service
+    .from('projects')
+    .select('*')
+    .eq('id', id).eq('organization_id', orgId).single();
+  if (!project) notFound();
+
+  const { data: reports } = await service
+    .from('project_reports')
+    .select('id, title, submission_status, verification_status, report_date, submitted_at, reviewer_comment')
+    .eq('project_id', id)
+    .order('created_at', { ascending: false });
+
+  const sc  = STATUS_CONFIG[project.status]  ?? STATUS_CONFIG.draft;
+  const fmt = (n: number) =>
+    `RM ${n.toLocaleString('en-MY', { minimumFractionDigits: 2 })}`;
+
+  if (sp.edit === '1' && isManager) {
+    return (
+      <div className="p-6 max-w-2xl mx-auto space-y-6">
+        <div className="flex items-center gap-3">
+          <a href={`/org/${orgId}/projects`} className="text-[12px] text-gray-400 hover:text-gray-600">← Projects</a>
+          <span className="text-gray-300">/</span>
+          <a href={`/org/${orgId}/projects/${id}`} className="text-[12px] text-gray-400 hover:text-gray-600">{project.title}</a>
+          <span className="text-gray-300">/</span>
+          <span className="text-[12px] text-gray-600">Edit</span>
+        </div>
+        <ProjectForm orgId={orgId} basePath={`/org/${orgId}`} mode="edit" projectId={id} initialValues={{
+          title: project.title, objective: project.objective,
+          description: project.description ?? '', location_text: project.location_text ?? '',
+          start_date: project.start_date ?? '', end_date: project.end_date ?? '',
+          budget_amount: project.budget_amount ? String(project.budget_amount) : '',
+          status: project.status, is_public: project.is_public,
+          beneficiary_summary: project.beneficiary_summary ?? '',
+        }} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <a href={`/org/${orgId}/projects`} className="text-[12px] text-gray-400 hover:text-gray-600">← Projects</a>
+          </div>
+          <h1 className="text-xl font-semibold text-gray-900">{project.title}</h1>
+          <div className="flex items-center gap-2 mt-1">
+            <span className={`text-[10px] font-semibold px-2.5 py-0.5 rounded-full ${sc.bg} ${sc.color}`}>
+              {sc.label}
+            </span>
+            {project.is_public && (
+              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600">
+                Public on AmanahHub
+              </span>
+            )}
+          </div>
+        </div>
+        {isManager && (
+          <Link href={`/org/${orgId}/projects/${id}?edit=1`}
+            className="px-4 py-2 border border-gray-300 text-gray-700 text-sm font-medium
+                       rounded-lg hover:bg-gray-50 transition-colors">
+            Edit project
+          </Link>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* Left — Project details */}
+        <div className="lg:col-span-2 space-y-5">
+          <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+            <div className="px-5 py-3 bg-gray-50 rounded-t-lg">
+              <p className="text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Project details</p>
+            </div>
+            {[
+              { label: 'Objective',         value: project.objective },
+              { label: 'Description',       value: project.description },
+              { label: 'Location',          value: project.location_text },
+              { label: 'Start date',        value: project.start_date },
+              { label: 'End date',          value: project.end_date },
+              { label: 'Budget',            value: project.budget_amount ? fmt(Number(project.budget_amount)) : null },
+              { label: 'Beneficiaries',     value: project.beneficiary_summary },
+            ].filter(({ value }) => value).map(({ label, value }) => (
+              <div key={label} className="grid grid-cols-3 gap-3 px-5 py-3">
+                <p className="text-[11px] text-gray-400 font-medium">{label}</p>
+                <p className="text-[12px] text-gray-800 col-span-2">{value}</p>
+              </div>
+            ))}
+          </div>
+
+          {/* Reports */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-gray-700">
+                Progress reports ({(reports ?? []).length})
+              </h2>
+              {isManager && (
+                <Link href={`/org/${orgId}/reports/new?projectId=${id}`}
+                  className="text-[11px] font-medium text-emerald-600 hover:underline">
+                  + Submit report
+                </Link>
+              )}
+            </div>
+            {reports && reports.length > 0 ? (
+              <div className="rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+                {reports.map((r) => {
+                  const vc = VERIFY_CONFIG[r.verification_status] ?? VERIFY_CONFIG.pending;
+                  return (
+                    <Link key={r.id} href={`/org/${orgId}/reports/${r.id}`}
+                      className="flex items-center justify-between px-4 py-3.5 hover:bg-gray-50 transition-colors">
+                      <div>
+                        <p className="text-[13px] font-medium text-gray-800">{r.title}</p>
+                        <p className="text-[10px] text-gray-400 mt-0.5">
+                          {r.report_date ?? new Date(r.submitted_at ?? Date.now()).toLocaleDateString('en-MY')}
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-[11px] font-medium ${vc.color}`}>{vc.label}</p>
+                        <p className="text-[9px] text-gray-400 capitalize mt-0.5">
+                          {r.submission_status}
+                        </p>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-gray-200 bg-gray-50 p-5 text-center">
+                <p className="text-[12px] text-gray-500">No reports yet.</p>
+                {isManager && (
+                  <Link href={`/org/${orgId}/reports/new?projectId=${id}`}
+                    className="text-[12px] text-emerald-600 hover:underline mt-1 block">
+                    Submit first report →
+                  </Link>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Right — Quick actions + CTCF */}
+        <div className="space-y-4">
+          {isManager && (
+            <div className="rounded-lg border border-gray-200 bg-white p-4 space-y-2">
+              <p className="text-[11px] font-semibold text-gray-600 uppercase tracking-wide">Actions</p>
+              <Link href={`/org/${orgId}/reports/new?projectId=${id}`}
+                className="block w-full text-center px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700
+                           text-white text-sm font-medium rounded-lg transition-colors">
+                + Submit progress report
+              </Link>
+              <Link href={`/org/${orgId}/projects/${id}?edit=1`}
+                className="block w-full text-center px-4 py-2 border border-gray-300
+                           text-gray-600 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors">
+                Edit project
+              </Link>
+            </div>
+          )}
+
+          <div className="rounded-lg bg-blue-50 border border-blue-200 p-4">
+            <p className="text-[11px] font-semibold text-blue-800">CTCF Layer 3</p>
+            <p className="text-[11px] text-blue-700 mt-1 leading-relaxed">
+              Submit progress reports with beneficiary counts and spending evidence.
+              A platform reviewer will verify them — verified reports count toward your
+              certification score.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}

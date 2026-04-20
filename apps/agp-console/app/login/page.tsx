@@ -1,4 +1,4 @@
-import { loginAction } from "@/app/login/actions";
+import { LoginForm } from "@/app/login/login-form";
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
   const { error } = await searchParams;
@@ -16,19 +16,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
 
         {error ? <div className="notice notice-warning">{decodeURIComponent(error)}</div> : null}
 
-        <form action={loginAction} className="stack">
-          <div className="field">
-            <label htmlFor="email">Email</label>
-            <input className="input" id="email" name="email" type="email" required />
-          </div>
-
-          <div className="field">
-            <label htmlFor="password">Password</label>
-            <input className="input" id="password" name="password" type="password" required />
-          </div>
-
-          <button className="btn btn-primary" type="submit">Sign in</button>
-        </form>
+        <LoginForm />
       </div>
     </div>
   );

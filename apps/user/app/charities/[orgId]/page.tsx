@@ -1,367 +1,215 @@
-// apps/user/app/charities/[orgId]/page.tsx
-// AmanahHub — Public Organisation Profile (Sprint 24 — Trust Badge update)
-//
-// What changed from Phase 1:
-//   • Trust badge (Gold/Silver/Platinum) replaces simple score ring
-//   • Trust snapshot panel (5 governance signals)
-//   • Pillar breakdown (5 bars with public-friendly labels)
-//   • Trust timeline (live governance events)
-//   • Mini trust panel on donation CTA section
-//
-// Data source: amanah_index_history (v2 preferred)
-// Public API: /api/trust/[orgId] (used for revalidation; server components read DB directly)
-
-import { notFound }  from 'next/navigation';
-import Link          from 'next/link';
+import Link from 'next/link';
+import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { TrustBadge, TrustBadgeInline } from '@/components/ui/trust-badge';
-import { TrustSnapshotPanel, TrustPillarPanel, MiniTrustPanel } from '@/components/ui/trust-panel';
-import { TrustTimeline } from '@/components/ui/trust-timeline';
-import { getTrustGrade } from '@/lib/trust-grade';
+import { TrustBadge } from '@/components/charity/trust-badge';
+import { TrustPillarPanel } from '@/components/charity/trust-pillar-panel';
+import { TrustSnapshotPanel } from '@/components/charity/trust-snapshot-panel';
+import { GovernanceStageBadge } from '@/components/charity/governance-stage-badge';
+import {
+  type PublicTrustEvent,
+  type PublicTrustProfile,
+  canShowTrustScore,
+  getDirectoryStageMeta,
+  getPublicProfileSummary,
+  hasPublishedTrustSnapshot,
+} from '@/lib/public-trust';
+import { getTrustGrade } from '@/lib/trust';
 
-export const revalidate = 300; // ISR: revalidate every 5 minutes
+export const dynamic = 'force-dynamic';
 
-const ORG_TYPE_LABELS: Record<string, string> = {
-  ngo:              'NGO / Welfare',
-  mosque_surau:     'Mosque / Surau',
-  waqf_institution: 'Waqf Institution',
-  zakat_body:       'Zakat Body',
-  foundation:       'Foundation',
-  cooperative:      'Cooperative',
-  other:            'Other',
-};
-
-const FUND_BADGE: Record<string, string> = {
-  zakat:   'bg-purple-100 text-purple-700',
-  waqf:    'bg-teal-100 text-teal-700',
-  sadaqah: 'bg-emerald-100 text-emerald-700',
-  general: 'bg-gray-100 text-gray-600',
-};
-
-const PUBLIC_EVENT_LABELS: Record<string, string> = {
-  fi_period_closed:          'Financial accounts closed on time',
-  fi_bank_reconciled:        'Bank accounts reconciled',
-  fi_bank_account_linked:    'Bank account linked',
-  gov_policy_uploaded:       'Governance policy submitted',
-  gov_payment_dual_approved: 'Dual approval workflow active',
-  certification_updated:     'Certification application updated',
-  trn_financial_published:   'Financial report published',
-  trn_report_submitted:      'Transparency report submitted',
-  imp_report_verified:       'Impact report verified',
-};
-
-const PUBLIC_EVENT_PILLARS: Record<string, string> = {
-  fi_period_closed:          'Financial Integrity',
-  fi_bank_reconciled:        'Financial Integrity',
-  fi_bank_account_linked:    'Financial Integrity',
-  gov_policy_uploaded:       'Governance',
-  gov_payment_dual_approved: 'Governance',
-  certification_updated:     'Compliance',
-  trn_financial_published:   'Transparency',
-  trn_report_submitted:      'Transparency',
-  imp_report_verified:       'Impact',
-};
-
-export async function generateMetadata({ params }: { params: Promise<{ orgId: string }> }) {
+export default async function CharityDetailPage({ params }: { params: Promise<{ orgId: string }> }) {
   const { orgId } = await params;
-  const supabase  = await createClient();
-  const { data }  = await supabase
-    .from('organizations').select('name, summary').eq('id', orgId).single();
-  if (!data) return { title: 'Organisation — AmanahHub' };
-  return {
-    title:       `${data.name} — AmanahHub`,
-    description: data.summary ?? `${data.name} on AmanahHub — trusted, verified Islamic charity.`,
-  };
-}
+  const supabase = await createClient();
 
-export default async function OrgPublicProfilePage({
-  params,
-}: {
-  params: Promise<{ orgId: string }>;
-}) {
-  const { orgId } = await params;
-  const supabase  = await createClient();
-
-  // Only listed orgs
-  const { data: org } = await supabase
-    .from('organizations')
-    .select('id, name, legal_name, registration_no, website_url, contact_email, state, org_type, oversight_authority, fund_types, summary, onboarding_status, listing_status')
-    .eq('id', orgId)
-    .eq('listing_status', 'listed')
-    .single();
-
-  if (!org) notFound();
-
-  const fundTypes = (org.fund_types ?? []) as string[];
-
-  // ── Load trust data in parallel ─────────────────────────────
-  const [
-    scoreResult,
-    certResult,
-    bankResult,
-    closesResult,
-    policyResult,
-    reportResult,
-    eventResult,
-    projectResult,
-    docResult,
-  ] = await Promise.all([
-    supabase.from('amanah_index_history')
-      .select('score_value, score_version, breakdown, public_summary, computed_at')
+  const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
+    supabase
+      .from('v_amanahhub_public_trust_profiles')
+      .select('*')
       .eq('organization_id', orgId)
-      .order('computed_at', { ascending: false })
-      .limit(1).maybeSingle(),
-
-    supabase.from('certification_history')
-      .select('new_status, valid_from, valid_to, decided_at')
+      .maybeSingle(),
+    supabase
+      .from('v_amanahhub_public_trust_events')
+      .select('*')
       .eq('organization_id', orgId)
-      .order('decided_at', { ascending: false })
-      .limit(1).maybeSingle(),
-
-    supabase.from('bank_accounts')
-      .select('*', { count: 'exact', head: true })
-      .eq('organization_id', orgId).eq('is_active', true),
-
-    supabase.from('fund_period_closes')
-      .select('*', { count: 'exact', head: true })
-      .eq('organization_id', orgId),
-
-    supabase.from('trust_events')
-      .select('*', { count: 'exact', head: true })
-      .eq('organization_id', orgId).eq('event_type', 'gov_policy_uploaded'),
-
-    supabase.from('project_reports')
-      .select('*', { count: 'exact', head: true })
-      .eq('organization_id', orgId).eq('submission_status', 'submitted'),
-
-    supabase.from('trust_events')
-      .select('id, event_type, pillar, score_delta, occurred_at')
-      .eq('organization_id', orgId)
-      .in('event_type', Object.keys(PUBLIC_EVENT_LABELS))
-      .order('occurred_at', { ascending: false })
-      .limit(10),
-
-    supabase.from('projects')
-      .select('id, title, objective, status, budget_amount, is_public')
-      .eq('organization_id', orgId)
-      .eq('is_public', true)
-      .eq('status', 'active')
-      .limit(6),
-
-    supabase.from('org_documents')
-      .select('id, document_type, label, storage_path')
-      .eq('organization_id', orgId)
-      .eq('is_approved_public', true)
-      .eq('visibility', 'public')
-      .limit(8),
+      .order('occurred_at', { ascending: false, nullsFirst: false })
+      .limit(12),
   ]);
 
-  const score          = Number(scoreResult.data?.score_value ?? 0);
-  const breakdown      = (scoreResult.data?.breakdown ?? {}) as Record<string, {
-    raw?: number; capped?: number; pct?: number; max?: number;
-  }>;
-  const cert           = certResult.data;
-  const isCertified    = cert?.new_status === 'certified';
-  const trustGrade     = getTrustGrade(score);
+  if (profileError) throw new Error(profileError.message);
+  if (eventsError) throw new Error(eventsError.message);
+  if (!profile) notFound();
 
-  // Pillar breakdown for public display
-  const PILLARS = [
-    { key: 'financial_integrity', publicLabel: 'Financial Care' },
-    { key: 'governance',          publicLabel: 'Leadership & Controls' },
-    { key: 'compliance',          publicLabel: 'Legal & Audit' },
-    { key: 'transparency',        publicLabel: 'Openness' },
-    { key: 'impact',              publicLabel: 'Community Impact' },
-  ];
-
-  const pillarBreakdown = PILLARS.map((p) => ({
-    key:         p.key,
-    publicLabel: p.publicLabel,
-    pct:         Math.round((breakdown[p.key]?.pct ?? 0) * 100) / 100,
-  }));
-
-  // Snapshot signals
-  const snapshotSignals = [
-    { label: 'Separate bank account',       detail: 'Funds kept separate from personal accounts',         ok: (bankResult.count ?? 0) > 0 },
-    { label: 'Monthly accounts maintained', detail: 'Financial records closed and reviewed each month',    ok: (closesResult.count ?? 0) > 0 },
-    { label: 'Governance policies on file', detail: 'Written policies governing financial controls',       ok: (policyResult.count ?? 0) > 0 },
-    { label: 'Progress reports submitted',  detail: 'Regular reporting on activities and beneficiary impact', ok: (reportResult.count ?? 0) > 0 },
-    { label: 'Certified by Amanah',         detail: 'CTCF certification evaluation completed by reviewer', ok: isCertified },
-  ];
-
-  // Public trust events
-  const recentEvents = (eventResult.data ?? []).map((e) => ({
-    id:         e.id,
-    label:      PUBLIC_EVENT_LABELS[e.event_type] ?? e.event_type,
-    pillar:     PUBLIC_EVENT_PILLARS[e.event_type] ?? e.pillar,
-    positive:   (e.score_delta ?? 0) >= 0,
-    occurredAt: e.occurred_at,
-  }));
-
-  const projects = projectResult.data ?? [];
+  const org = profile as PublicTrustProfile;
+  const timeline = (events ?? []) as PublicTrustEvent[];
+  const hasPublishedSnapshot = hasPublishedTrustSnapshot(org);
+  const showTrustScore = canShowTrustScore(org);
+  const trustGrade = showTrustScore ? getTrustGrade(org.trust_score ?? 0) : null;
+  const stageMeta = getDirectoryStageMeta(org.governance_stage_key);
+  const summary = getPublicProfileSummary(org);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-8">
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-center gap-3 text-sm">
+        <Link href="/charities" className="font-medium text-emerald-700 hover:text-emerald-800">
+          ← Back to directory
+        </Link>
+        <GovernanceStageBadge stage={org.governance_stage_key} />
+      </div>
 
-        {/* ── SECTION A — Trust Header ── */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
-          <div className="flex items-start gap-5 flex-wrap">
-            {/* Org avatar placeholder */}
-            <div className="w-16 h-16 rounded-xl bg-emerald-100 flex items-center justify-center
-                            text-2xl font-bold text-emerald-600 flex-shrink-0">
-              {org.name[0].toUpperCase()}
-            </div>
-
-            {/* Org info */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900 leading-tight">{org.name}</h1>
-              <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                {org.org_type && (
-                  <span className="text-[11px] text-gray-500 capitalize">
-                    {ORG_TYPE_LABELS[org.org_type] ?? org.org_type}
-                  </span>
-                )}
-                {org.state && (
-                  <>
-                    <span className="text-gray-300">·</span>
-                    <span className="text-[11px] text-gray-500">{org.state}</span>
-                  </>
-                )}
-                {org.oversight_authority && (
-                  <>
-                    <span className="text-gray-300">·</span>
-                    <span className="text-[11px] text-gray-500">Reg: {org.oversight_authority}</span>
-                  </>
-                )}
-              </div>
-              {/* Fund type badges */}
-              <div className="flex gap-1.5 mt-2 flex-wrap">
-                {fundTypes.map((ft) => (
-                  <span key={ft}
-                    className={`text-[9px] font-semibold px-2 py-0.5 rounded-full capitalize ${
-                      FUND_BADGE[ft] ?? FUND_BADGE.general
-                    }`}>
-                    {ft}
-                  </span>
-                ))}
+      <section className="grid gap-6 lg:grid-cols-[1.6fr_0.9fr]">
+        <div className="card p-6">
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Public organisation profile</p>
+              <h1 className="mt-2 text-3xl font-semibold tracking-tight text-slate-900">{org.name}</h1>
+              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+                {org.org_type ? <span>{org.org_type}</span> : null}
+                {org.state ? <span>• {org.state}</span> : null}
+                {org.registration_no ? <span>• Reg. {org.registration_no}</span> : null}
               </div>
             </div>
 
-            {/* Trust badge */}
-            <div className="flex-shrink-0">
-              <TrustBadge
-                score={score}
-                grade={trustGrade.grade}
-                gradeLabel={trustGrade.label}
-                gradeSublabel={trustGrade.gradeSublabel}
-                lastUpdated={scoreResult.data?.computed_at}
-                certified={isCertified}
-                size="md"
-              />
+            {summary ? <p className="text-sm leading-7 text-slate-600">{summary}</p> : null}
+
+            <div className="grid gap-4 rounded-2xl border border-emerald-100 bg-emerald-50/40 p-4 sm:grid-cols-2">
+              <div>
+                <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Governance stage</p>
+                <p className="mt-2 text-base font-semibold text-slate-900">{org.governance_stage_label ?? stageMeta.label}</p>
+                <p className="mt-1 text-sm leading-6 text-slate-600">{org.governance_stage_description ?? stageMeta.description}</p>
+              </div>
+              <div className="space-y-2 text-sm text-slate-600">
+                {org.current_case_code ? (
+                  <p>
+                    <span className="font-medium text-slate-800">Current case:</span> {org.current_case_code}
+                  </p>
+                ) : null}
+                {org.current_case_status ? (
+                  <p>
+                    <span className="font-medium text-slate-800">Review status:</span> {org.current_case_status}
+                  </p>
+                ) : null}
+                {org.published_at ? (
+                  <p>
+                    <span className="font-medium text-slate-800">Published:</span>{' '}
+                    {new Date(org.published_at).toLocaleDateString()}
+                  </p>
+                ) : org.public_updated_at ? (
+                  <p>
+                    <span className="font-medium text-slate-800">Profile updated:</span>{' '}
+                    {new Date(org.public_updated_at).toLocaleDateString()}
+                  </p>
+                ) : null}
+              </div>
             </div>
           </div>
+        </div>
 
-          {/* Mission summary */}
-          {org.summary && (
-            <p className="text-[14px] text-gray-600 leading-relaxed border-t border-gray-100 pt-4">
-              {org.summary}
-            </p>
-          )}
-
-          {/* Auto-generated trust summary */}
-          {scoreResult.data?.public_summary && (
-            <div className="rounded-lg bg-emerald-50 border border-emerald-100 px-4 py-3">
-              <p className="text-[12px] text-emerald-800 leading-relaxed">
-                {scoreResult.data.public_summary}
+        <aside className="space-y-4">
+          {showTrustScore && trustGrade ? (
+            <div className="card p-6">
+              <TrustBadge
+                score={org.trust_score ?? 0}
+                grade={trustGrade.grade}
+                description={trustGrade.description}
+                tier={org.trust_tier}
+              />
+            </div>
+          ) : (
+            <div className="card p-6">
+              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Amanah journey</p>
+              <h2 className="mt-2 text-lg font-semibold text-slate-900">This organisation is welcomed on the platform.</h2>
+              <p className="mt-2 text-sm leading-7 text-slate-600">
+                A published trust snapshot is not available yet. Donors can still discover the organisation, follow its
+                governance journey, and review new public updates as they are published.
               </p>
             </div>
           )}
 
-          {/* Donate CTA */}
-          <div className="flex gap-3">
-            <Link href={`/donate/${orgId}`}
-              className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-sm
-                         font-semibold rounded-xl transition-colors">
-              Donate →
-            </Link>
-            {org.website_url && (
-              <a href={org.website_url} target="_blank" rel="noopener noreferrer"
-                className="px-4 py-2.5 border border-gray-300 text-gray-600 text-sm
-                           font-medium rounded-xl hover:bg-gray-50 transition-colors">
-                Visit website ↗
-              </a>
-            )}
-          </div>
-        </div>
-
-        {/* ── SECTION B + C — Trust Snapshot + Pillars ── */}
-        {score > 0 && (
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
-            <TrustSnapshotPanel signals={snapshotSignals} orgName={org.name} />
-            <TrustPillarPanel pillars={pillarBreakdown} />
-          </div>
-        )}
-
-        {/* ── SECTION D — Active Projects ── */}
-        {projects.length > 0 && (
-          <div className="space-y-3">
-            <h2 className="text-[14px] font-semibold text-gray-800">Active programmes</h2>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              {projects.map((project) => (
-                <Link key={project.id}
-                  href={`/charities/${orgId}/projects/${project.id}`}
-                  className="rounded-xl border border-gray-200 bg-white p-4 hover:border-emerald-300
-                             hover:shadow-sm transition-all space-y-2">
-                  <p className="text-[13px] font-semibold text-gray-800 line-clamp-2">
-                    {project.title}
-                  </p>
-                  <p className="text-[11px] text-gray-500 line-clamp-2 leading-relaxed">
-                    {project.objective}
-                  </p>
-                  {project.budget_amount && (
-                    <p className="text-[11px] text-emerald-700 font-medium">
-                      Budget: RM {Number(project.budget_amount).toLocaleString('en-MY')}
-                    </p>
-                  )}
-                </Link>
-              ))}
+          <div className="card p-6 text-sm text-slate-600">
+            <h2 className="text-base font-semibold text-slate-900">Organisation details</h2>
+            <div className="mt-4 space-y-2">
+              {org.website_url ? (
+                <p>
+                  <span className="font-medium text-slate-800">Website:</span>{' '}
+                  <a href={org.website_url} target="_blank" rel="noreferrer" className="text-emerald-700 hover:text-emerald-800">
+                    {org.website_url}
+                  </a>
+                </p>
+              ) : null}
+              {org.contact_email ? (
+                <p>
+                  <span className="font-medium text-slate-800">Email:</span> {org.contact_email}
+                </p>
+              ) : null}
+              {org.contact_phone ? (
+                <p>
+                  <span className="font-medium text-slate-800">Phone:</span> {org.contact_phone}
+                </p>
+              ) : null}
+              {org.oversight_authority ? (
+                <p>
+                  <span className="font-medium text-slate-800">Oversight authority:</span> {org.oversight_authority}
+                </p>
+              ) : null}
+              {org.address ? (
+                <p>
+                  <span className="font-medium text-slate-800">Address:</span> {org.address}
+                </p>
+              ) : null}
             </div>
           </div>
-        )}
+        </aside>
+      </section>
 
-        {/* ── SECTION E — Trust Timeline ── */}
-        <TrustTimeline events={recentEvents} />
+      {hasPublishedSnapshot ? (
+        <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <TrustSnapshotPanel
+            status={org.snapshot_status}
+            reviewStatus={org.review_status}
+            effectiveFrom={org.effective_from}
+            effectiveTo={org.effective_to}
+            publishedAt={org.published_at}
+            lastReviewedAt={org.last_reviewed_at}
+          />
+          <TrustPillarPanel pillarScores={org.pillar_scores} />
+        </section>
+      ) : null}
 
-        {/* ── SECTION F — Donate CTA with mini trust panel ── */}
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 space-y-4">
-          <h2 className="text-[16px] font-bold text-gray-900">
-            Support {org.name}
-          </h2>
-          <p className="text-[13px] text-gray-600 leading-relaxed">
-            Your donation goes directly to the organisation — we never hold funds.
-            Non-custodial. Transparent. Verified.
-          </p>
-
-          {score > 0 && (
-            <MiniTrustPanel
-              signals={snapshotSignals}
-              gradeLabel={trustGrade.label}
-              score={score}
-            />
-          )}
-
-          <Link href={`/donate/${orgId}`}
-            className="block w-full py-3.5 bg-emerald-600 hover:bg-emerald-700 text-white
-                       text-center text-sm font-bold rounded-xl transition-colors">
-            Donate to {org.name} →
-          </Link>
-
-          <p className="text-[10px] text-gray-400 text-center">
-            Powered by Amanah Governance Platform · Trusted Giving. Transparent Governance.
-          </p>
+      <section className="card p-6">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-slate-900">Public trust timeline</h2>
+            <p className="text-sm text-slate-500">Public milestones shared from the organisation&apos;s governance journey.</p>
+          </div>
         </div>
 
-      </div>
+        {timeline.length === 0 ? (
+          <p className="text-sm text-slate-500">
+            No public timeline items have been published yet. New milestones will appear here as this organisation
+            progresses through its amanah journey.
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {timeline.map((event) => (
+              <div key={event.id} className="rounded-2xl border border-slate-200 p-4">
+                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-500">
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 font-medium text-slate-700">{event.event_type}</span>
+                  {event.occurred_at ? <span>{new Date(event.occurred_at).toLocaleDateString()}</span> : null}
+                </div>
+                <h3 className="mt-2 text-sm font-semibold text-slate-900">{event.event_title ?? 'Public governance update'}</h3>
+                {event.event_summary ? <p className="mt-1 text-sm leading-6 text-slate-600">{event.event_summary}</p> : null}
+              </div>
+            ))}
+          </div>
+        )}
+      </section>
+
+      {org.notes_public ? (
+        <section className="card p-6">
+          <h2 className="text-lg font-semibold text-slate-900">Public notes</h2>
+          <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-600">{org.notes_public}</p>
+        </section>
+      ) : null}
     </div>
   );
 }

@@ -1,6 +1,7 @@
 'use client';
 // apps/org/components/projects/project-form.tsx
 // Sprint 25 — Project create/edit form
+// Option A: accepts basePath so redirects go to /org/[orgId]/projects/...
 
 import { useState, useTransition } from 'react';
 import { useRouter }               from 'next/navigation';
@@ -13,9 +14,10 @@ interface InitialValues {
 }
 
 interface Props {
-  orgId:         string;
-  mode:          'create' | 'edit';
-  projectId?:    string;
+  orgId:          string;
+  basePath:       string;          // e.g. /org/abc-123
+  mode:           'create' | 'edit';
+  projectId?:     string;
   initialValues?: InitialValues;
 }
 
@@ -28,7 +30,7 @@ const DEFAULT: InitialValues = {
 const inputCls = `w-full px-3 py-2 border border-gray-300 rounded-lg text-[13px]
                   focus:outline-none focus:ring-2 focus:ring-emerald-500`;
 
-export function ProjectForm({ orgId, mode, projectId, initialValues }: Props) {
+export function ProjectForm({ orgId, basePath, mode, projectId, initialValues }: Props) {
   const router = useRouter();
   const [v, setV]         = useState<InitialValues>(initialValues ?? DEFAULT);
   const [error, setError] = useState('');
@@ -48,7 +50,7 @@ export function ProjectForm({ orgId, mode, projectId, initialValues }: Props) {
       });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
-      router.push(data.id ? `/projects/${data.id}` : '/projects');
+      router.push(data.id ? `${basePath}/projects/${data.id}` : `${basePath}/projects`);
     });
   }
 
@@ -153,7 +155,7 @@ export function ProjectForm({ orgId, mode, projectId, initialValues }: Props) {
                      font-medium rounded-lg transition-colors disabled:opacity-40">
           {isPending ? 'Saving…' : mode === 'create' ? 'Create project' : 'Save changes'}
         </button>
-        <a href="/projects"
+        <a href={`${basePath}/projects`}
           className="px-6 py-2.5 border border-gray-300 text-gray-600 text-sm font-medium
                      rounded-lg hover:bg-gray-50 transition-colors">
           Cancel

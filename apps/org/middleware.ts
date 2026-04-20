@@ -1,25 +1,18 @@
-// apps/org/middleware.ts — Sprint 27-28
+// apps/org/middleware.ts
+// amanahOS — Route protection middleware
+// Option A: all org-scoped routes now live under /org/[orgId]/
+
 import { createServerClient } from '@supabase/ssr';
 import { NextRequest, NextResponse } from 'next/server';
 
 const PROTECTED_PREFIXES = [
-  '/dashboard',
-  '/onboarding',
-  '/profile',
-  '/accounting',
-  '/projects',
-  '/reports',
-  '/compliance',
-  '/policy-kit',
-  '/trust',
-  '/certification',
-  '/members',
+  '/dashboard',   // Redirect page → /org/[orgId]/dashboard
+  '/org',         // All org-scoped routes
 ];
 
-// Public routes — accessible without authentication
 const PUBLIC_PREFIXES = [
   '/login',
-  '/invite',    // Sprint 28: /invite/[token] — invitation accept page
+  '/invite',
   '/no-access',
   '/setup',
 ];
@@ -31,7 +24,7 @@ type CookieSetInput = {
 };
 
 export async function middleware(request: NextRequest) {
-  const { pathname, searchParams } = request.nextUrl;
+  const { pathname } = request.nextUrl;
 
   const supabaseUrl     = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -43,7 +36,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(new URL('/setup', request.url));
   }
 
-  // Always pass through public prefixes
   const isPublic = PUBLIC_PREFIXES.some((p) => pathname.startsWith(p));
   if (isPublic) return NextResponse.next();
 

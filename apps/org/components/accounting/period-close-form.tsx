@@ -6,11 +6,14 @@ import { useState, useTransition } from 'react';
 import { closePeriod }             from '@/lib/period-close-actions';
 
 interface Props {
+  basePath?: string;
   orgId:       string;
   currentYear: number;
 }
 
-export function PeriodCloseForm({ orgId, currentYear }: Props) {
+export function PeriodCloseForm({ orgId, currentYear,
+  basePath,
+}: Props) {
   const [closeType, setCloseType]   = useState<'year' | 'month'>('year');
   const [month,     setMonth]       = useState(new Date().getMonth() + 1);
   const [notes,     setNotes]       = useState('');
@@ -156,7 +159,7 @@ export function PeriodCloseForm({ orgId, currentYear }: Props) {
             </p>
           )}
           {result.success && (
-            <a href="/accounting/statements"
+            <a href={basePath ? `${basePath}/accounting/statements` : "/accounting/statements"}
               className="text-[11px] text-emerald-700 hover:underline mt-1 block">
               View financial statements →
             </a>

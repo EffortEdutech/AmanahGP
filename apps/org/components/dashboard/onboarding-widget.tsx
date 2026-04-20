@@ -10,9 +10,10 @@ import type { OnboardingState } from '@/lib/onboarding-state';
 
 interface Props {
   state: OnboardingState;
+  basePath?: string;
 }
 
-export function OnboardingWidget({ state }: Props) {
+export function OnboardingWidget({ state, basePath = '' }: Props) {
   // Don't render if complete
   if (state.isComplete) return null;
 
@@ -44,7 +45,7 @@ export function OnboardingWidget({ state }: Props) {
             <p className="text-[13px] font-bold text-gray-800">
               Amanah Ready — {state.completedCount}/{state.totalSteps} steps done
             </p>
-            <Link href="/onboarding"
+            <Link href={`${basePath}/onboarding`}
               className="text-[11px] font-medium text-blue-600 hover:underline flex-shrink-0">
               View all steps →
             </Link>

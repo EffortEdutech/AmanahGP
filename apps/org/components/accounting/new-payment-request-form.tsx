@@ -12,12 +12,13 @@ interface Props {
   expenseAccounts:  Array<{ id: string; code: string; name: string }>;
   bankAccounts:     Array<{ id: string; name: string; bank: string | null; fundType: string | null }>;
   projects:         Array<{ id: string; title: string }>;
+  basePath:         string;
 }
 
 const LARGE_THRESHOLD = 5000;
 
 export function NewPaymentRequestForm({
-  orgId, userId, requestNo, funds, expenseAccounts, bankAccounts, projects,
+  orgId, userId, requestNo, funds, expenseAccounts, bankAccounts, projects, basePath,
 }: Props) {
   const router = useRouter();
   const [description,   setDescription]  = useState('');
@@ -62,7 +63,7 @@ export function NewPaymentRequestForm({
       });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
-      router.push(`/accounting/payment-requests/${data.id}`);
+      router.push(`${basePath}/accounting/payment-requests/${data.id}`);
     });
   }
 
@@ -201,7 +202,7 @@ export function NewPaymentRequestForm({
                      font-medium rounded-lg transition-colors disabled:opacity-40">
           {isPending ? 'Saving…' : 'Save as draft'}
         </button>
-        <a href="/accounting/payment-requests"
+        <a href={`${basePath}/accounting/payment-requests`}
           className="px-6 py-2.5 border border-gray-300 text-gray-600 text-sm font-medium
                      rounded-lg hover:bg-gray-50 transition-colors">
           Cancel

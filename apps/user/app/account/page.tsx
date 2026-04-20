@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { StatusBadge } from '@/components/ui/badge';
+import { signOut } from '@/app/(auth)/actions';
 
 export const metadata = { title: 'My Account | AmanahHub' };
 
@@ -75,7 +76,15 @@ export default async function AccountPage() {
 
   return (
     <div className="max-w-2xl mx-auto px-4 py-6">
-      <h1 className="text-lg font-semibold text-gray-900 mb-5">My account</h1>
+      <div className="flex items-start justify-between gap-3 mb-5">
+        <h1 className="text-lg font-semibold text-gray-900">My account</h1>
+
+        <form action={signOut}>
+          <button type="submit" className="btn-secondary text-xs px-3 py-2">
+            Sign out
+          </button>
+        </form>
+      </div>
 
       <div className="grid grid-cols-3 gap-3 mb-5">
         <StatBlock

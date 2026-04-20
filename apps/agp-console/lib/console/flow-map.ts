@@ -18,7 +18,7 @@ export const CONSOLE_FLOW_SECTIONS: ConsoleFlowSection[] = [
       {
         label: "Dashboard",
         href: "/dashboard",
-        note: "Main control-plane landing page. From here you can jump to the flow map, review workbench, and publication command.",
+        note: "Main control-plane landing page. From here you can move into organisations, governance review, publication, and operational readiness.",
       },
       {
         label: "Organisations",
@@ -33,7 +33,7 @@ export const CONSOLE_FLOW_SECTIONS: ConsoleFlowSection[] = [
       {
         label: "Roles & Access",
         href: "/roles",
-        note: "Platform role assignment, access governance, and reviewer/scholar/approver control.",
+        note: "Platform role assignment, access governance, and reviewer, scholar, or approver control.",
       },
     ],
   },
@@ -65,7 +65,7 @@ export const CONSOLE_FLOW_SECTIONS: ConsoleFlowSection[] = [
   },
   {
     title: "3. Review, clarification, scholar, and decision workspaces",
-    description: "These pages drive the actual governance review journey from evidence to final decision.",
+    description: "These pages drive the governance review journey from evidence to recommendation, approval, and final outcome.",
     entries: [
       {
         label: "Clarifications",
@@ -74,13 +74,13 @@ export const CONSOLE_FLOW_SECTIONS: ConsoleFlowSection[] = [
       },
       {
         label: "Scholar Approval",
-        href: "/scholar-approval",
+        href: "/approval-board",
         note: "Used for scholarly routing, recommendation, and approval readiness before final outcome.",
       },
       {
         label: "Case detail",
         href: "/cases",
-        note: "Open a case row first, then use case-level links for assignments, recommendations, decision, remediation, and dossier.",
+        note: "Open a case row first, then use case-level links for assignments, recommendations, decision, remediation, dossier, and clarifications.",
       },
       {
         label: "Assignments board",
@@ -111,7 +111,7 @@ export const CONSOLE_FLOW_SECTIONS: ConsoleFlowSection[] = [
       {
         label: "Publication Command",
         href: "/publication-command",
-        note: "Final publish / unpublish control for donor-facing trust release.",
+        note: "Final publish and unpublish control for donor-facing trust release.",
       },
       {
         label: "Trust Snapshots",

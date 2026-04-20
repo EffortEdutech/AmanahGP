@@ -1,32 +1,34 @@
 'use client';
 // apps/org/components/reports/report-form.tsx
 // Sprint 25 — Report create + submit form
+// Option A: accepts basePath so redirects go to /org/[orgId]/reports
 
 import { useState, useTransition } from 'react';
 import { useRouter }               from 'next/navigation';
 
 interface Props {
-  orgId:            string;
-  projects:         Array<{ id: string; title: string }>;
+  orgId:             string;
+  basePath:          string;    // e.g. /org/abc-123
+  projects:          Array<{ id: string; title: string }>;
   defaultProjectId?: string;
 }
 
 const inputCls = `w-full px-3 py-2 border border-gray-300 rounded-lg text-[13px]
                   focus:outline-none focus:ring-2 focus:ring-emerald-500`;
 
-export function ReportForm({ orgId, projects, defaultProjectId }: Props) {
+export function ReportForm({ orgId, basePath, projects, defaultProjectId }: Props) {
   const router = useRouter();
-  const [projectId,   setProjectId]   = useState(defaultProjectId ?? '');
-  const [title,       setTitle]       = useState('');
-  const [reportDate,  setReportDate]  = useState('');
-  const [narrative,   setNarrative]   = useState('');
+  const [projectId,    setProjectId]    = useState(defaultProjectId ?? '');
+  const [title,        setTitle]        = useState('');
+  const [reportDate,   setReportDate]   = useState('');
+  const [narrative,    setNarrative]    = useState('');
   const [beneficiaries, setBeneficiaries] = useState('');
-  const [spendToDate, setSpendToDate] = useState('');
-  const [milestones,  setMilestones]  = useState('');
-  const [nextSteps,   setNextSteps]   = useState('');
-  const [submitNow,   setSubmitNow]   = useState(false);
-  const [error,       setError]       = useState('');
-  const [isPending,   startTransition] = useTransition();
+  const [spendToDate,  setSpendToDate]  = useState('');
+  const [milestones,   setMilestones]   = useState('');
+  const [nextSteps,    setNextSteps]    = useState('');
+  const [submitNow,    setSubmitNow]    = useState(false);
+  const [error,        setError]        = useState('');
+  const [isPending,    startTransition] = useTransition();
 
   async function handleSubmit(e: React.FormEvent, autoSubmit = false) {
     e.preventDefault(); setError('');
@@ -43,7 +45,7 @@ export function ReportForm({ orgId, projects, defaultProjectId }: Props) {
       });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
-      router.push('/reports');
+      router.push(`${basePath}/reports`);
     });
   }
 
@@ -60,7 +62,6 @@ export function ReportForm({ orgId, projects, defaultProjectId }: Props) {
   return (
     <form onSubmit={(e) => handleSubmit(e)} className="rounded-lg border border-gray-200 bg-white p-6 space-y-5">
 
-      {/* Project select */}
       {field('Project', (
         <select required value={projectId} onChange={(e) => setProjectId(e.target.value)}
           className={inputCls}>
@@ -124,7 +125,6 @@ export function ReportForm({ orgId, projects, defaultProjectId }: Props) {
           className={`${inputCls} resize-none`} />
       ))}
 
-      {/* CTCF note */}
       <div className="rounded-lg bg-blue-50 border border-blue-200 p-3">
         <p className="text-[11px] text-blue-700">
           <strong>After submitting</strong>, a platform reviewer will verify this report.
@@ -153,7 +153,7 @@ export function ReportForm({ orgId, projects, defaultProjectId }: Props) {
                      font-semibold rounded-lg transition-colors disabled:opacity-40">
           {isPending ? 'Submitting…' : 'Submit for review →'}
         </button>
-        <a href="/reports"
+        <a href={`${basePath}/reports`}
           className="px-5 py-2.5 text-gray-400 hover:text-gray-600 text-sm transition-colors self-center">
           Cancel
         </a>
