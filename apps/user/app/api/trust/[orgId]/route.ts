@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+﻿import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { canShowTrustScore, type PublicTrustProfile } from '@/lib/public-trust';
 import { getTrustGrade } from '@/lib/trust';
@@ -12,7 +12,7 @@ export async function GET(
 
   const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
     supabase
-      .from('v_amanahhub_public_trust_profiles')
+      .from('v_amanahhub_public_trust_profiles_live_score')
       .select('*')
       .eq('organization_id', orgId)
       .maybeSingle(),
@@ -94,3 +94,6 @@ export async function GET(
     publicEvents: events ?? [],
   });
 }
+
+
+

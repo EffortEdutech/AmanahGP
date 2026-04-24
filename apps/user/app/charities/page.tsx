@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
 import { DirectorySearch } from '@/components/charity/directory-search';
 import { CharityCard } from '@/components/charity/charity-card';
@@ -31,7 +31,7 @@ export default async function CharitiesPage({
   const supabase = await createClient();
 
   let query = supabase
-    .from('v_amanahhub_public_trust_profiles')
+    .from('v_amanahhub_public_trust_profiles_live_score')
     .select('*')
     .order('governance_stage_sort', { ascending: true })
     .order('trust_score', { ascending: false, nullsFirst: false })
@@ -62,7 +62,7 @@ export default async function CharitiesPage({
             </h1>
             <p className="mt-4 max-w-2xl text-[15px] leading-8 text-gray-600">
               This is the main donor gateway. Compare organisations by governance journey,
-              public trust profile, and visible accountability signals — not just by name alone.
+              public trust profile, and visible accountability signals â€” not just by name alone.
             </p>
           </div>
 
@@ -176,3 +176,6 @@ function StatCard({ value, label }: { value: string; label: string }) {
     </div>
   );
 }
+
+
+

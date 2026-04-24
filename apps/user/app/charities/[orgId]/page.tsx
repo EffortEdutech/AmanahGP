@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { ScoreRing } from '@/components/ui/score-ring';
@@ -28,7 +28,7 @@ export default async function CharityDetailPage({
 
   const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
     supabase
-      .from('v_amanahhub_public_trust_profiles')
+      .from('v_amanahhub_public_trust_profiles_live_score')
       .select('*')
       .eq('organization_id', orgId)
       .maybeSingle(),
@@ -61,7 +61,7 @@ export default async function CharityDetailPage({
         <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
           <div className="mb-5 flex flex-wrap items-center gap-3 text-sm">
             <Link href="/charities" className="font-medium text-emerald-700 hover:text-emerald-800">
-              ← Back to directory
+              â† Back to directory
             </Link>
             <GovernanceStageBadge stage={org.governance_stage_key} />
             {showTrustScore ? <TierBadge score={org.trust_score ?? 0} /> : null}
@@ -88,8 +88,8 @@ export default async function CharityDetailPage({
                   </h1>
                   <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-sm text-slate-500">
                     {org.org_type ? <span>{org.org_type}</span> : null}
-                    {org.state ? <span>• {org.state}</span> : null}
-                    {org.registration_no ? <span>• Reg. {org.registration_no}</span> : null}
+                    {org.state ? <span>â€¢ {org.state}</span> : null}
+                    {org.registration_no ? <span>â€¢ Reg. {org.registration_no}</span> : null}
                   </div>
                 </div>
               </div>
@@ -206,7 +206,7 @@ export default async function CharityDetailPage({
             <div>
               <h2 className="text-lg font-semibold text-slate-900">Public trust timeline</h2>
               <p className="text-sm text-slate-500">
-                Public milestones shared from the organisation’s governance journey.
+                Public milestones shared from the organisationâ€™s governance journey.
               </p>
             </div>
           </div>
@@ -259,7 +259,7 @@ function buildSnapshotSignals(org: PublicTrustProfile) {
     },
     {
       label: 'Governance stage is visible',
-      detail: 'The organisation’s current governance journey status is shown publicly.',
+      detail: 'The organisationâ€™s current governance journey status is shown publicly.',
       ok: Boolean(org.governance_stage_key),
     },
     {
@@ -328,3 +328,6 @@ function formatReviewStatus(value: string) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
+
+
+

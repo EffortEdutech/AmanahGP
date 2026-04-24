@@ -11,10 +11,11 @@ import {
   orgTypeLabel,
 } from '@/lib/public-trust';
 import { getTrustGrade } from '@/lib/trust';
+import { formatAmanahScoreWithMax } from '@agp/scoring';
 
 export function CharityCard({ org }: { org: PublicTrustProfile }) {
   const hasScore = canShowTrustScore(org);
-  const score = org.trust_score ?? 0;
+  const score = Number(org.trust_score ?? 0);
   const trustGrade = hasScore ? getTrustGrade(score) : null;
   const isCertified = org.snapshot_status === 'published' && org.review_status === 'approved';
   const stageMeta = getDirectoryStageMeta(org.governance_stage_key);
@@ -78,7 +79,7 @@ export function CharityCard({ org }: { org: PublicTrustProfile }) {
         <div className="mt-5 grid grid-cols-2 gap-3">
           <MiniFact
             label="Trust score"
-            value={hasScore ? `${Math.round(score)}/100` : 'In progress'}
+            value={hasScore ? formatAmanahScoreWithMax(score) : 'In progress'}
           />
           <MiniFact
             label="Public profile"

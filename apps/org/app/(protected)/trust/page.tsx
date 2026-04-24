@@ -5,6 +5,7 @@
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { getAmanahTier } from '@/lib/amanah-tiers';
 function relationOne<T>(value: unknown): T | null {
   if (Array.isArray(value)) {
     return (value[0] as T | undefined) ?? null;

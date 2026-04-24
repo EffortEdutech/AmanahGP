@@ -5,6 +5,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 type CertificationHistoryRow = {
   new_status: string | null;
   valid_from: string | null;
@@ -13,8 +16,11 @@ type CertificationHistoryRow = {
 };
 
 type AmanahIndexHistoryRow = {
+  organization_id: string;
   score_value: number | null;
+  score_version: string | null;
   computed_at: string | null;
+  breakdown?: Record<string, unknown> | null;
 };
 
 type OrganizationRow = {
@@ -25,7 +31,6 @@ type OrganizationRow = {
   state: string | null;
   updated_at: string | null;
   certification_history?: CertificationHistoryRow[] | null;
-  amanah_index_history?: AmanahIndexHistoryRow[] | null;
 };
 
 export async function GET(request: NextRequest) {
@@ -52,10 +57,6 @@ export async function GET(request: NextRequest) {
         valid_from,
         valid_to,
         decided_at
-      ),
-      amanah_index_history (
-        score_value,
-        computed_at
       )
     `)
     .eq('listing_status', 'listed')
@@ -83,6 +84,39 @@ export async function GET(request: NextRequest) {
   }
 
   const rows = (data ?? []) as OrganizationRow[];
+  const orgIds = rows.map((org) => org.id);
+
+  const { data: scoreRows, error: scoreError } = orgIds.length
+    ? await supabase
+        .from('amanah_index_history')
+        .select('organization_id, score_value, score_version, computed_at, breakdown')
+        .in('organization_id', orgIds)
+        .eq('score_version', 'amanah_v2_events')
+        .eq('breakdown->>model', 'baseline_plus_events_v1')
+        .order('computed_at', { ascending: false })
+    : { data: [], error: null };
+
+  if (scoreError) {
+    return NextResponse.json(
+      {
+        ok: false,
+        data: null,
+        error: {
+          code: 'SCORE_QUERY_ERROR',
+          message: scoreError.message,
+        },
+      },
+      { status: 500 }
+    );
+  }
+
+  const latestScoreByOrg = new Map<string, AmanahIndexHistoryRow>();
+
+  for (const row of (scoreRows ?? []) as AmanahIndexHistoryRow[]) {
+    if (!latestScoreByOrg.has(row.organization_id)) {
+      latestScoreByOrg.set(row.organization_id, row);
+    }
+  }
 
   const items = rows.map((org) => {
     const latestCert = [...(org.certification_history ?? [])].sort(
@@ -91,11 +125,7 @@ export async function GET(request: NextRequest) {
         new Date(a.decided_at ?? 0).getTime()
     )[0];
 
-    const latestScore = [...(org.amanah_index_history ?? [])].sort(
-      (a: AmanahIndexHistoryRow, b: AmanahIndexHistoryRow) =>
-        new Date(b.computed_at ?? 0).getTime() -
-        new Date(a.computed_at ?? 0).getTime()
-    )[0];
+    const latestScore = latestScoreByOrg.get(org.id) ?? null;
 
     return {
       id: org.id,

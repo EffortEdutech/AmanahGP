@@ -1,10 +1,10 @@
 // components/ui/badge.tsx
-// AmanahHub — Badge component (Sprint 7 UI uplift)
-// Matches UAT .badge .bg .ba .bb .bp .bgr .bred
+// AmanahHub — Badge component
+// Tier labels are routed through the canonical @agp/scoring adapter in score-ring.tsx.
 
 import { scoreTier, tierLabel, type Tier as ScoreTier } from './score-ring';
 
-type Variant = 'green' | 'amber' | 'blue' | 'purple' | 'gray' | 'red';
+type Variant = 'green' | 'amber' | 'blue' | 'purple' | 'gray' | 'red' | 'orange';
 
 const variantClass: Record<Variant, string> = {
   green:  'badge-green',
@@ -13,6 +13,7 @@ const variantClass: Record<Variant, string> = {
   purple: 'badge-purple',
   gray:   'badge-gray',
   red:    'badge-red',
+  orange: 'badge-amber',
 };
 
 interface BadgeProps {
@@ -29,8 +30,6 @@ export function Badge({ children, variant = 'gray', className = '' }: BadgeProps
   );
 }
 
-/* Pre-built semantic badges */
-
 export function CertifiedBadge() {
   return (
     <span className="badge badge-green">
@@ -43,11 +42,26 @@ export function CertifiedBadge() {
   );
 }
 
+function tierVariant(tier: ScoreTier): Variant {
+  switch (tier) {
+    case 'platinum':
+      return 'purple';
+    case 'gold':
+      return 'amber';
+    case 'silver':
+      return 'gray';
+    case 'bronze':
+      return 'orange';
+    case 'foundation':
+      return 'blue';
+    default:
+      return 'gray';
+  }
+}
+
 export function TierBadge({ score }: { score: number }) {
   const tier = scoreTier(score);
-  const v: Variant =
-    tier === 'platinum' ? 'purple' :
-    tier === 'gold'     ? 'amber'  : 'gray';
+  const v = tierVariant(tier);
 
   return (
     <span className={`badge ${variantClass[v]}`}>

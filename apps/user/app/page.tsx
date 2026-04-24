@@ -1,5 +1,5 @@
-// apps/user/app/page.tsx
-// AmanahHub — Premium Islamic Charity Marketplace Landing (Sprint 25)
+﻿// apps/user/app/page.tsx
+// AmanahHub â€” Premium Islamic Charity Marketplace Landing (Sprint 25)
 // Donor-first storytelling + stronger trust cues + premium visual hierarchy
 
 import Link from 'next/link';
@@ -22,7 +22,7 @@ const FEATURED_STAGE_ORDER: GovernanceJourneyStage[] = [
 ];
 
 export const metadata = {
-  title: 'AmanahHub — Trusted Giving. Transparent Governance.',
+  title: 'AmanahHub â€” Trusted Giving. Transparent Governance.',
 };
 
 export default async function HomePage() {
@@ -30,7 +30,7 @@ export default async function HomePage() {
 
   const [{ data: profiles }, { count: orgCount }, { count: donationCount }] = await Promise.all([
     supabase
-      .from('v_amanahhub_public_trust_profiles')
+      .from('v_amanahhub_public_trust_profiles_live_score')
       .select('*')
       .order('governance_stage_sort', { ascending: true })
       .order('trust_score', { ascending: false, nullsFirst: false })
@@ -51,7 +51,7 @@ export default async function HomePage() {
 
   return (
     <div className="bg-white text-gray-900">
-      {/* ───────────────────────── HERO ───────────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="relative overflow-hidden border-b border-emerald-100 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%),linear-gradient(to_bottom,_#ffffff,_#f8fafc)]">
         <div className="absolute inset-0 pointer-events-none opacity-[0.06] [background-image:radial-gradient(circle,_#047857_1px,_transparent_1px)] [background-size:24px_24px]" />
 
@@ -69,7 +69,7 @@ export default async function HomePage() {
 
             <p className="mt-5 max-w-xl text-[15px] leading-8 text-gray-600 sm:text-[16px]">
               AmanahHub helps donors discover Islamic charities with visible governance signals,
-              independent trust verification, and real operational transparency — so your sadaqah
+              independent trust verification, and real operational transparency â€” so your sadaqah
               reaches organisations you can support with confidence.
             </p>
 
@@ -91,7 +91,7 @@ export default async function HomePage() {
             {/* Trust points */}
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
-                ['Non-custodial', 'Donations go directly to the charity’s own gateway'],
+                ['Non-custodial', 'Donations go directly to the charityâ€™s own gateway'],
                 ['Visible trust signals', 'Donors see governance and reporting signals publicly'],
                 ['Inclusive growth', 'Organisations are welcomed while improving step by step'],
               ].map(([title, desc]) => (
@@ -134,7 +134,7 @@ export default async function HomePage() {
 
               <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
                 <p className="text-[12px] font-semibold text-emerald-800">
-                  “Trust is not a slogan — it should be visible before a donor gives.”
+                  â€œTrust is not a slogan â€” it should be visible before a donor gives.â€
                 </p>
                 <p className="mt-2 text-[11px] leading-6 text-emerald-700/90">
                   AmanahHub is designed so donors do not have to guess whether an organisation is
@@ -146,7 +146,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ───────────────────────── STATS ───────────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="border-b border-gray-100 bg-white">
         <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:grid-cols-3">
           <StatCard value={String(orgCount ?? 0)} label="Listed organisations" />
@@ -155,7 +155,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ───────────────────────── WHY AMANAHHUB ───────────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ WHY AMANAHHUB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="mx-auto max-w-7xl px-4 py-16">
         <div className="max-w-3xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
@@ -182,12 +182,12 @@ export default async function HomePage() {
           />
           <FeatureCard
             title="Give directly, safely"
-            desc="AmanahHub is non-custodial. Donations are routed through the charity’s own registered payment flow."
+            desc="AmanahHub is non-custodial. Donations are routed through the charityâ€™s own registered payment flow."
           />
         </div>
       </section>
 
-      {/* ───────────────────────── FEATURED CHARITIES ───────────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ FEATURED CHARITIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="border-y border-gray-100 bg-gray-50/70">
         <div className="mx-auto max-w-7xl px-4 py-16">
           <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -199,7 +199,7 @@ export default async function HomePage() {
                 Explore organisations by trust and governance journey
               </h2>
               <p className="mt-2 max-w-2xl text-[14px] leading-7 text-gray-600">
-                Organisations appear across different stages — from published trust profiles to those still
+                Organisations appear across different stages â€” from published trust profiles to those still
                 progressing in governance and public readiness.
               </p>
             </div>
@@ -208,7 +208,7 @@ export default async function HomePage() {
               href="/charities"
               className="inline-flex items-center text-sm font-semibold text-emerald-700 hover:text-emerald-800"
             >
-              View full directory →
+              View full directory â†’
             </Link>
           </div>
 
@@ -268,7 +268,7 @@ export default async function HomePage() {
                                 </h3>
 
                                 <p className="mt-1 text-[12px] text-gray-500">
-                                  {[org.org_type, org.state].filter(Boolean).join(' · ') || 'Organisation'}
+                                  {[org.org_type, org.state].filter(Boolean).join(' Â· ') || 'Organisation'}
                                 </p>
 
                                 <p className="mt-3 line-clamp-3 text-[13px] leading-6 text-gray-600">
@@ -281,7 +281,7 @@ export default async function HomePage() {
                               <span className="text-[11px] font-medium text-gray-500">
                                 {org.governance_stage_label ?? meta.label}
                               </span>
-                              <span className="text-[12px] font-semibold text-emerald-700">View profile →</span>
+                              <span className="text-[12px] font-semibold text-emerald-700">View profile â†’</span>
                             </div>
                           </Link>
                         );
@@ -295,7 +295,7 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* ───────────────────────── DONOR EXPLANATION ───────────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DONOR EXPLANATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="mx-auto max-w-7xl px-4 py-16">
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
           <div>
@@ -318,13 +318,13 @@ export default async function HomePage() {
             />
             <QuestionCard
               q="Can I give without uncertainty?"
-              a="AmanahHub keeps donations non-custodial and connects donors directly to the charity’s own payment route."
+              a="AmanahHub keeps donations non-custodial and connects donors directly to the charityâ€™s own payment route."
             />
           </div>
         </div>
       </section>
 
-      {/* ───────────────────────── CTA ───────────────────────── */}
+      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="mx-auto max-w-7xl px-4 pb-20">
         <div className="overflow-hidden rounded-[32px] border border-emerald-200 bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 px-6 py-10 text-white shadow-[0_30px_90px_-35px_rgba(4,120,87,0.7)] sm:px-8 lg:px-12 lg:py-12">
           <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -361,7 +361,7 @@ export default async function HomePage() {
   );
 }
 
-/* ───────────────────────── SMALL COMPONENTS ───────────────────────── */
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SMALL COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
 
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
@@ -376,7 +376,7 @@ function FeatureCard({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-        ✦
+        âœ¦
       </div>
       <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
       <p className="mt-2 text-[14px] leading-7 text-gray-600">{desc}</p>
@@ -392,3 +392,6 @@ function QuestionCard({ q, a }: { q: string; a: string }) {
     </div>
   );
 }
+
+
+

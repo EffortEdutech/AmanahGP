@@ -14,6 +14,7 @@ import Link                    from 'next/link';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { CertificationApplyForm } from '@/components/org/certification-apply-form';
+import { getAmanahTier } from '@/lib/amanah-tiers';
 function relationOne<T>(value: unknown): T | null {
   if (Array.isArray(value)) {
     return (value[0] as T | undefined) ?? null;
@@ -217,9 +218,7 @@ export default async function CertificationPage() {
   const readinessPct = Math.round((passedCount / checks.length) * 100);
 
   // Grade label for current score
-  const scoreGrade =
-    score >= 85 ? 'Platinum' : score >= 70 ? 'Gold' :
-    score >= 55 ? 'Silver'   : score >= 40 ? 'Bronze' : 'Foundation';
+  const scoreGrade = getAmanahTier(score).shortLabel;
 
   return (
     <div className="p-6 max-w-3xl mx-auto space-y-6">

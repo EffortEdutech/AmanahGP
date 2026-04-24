@@ -71,14 +71,25 @@ export async function emitTrustEvent(input: TrustEventInput): Promise<TrustEvent
 
   if (error) return { success: false, error: error.message };
 
-  // Get new score
-  const { data: scoreRow } = await service
+  // Get new safe score
+  // Temporary guard: old amanah_v2_events rows may be event-only and show
+  // values like 0.50 / 0.60. Prefer v2 only when it is not obviously broken;
+  // otherwise fall back to amanah_v1 or the latest available row.
+  const { data: scoreRows } = await service
     .from('amanah_index_history')
-    .select('score_value')
+    .select('score_value, score_version, computed_at')
     .eq('organization_id', input.orgId)
-    .eq('score_version', 'amanah_v2_events')
     .order('computed_at', { ascending: false })
-    .limit(1).maybeSingle();
+    .limit(10);
+
+  const scoreRow =
+    scoreRows?.find((row) => {
+      const value = Number(row.score_value ?? 0);
+      return row.score_version === 'amanah_v2_events' && value >= 10;
+    }) ??
+    scoreRows?.find((row) => row.score_version === 'amanah_v1') ??
+    scoreRows?.[0] ??
+    null;
 
   return {
     success:  true,

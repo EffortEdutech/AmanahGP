@@ -7,6 +7,7 @@ import { createClient }          from '@/lib/supabase/server';
 import { createServiceClient }   from '@/lib/supabase/service';
 import { OnboardingWidget }      from '@/components/dashboard/onboarding-widget';
 import { getOnboardingState }    from '@/lib/onboarding-state';
+import { getAmanahTier } from '@/lib/amanah-tiers';
 function relationOne<T>(value: unknown): T | null {
   if (Array.isArray(value)) {
     return (value[0] as T | undefined) ?? null;

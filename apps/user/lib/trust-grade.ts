@@ -1,20 +1,23 @@
 // apps/user/lib/trust-grade.ts
-// Extracted from the API route — Next.js route files cannot export
-// non-HTTP-method functions. This utility is imported wherever needed.
+// Compatibility wrapper. Canonical Amanah tier logic lives in @agp/scoring.
 
-export type TrustGrade = 'platinum' | 'gold' | 'silver' | 'building' | 'none';
+import { getAmanahTier, type AmanahTier } from '@agp/scoring';
 
-export interface TrustGradeResult {
-  grade:        TrustGrade;
-  label:        string;
-  gradeSublabel: string;
-  color:        string;
-}
+export type TrustGrade = AmanahTier;
 
-export function getTrustGrade(score: number): TrustGradeResult {
-  if (score >= 85) return { grade: 'platinum', label: 'Platinum', gradeSublabel: 'Exceptional Amanah', color: '#64748b' };
-  if (score >= 70) return { grade: 'gold',     label: 'Gold',     gradeSublabel: 'Highly Trusted',    color: '#b45309' };
-  if (score >= 55) return { grade: 'silver',   label: 'Silver',   gradeSublabel: 'Trusted',            color: '#475569' };
-  if (score >= 30) return { grade: 'building', label: 'Building', gradeSublabel: 'Developing',          color: '#6b7280' };
-  return              { grade: 'none',     label: 'New',      gradeSublabel: 'Getting started',    color: '#9ca3af' };
+export function getTrustGrade(score: number | string | null | undefined) {
+  const tier = getAmanahTier(score);
+
+  return {
+    grade: tier.tier,
+    label: tier.shortLabel,
+    gradeSublabel: tier.sublabel,
+    color:
+      tier.tier === 'platinum' ? '#475569' :
+      tier.tier === 'gold' ? '#b45309' :
+      tier.tier === 'silver' ? '#64748b' :
+      tier.tier === 'bronze' ? '#c2410c' :
+      tier.tier === 'foundation' ? '#2563eb' :
+      '#64748b',
+  };
 }

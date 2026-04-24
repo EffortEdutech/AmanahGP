@@ -1,105 +1,105 @@
-// apps/admin/components/ui/score-ring.tsx
-// AmanahHub Console — Score ring component (Sprint 11 fix)
-// Fully null-safe: never throws on undefined/null/NaN score.
+import {
+  getAmanahTier,
+  formatAmanahScore,
+  type AmanahTier,
+} from '@agp/scoring';
 
-import React from 'react';
+export type Tier = AmanahTier;
 
-// ── Tier helpers (exported for use in other components) ───────
-export type Tier = 'platinum' | 'gold' | 'silver' | 'basic';
-
-export function scoreTier(score: number | null | undefined): Tier {
-  if (score == null || isNaN(Number(score))) return 'basic';
-  const n = Number(score);
-  if (n >= 85) return 'platinum';
-  if (n >= 70) return 'gold';
-  if (n >= 55) return 'silver';
-  return 'basic';
+export function scoreTier(score: number | string | null | undefined): Tier {
+  return getAmanahTier(score).tier;
 }
 
-export function tierLabel(tier: Tier | null | undefined): string {
-  if (!tier) return 'Basic';
-  const labels: Record<Tier, string> = {
-    platinum: 'Platinum',
-    gold:     'Gold',
-    silver:   'Silver',
-    basic:    'Basic',
-  };
-  return labels[tier] ?? 'Basic';
+export function tierLabel(tier: Tier | string | null | undefined): string {
+  switch (tier) {
+    case 'platinum':
+      return 'Platinum';
+    case 'gold':
+      return 'Gold';
+    case 'silver':
+      return 'Silver';
+    case 'bronze':
+      return 'Bronze';
+    case 'foundation':
+      return 'Foundation';
+    default:
+      return 'Amanah';
+  }
 }
 
-// ── Tier visual config ────────────────────────────────────────
-const TIER_CONFIG: Record<Tier, {
-  ring:  string;
-  bg:    string;
-  text:  string;
-  label: string;
-}> = {
-  platinum: {
-    ring:  'ring-violet-300',
-    bg:    'bg-violet-50',
-    text:  'text-violet-800',
-    label: 'Platinum',
-  },
-  gold: {
-    ring:  'ring-amber-300',
-    bg:    'bg-amber-50',
-    text:  'text-amber-800',
-    label: 'Gold',
-  },
-  silver: {
-    ring:  'ring-gray-300',
-    bg:    'bg-gray-100',
-    text:  'text-gray-600',
-    label: 'Silver',
-  },
-  basic: {
-    ring:  'ring-gray-200',
-    bg:    'bg-gray-100',
-    text:  'text-gray-400',
-    label: 'Basic',
-  },
-};
+export function tierFullLabel(tier: Tier | string | null | undefined): string {
+  switch (tier) {
+    case 'platinum':
+      return 'Platinum Amanah';
+    case 'gold':
+      return 'Gold Amanah';
+    case 'silver':
+      return 'Silver Amanah';
+    case 'bronze':
+      return 'Bronze Amanah';
+    case 'foundation':
+      return 'Foundation Amanah';
+    default:
+      return 'Building public trust profile';
+  }
+}
 
-// ── Size config ───────────────────────────────────────────────
-const SIZE_CONFIG = {
-  xs:  { outer: 'w-8  h-8',  score: 'text-[9px]',  sub: 'hidden' },
-  sm:  { outer: 'w-10 h-10', score: 'text-[10px]', sub: 'hidden' },
-  md:  { outer: 'w-14 h-14', score: 'text-[13px]', sub: 'text-[8px]' },
-  lg:  { outer: 'w-16 h-16', score: 'text-[15px]', sub: 'text-[9px]' },
-  xl:  { outer: 'w-20 h-20', score: 'text-[18px]', sub: 'text-[10px]' },
-};
-
-// ── Component ─────────────────────────────────────────────────
-interface ScoreRingProps {
-  score: number | null | undefined;
-  size?: keyof typeof SIZE_CONFIG;
+type ScoreRingProps = {
+  score: number | string | null | undefined;
+  size?: 'sm' | 'md' | 'lg';
   showLabel?: boolean;
-}
+  className?: string;
+};
+
+const SIZE_CLASS = {
+  sm: 'h-14 w-14 text-lg',
+  md: 'h-20 w-20 text-2xl',
+  lg: 'h-28 w-28 text-4xl',
+};
+
+const TIER_CLASS: Record<AmanahTier, string> = {
+  platinum: 'bg-slate-50 ring-1 ring-slate-300 text-slate-800',
+  gold: 'bg-amber-50 ring-1 ring-amber-200 text-amber-800',
+  silver: 'bg-gray-50 ring-1 ring-gray-300 text-gray-700',
+  bronze: 'bg-orange-50 ring-1 ring-orange-200 text-orange-800',
+  foundation: 'bg-blue-50 ring-1 ring-blue-200 text-blue-800',
+  none: 'bg-gray-50 ring-1 ring-gray-200 text-gray-500',
+};
 
 export function ScoreRing({
   score,
   size = 'md',
-  showLabel = false,
+  showLabel = true,
+  className = '',
 }: ScoreRingProps) {
-  // Safe coercion — never pass undefined to tier lookup
-  const safeScore = (score != null && !isNaN(Number(score))) ? Number(score) : null;
-  const tier   = scoreTier(safeScore);
-  const config = TIER_CONFIG[tier]; // always defined since Tier is exhaustive
-  const sizes  = SIZE_CONFIG[size] ?? SIZE_CONFIG.md;
+  const tier = getAmanahTier(score);
+  const scoreText = formatAmanahScore(score);
+  const hasScore = scoreText !== 'In progress';
 
   return (
-    <div className={`
-      flex flex-col items-center justify-center rounded-full flex-shrink-0
-      ring-2 ${config.ring} ${config.bg} ${sizes.outer}
-    `}>
-      <span className={`font-bold leading-none ${config.text} ${sizes.score}`}>
-        {safeScore !== null ? safeScore.toFixed(safeScore >= 10 ? 0 : 1) : '—'}
-      </span>
-      {showLabel && sizes.sub !== 'hidden' && (
-        <span className={`font-medium leading-none mt-0.5 ${config.text} ${sizes.sub}`}>
-          {config.label}
-        </span>
+    <div className={`inline-flex flex-col items-center gap-1 ${className}`}>
+      <div
+        className={[
+          'rounded-full flex items-center justify-center font-black',
+          SIZE_CLASS[size] ?? SIZE_CLASS.md,
+          TIER_CLASS[tier.tier] ?? TIER_CLASS.none,
+        ].join(' ')}
+      >
+        {hasScore ? scoreText : '—'}
+      </div>
+
+      {showLabel && (
+        <div className="text-center leading-tight">
+          <div className="text-xs font-bold text-gray-900">
+            {tier.shortLabel}
+          </div>
+          <div className="text-[10px] text-gray-500">
+            {tier.sublabel}
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+export default ScoreRing;
