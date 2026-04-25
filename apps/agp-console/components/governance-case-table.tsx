@@ -1,4 +1,4 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import type { GovernanceReviewCaseRow } from "@/lib/console/server";
 import { formatDate, formatDateTime, statusBadgeClass, titleCase } from "@/lib/console/mappers";
 
@@ -9,14 +9,18 @@ function priorityBadgeClass(priority: string) {
   return "badge badge-green";
 }
 
+function isApproverStage(row: GovernanceReviewCaseRow) {
+  return row.status === "approval_pending" || Boolean(row.approval_started_at);
+}
+
 function workspaceLink(row: GovernanceReviewCaseRow) {
-  return row.current_stage === "approver"
+  return isApproverStage(row)
     ? `/cases/${row.id}/decision`
     : `/cases/${row.id}/recommendations`;
 }
 
 function workspaceLabel(row: GovernanceReviewCaseRow) {
-  return row.current_stage === "approver" ? "Decision" : "Recommendations";
+  return isApproverStage(row) ? "Decision" : "Recommendations";
 }
 
 export function GovernanceCaseTable({ rows }: { rows: GovernanceReviewCaseRow[] }) {
@@ -72,3 +76,4 @@ export function GovernanceCaseTable({ rows }: { rows: GovernanceReviewCaseRow[] 
     </div>
   );
 }
+

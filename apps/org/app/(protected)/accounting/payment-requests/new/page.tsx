@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/payment-requests/new/page.tsx
+﻿// apps/org/app/(protected)/accounting/payment-requests/new/page.tsx
 // amanahOS — New Payment Request
 
 import { redirect }            from 'next/navigation';
@@ -65,6 +65,7 @@ export default async function NewPaymentRequestPage() {
       </div>
 
       <NewPaymentRequestForm
+        basePath={""}
         orgId={orgId}
         userId={platformUser.id}
         requestNo={nextNo}
@@ -76,3 +77,4 @@ export default async function NewPaymentRequestPage() {
     </div>
   );
 }
+

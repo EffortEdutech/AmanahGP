@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/close/page.tsx
+﻿// apps/org/app/(protected)/accounting/close/page.tsx
 // amanahOS — Monthly Close Workflow (Sprint 19 patch — fixed bank recon gate)
 //
 // FIX: allBankReconciled gate now correctly passes when no bank accounts
@@ -361,7 +361,6 @@ export default async function MonthClosePage({
             </div>
           ) : (
             <CloseForm
-        basePath={`/org/${orgId}`}
               orgId={orgId}
               year={targetYear}
               month={targetMonth}
@@ -481,4 +480,6 @@ function ControlRow({ label, ok, detail, warning }: {
     </div>
   );
 }
+
+
 

@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/projects/[id]/page.tsx
+﻿// apps/org/app/(protected)/projects/[id]/page.tsx
 // amanahOS — Project Detail (view + edit + reports)
 
 import { redirect, notFound }  from 'next/navigation';
@@ -78,7 +78,7 @@ export default async function ProjectDetailPage({
           <span className="text-gray-300">/</span>
           <span className="text-[12px] text-gray-600">Edit</span>
         </div>
-        <ProjectForm orgId={orgId} mode="edit" projectId={id} initialValues={{
+        <ProjectForm basePath="" orgId={orgId} mode="edit" projectId={id} initialValues={{
           title: project.title, objective: project.objective,
           description: project.description ?? '', location_text: project.location_text ?? '',
           start_date: project.start_date ?? '', end_date: project.end_date ?? '',
@@ -223,3 +223,4 @@ export default async function ProjectDetailPage({
     </div>
   );
 }
+

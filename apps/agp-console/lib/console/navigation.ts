@@ -1,4 +1,4 @@
-import {
+﻿import {
   Bell,
   BookCheck,
   Building2,
@@ -14,6 +14,19 @@ import {
   Users,
   Wallet,
 } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
+export type ConsoleNavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+};
+
+type ConsoleNavGroup = {
+  title: string;
+  description: string;
+  items: readonly ConsoleNavItem[];
+};
 
 export const CONSOLE_NAV_GROUPS = [
   {
@@ -53,9 +66,9 @@ export const CONSOLE_NAV_GROUPS = [
       { href: "/production-readiness", label: "Production Readiness", icon: Rocket },
     ],
   },
-] as const;
+] satisfies readonly ConsoleNavGroup[];
 
-export const CONSOLE_NAV_ITEMS = CONSOLE_NAV_GROUPS.flatMap((group) => group.items);
+export const CONSOLE_NAV_ITEMS: ConsoleNavItem[] = CONSOLE_NAV_GROUPS.flatMap((group) => [...group.items]);
 
 export const CONSOLE_CRITICAL_FLOW = [
   { label: "Dashboard", href: "/dashboard", purpose: "Entry point for the AGP Console control plane." },
@@ -87,3 +100,4 @@ export const CONSOLE_UAT_CHECKLIST = [
   "No duplicate organization / organisation entity tables are used anywhere in AGP Console.",
   "Local run on port 3303 passes smoke test before production deploy.",
 ] as const;
+

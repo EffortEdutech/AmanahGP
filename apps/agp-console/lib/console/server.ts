@@ -1,4 +1,4 @@
-import { cache } from "react";
+﻿import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { ConsoleNotificationItem } from "@/components/notification-feed";
@@ -1088,7 +1088,7 @@ export async function listGovernanceReviewCases(filters?: {
     throw new Error(error.message);
   }
 
-  return (data ?? []) as GovernanceReviewCaseRow[];
+  return (data ?? []) as unknown as GovernanceReviewCaseRow[];
 }
 
 export async function getGovernanceReviewCaseById(caseId: string) {
@@ -1132,7 +1132,7 @@ export async function getGovernanceReviewCaseById(caseId: string) {
     throw new Error(error.message);
   }
 
-  return data as GovernanceReviewCaseRow;
+  return data as unknown as GovernanceReviewCaseRow;
 }
 
 export async function listGovernanceCaseAssignments(caseId: string) {
@@ -1398,3 +1398,5 @@ export async function writeAuditLog(
     metadata: input.metadata ?? {},
   });
 }
+
+

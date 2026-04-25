@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 type GovernanceEventIntakeBaseRow = {
   id: string;
@@ -103,7 +103,7 @@ export async function listGovernanceEventIntake(options?: {
     throw new Error(error.message);
   }
 
-  const rows = (data ?? []) as GovernanceEventIntakeBaseRow[];
+  const rows = (data ?? []) as unknown as GovernanceEventIntakeBaseRow[];
   const organizationIds = Array.from(new Set(rows.map((row) => row.organization_id)));
   const linkedCaseIds = Array.from(
     new Set(rows.map((row) => row.linked_case_id).filter((value): value is string => Boolean(value))),
@@ -206,3 +206,4 @@ export async function getGovernanceEventIntakeById(intakeId: string) {
   const rows = await listGovernanceEventIntake({ limit: 200 });
   return rows.find((row) => row.id === intakeId) ?? null;
 }
+

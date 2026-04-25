@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/projects/new/page.tsx
+﻿// apps/org/app/(protected)/projects/new/page.tsx
 // amanahOS — Create New Project
 
 import { redirect }            from 'next/navigation';
@@ -37,7 +37,8 @@ export default async function NewProjectPage() {
         <span className="text-gray-300">/</span>
         <h1 className="text-xl font-semibold text-gray-900">New project</h1>
       </div>
-      <ProjectForm orgId={membership.organization_id} mode="create" />
+      <ProjectForm basePath="" orgId={membership.organization_id} mode="create" />
     </div>
   );
 }
+

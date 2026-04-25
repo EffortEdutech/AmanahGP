@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/reports/new/page.tsx
+﻿// apps/org/app/(protected)/reports/new/page.tsx
 // amanahOS — Submit New Progress Report
 
 import { redirect }            from 'next/navigation';
@@ -47,7 +47,7 @@ export default async function NewReportPage({
         <span className="text-gray-300">/</span>
         <h1 className="text-xl font-semibold text-gray-900">Submit progress report</h1>
       </div>
-      <ReportForm
+      <ReportForm basePath=""
         orgId={orgId}
         projects={(projects ?? []).map((p) => ({ id: p.id, title: p.title }))}
         defaultProjectId={params.projectId}
@@ -55,3 +55,4 @@ export default async function NewReportPage({
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+﻿import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { CONSOLE_CRITICAL_FLOW, CONSOLE_UAT_CHECKLIST } from "@/lib/console/navigation";
 
 export type ProductionReadinessSummary = {
@@ -19,7 +19,7 @@ type CountResult = {
 
 async function safeCount(
   label: string,
-  queryFactory: (supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) => Promise<{
+  queryFactory: (supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>) => PromiseLike<{
     count: number | null;
     error: { message?: string | null } | null;
   }>,
@@ -103,3 +103,4 @@ export function getConsoleCriticalFlow() {
 export function getConsoleUatChecklist() {
   return CONSOLE_UAT_CHECKLIST;
 }
+

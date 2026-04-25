@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/projects/page.tsx
+﻿// apps/org/app/(protected)/projects/page.tsx
 // amanahOS — Projects (Sprint 25 — full CRUD, no Console link)
 //
 // Orgs create and manage their own projects here.
@@ -195,3 +195,4 @@ export default async function ProjectsPage({
     </div>
   );
 }
+

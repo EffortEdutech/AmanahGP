@@ -1,4 +1,4 @@
-// apps/org/app/api/audit-package/route.ts
+﻿// apps/org/app/api/audit-package/route.ts
 // Sprint 29 — Audit-Ready Package Download
 //
 // GET /api/audit-package?orgId=<uuid>   (orgId optional — falls back to membership lookup)
@@ -480,7 +480,12 @@ Amanah Governance Platform · amanahgp.com · Trusted Giving. Transparent Govern
   const dateCode = now.toISOString().split('T')[0];
   const filename = `amanah-audit-${orgSlug}-${dateCode}.zip`;
 
-  return new NextResponse(zipBuffer, {
+  const zipBody = zipBuffer.buffer.slice(
+    zipBuffer.byteOffset,
+    zipBuffer.byteOffset + zipBuffer.byteLength
+  ) as ArrayBuffer;
+
+  return new NextResponse(zipBody, {
     status: 200,
     headers: {
       'Content-Type':        'application/zip',
@@ -489,3 +494,4 @@ Amanah Governance Platform · amanahgp.com · Trusted Giving. Transparent Govern
     },
   });
 }
+

@@ -1,4 +1,4 @@
-// apps/org/app/(protected)/accounting/bank-accounts/[id]/reconcile/page.tsx
+﻿// apps/org/app/(protected)/accounting/bank-accounts/[id]/reconcile/page.tsx
 // amanahOS — Bank Reconciliation
 // Computes GL book balance from journal_lines for the linked account.
 
@@ -12,21 +12,10 @@ export const metadata = { title: 'Bank reconciliation — amanahOS' };
 
 export default async function ReconcilePage({
   params,
-  {
-  params,
   searchParams,
 }: {
-  params:       Promise<{ id: string }>;
-  searchParams: Promise<{ year?: string; month?: string }>;
-}}: {
   params: Promise<{ orgId: string; id: string }>;
-  {
-  params,
-  searchParams,
-}: {
-  params:       Promise<{ id: string }>;
   searchParams: Promise<{ year?: string; month?: string }>;
-}: any;
 }) {
   const { orgId, id } = await params;
   const supabase = await createClient();
@@ -192,3 +181,4 @@ export default async function ReconcilePage({
     </div>
   );
 }
+
