@@ -12,7 +12,7 @@ export async function GET(
 
   const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
     supabase
-      .from('v_amanahhub_public_trust_profiles_live_score')
+      .from('v_amanahhub_public_profiles')
       .select('*')
       .eq('organization_id', orgId)
       .maybeSingle(),
@@ -37,7 +37,7 @@ export async function GET(
   }
 
   const org = profile as PublicTrustProfile;
-  const trustGrade = canShowTrustScore(org) ? getTrustGrade(org.trust_score ?? 0) : null;
+  const trustGrade = canShowTrustScore(org) ? getTrustGrade(org.amanah_index_score ?? 0) : null;
 
   return NextResponse.json({
     organization: {
@@ -68,13 +68,13 @@ export async function GET(
       id: org.snapshot_id,
       status: org.snapshot_status,
       reviewStatus: org.review_status,
-      trustScore: org.has_published_snapshot ? org.trust_score : null,
-      trustTier: org.has_published_snapshot ? org.trust_tier : null,
+      trustScore: org.has_published_snapshot ? org.amanah_index_score : null,
+      trustTier: org.has_published_snapshot ? org.amanah_index_tier : null,
       grade: trustGrade?.grade ?? null,
-      gradeDescription: trustGrade?.description ?? null,
+      gradeDescription: trustGrade?.gradeSublabel ?? null,
       summary: org.summary_public ?? org.summary ?? org.description ?? org.governance_stage_description,
       notesPublic: org.notes_public,
-      pillarScores: org.pillar_scores,
+      pillarScores: org.amanah_index_breakdown,
       signalsPublic: org.signals_public,
       publishedAt: org.published_at,
       effectiveFrom: org.effective_from,
@@ -94,6 +94,9 @@ export async function GET(
     publicEvents: events ?? [],
   });
 }
+
+
+
 
 
 

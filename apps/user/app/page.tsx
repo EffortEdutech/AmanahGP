@@ -30,10 +30,10 @@ export default async function HomePage() {
 
   const [{ data: profiles }, { count: orgCount }, { count: donationCount }] = await Promise.all([
     supabase
-      .from('v_amanahhub_public_trust_profiles_live_score')
+      .from('v_amanahhub_public_profiles')
       .select('*')
       .order('governance_stage_sort', { ascending: true })
-      .order('trust_score', { ascending: false, nullsFirst: false })
+      .order('amanah_index_score', { ascending: false, nullsFirst: false })
       .order('published_at', { ascending: false, nullsFirst: false })
       .limit(9),
     supabase
@@ -174,7 +174,7 @@ export default async function HomePage() {
         <div className="mt-10 grid gap-5 md:grid-cols-3">
           <FeatureCard
             title="See trust signals instantly"
-            desc="Donors can view badges, governance stage, trust score, and supporting public transparency signals."
+            desc="Donors can view badges, governance stage, Amanah Index, and supporting public transparency signals."
           />
           <FeatureCard
             title="Support organisations on a journey"
@@ -238,7 +238,7 @@ export default async function HomePage() {
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                       {items.slice(0, 3).map((org) => {
                         const isPublished = org.snapshot_status === 'published' && org.review_status === 'approved';
-                        const hasScore = !!org.has_published_snapshot && (org.trust_score ?? 0) > 0;
+                        const hasScore = !!org.has_published_snapshot && (org.amanah_index_score ?? 0) > 0;
                         const summary = getPublicProfileSummary(org);
 
                         return (
@@ -249,7 +249,7 @@ export default async function HomePage() {
                           >
                             <div className="flex items-start gap-4">
                               {hasScore ? (
-                                <ScoreRing score={org.trust_score} size="lg" showLabel />
+                                <ScoreRing score={org.amanah_index_score} size="lg" showLabel />
                               ) : (
                                 <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
                                   Amanah
@@ -260,7 +260,7 @@ export default async function HomePage() {
                                 <div className="flex flex-wrap gap-1.5">
                                   <GovernanceStageBadge stage={org.governance_stage_key} />
                                   {isPublished ? <CertifiedBadge /> : null}
-                                  {hasScore ? <TierBadge score={org.trust_score ?? 0} /> : null}
+                                  {hasScore ? <TierBadge score={org.amanah_index_score ?? 0} /> : null}
                                 </div>
 
                                 <h3 className="mt-3 text-[17px] font-semibold leading-snug text-gray-900 transition group-hover:text-emerald-800">
@@ -392,6 +392,8 @@ function QuestionCard({ q, a }: { q: string; a: string }) {
     </div>
   );
 }
+
+
 
 
 

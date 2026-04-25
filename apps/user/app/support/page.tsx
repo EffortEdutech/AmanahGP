@@ -1,4 +1,4 @@
-// apps/user/app/support/page.tsx
+﻿// apps/user/app/support/page.tsx
 // AmanahHub — Support & FAQ (Sprint 10)
 
 import Link from 'next/link';
@@ -19,7 +19,7 @@ const DONOR_FAQS = [
   },
   {
     q: 'What does the Amanah score mean?',
-    a: 'The Amanah Index™ is a 0–100 trust score computed from verified data across five dimensions: governance (30%), financial transparency (25%), project reporting (20%), impact tracking (15%), and Shariah governance (15%). A higher score reflects stronger, independently verified transparency practices. The score is not self-reported — it is calculated from documentation reviewed by our platform reviewers.',
+    a: 'The Amanah Index™ is a 0–100 Amanah Index computed from verified data across five dimensions: governance (30%), financial transparency (25%), project reporting (20%), impact tracking (15%), and Shariah governance (15%). A higher score reflects stronger, independently verified transparency practices. The score is not self-reported — it is calculated from documentation reviewed by our platform reviewers.',
   },
   {
     q: 'What is the difference between Platinum, Gold, Silver, and Basic Amanah?',
@@ -200,3 +200,4 @@ function FaqList({ faqs }: { faqs: { q: string; a: string }[] }) {
     </div>
   );
 }
+

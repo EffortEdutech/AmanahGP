@@ -31,10 +31,10 @@ export default async function CharitiesPage({
   const supabase = await createClient();
 
   let query = supabase
-    .from('v_amanahhub_public_trust_profiles_live_score')
+    .from('v_amanahhub_public_profiles')
     .select('*')
     .order('governance_stage_sort', { ascending: true })
-    .order('trust_score', { ascending: false, nullsFirst: false })
+    .order('amanah_index_score', { ascending: false, nullsFirst: false })
     .order('published_at', { ascending: false, nullsFirst: false })
     .order('name', { ascending: true });
 
@@ -176,6 +176,8 @@ function StatCard({ value, label }: { value: string; label: string }) {
     </div>
   );
 }
+
+
 
 
 

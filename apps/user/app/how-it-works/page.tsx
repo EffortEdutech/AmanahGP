@@ -1,4 +1,4 @@
-// apps/user/app/how-it-works/page.tsx
+﻿// apps/user/app/how-it-works/page.tsx
 // AmanahHub — How It Works (Sprint 10)
 
 import Link from 'next/link';
@@ -144,7 +144,7 @@ export default function HowItWorksPage() {
       {/* Amanah Index */}
       <section id="amanah" className="py-16 px-4 bg-white">
         <div className="max-w-5xl mx-auto">
-          <SectionHead label="Trust score" title="The Amanah Index™" />
+          <SectionHead label="Amanah Index" title="The Amanah Index™" />
           <p className="text-gray-500 text-[14px] max-w-2xl mt-3 mb-8 leading-relaxed">
             The Amanah Index is a living score updated every time an organization has a report verified, certification renewed, or a trust event recorded. It is not self-reported — it is computed from verified data only.
           </p>
@@ -234,3 +234,4 @@ function SectionHead({ label, title }: { label: string; title: string }) {
     </div>
   );
 }
+

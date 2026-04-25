@@ -28,7 +28,7 @@ export default async function CharityDetailPage({
 
   const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
     supabase
-      .from('v_amanahhub_public_trust_profiles_live_score')
+      .from('v_amanahhub_public_profiles')
       .select('*')
       .eq('organization_id', orgId)
       .maybeSingle(),
@@ -48,7 +48,7 @@ export default async function CharityDetailPage({
   const timeline = (events ?? []) as PublicTrustEvent[];
   const hasPublishedSnapshot = hasPublishedTrustSnapshot(org);
   const showTrustScore = canShowTrustScore(org);
-  const trustGrade = showTrustScore ? getTrustGrade(org.trust_score ?? 0) : null;
+  const trustGrade = showTrustScore ? getTrustGrade(org.amanah_index_score ?? 0) : null;
   const stageMeta = getDirectoryStageMeta(org.governance_stage_key);
   const summary = getPublicProfileSummary(org) ?? stageMeta.description;
 
@@ -64,7 +64,7 @@ export default async function CharityDetailPage({
               â† Back to directory
             </Link>
             <GovernanceStageBadge stage={org.governance_stage_key} />
-            {showTrustScore ? <TierBadge score={org.trust_score ?? 0} /> : null}
+            {showTrustScore ? <TierBadge score={org.amanah_index_score ?? 0} /> : null}
             {org.snapshot_status === 'published' && org.review_status === 'approved' ? <CertifiedBadge /> : null}
           </div>
 
@@ -72,7 +72,7 @@ export default async function CharityDetailPage({
             <div className="rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm">
               <div className="flex items-start gap-5">
                 {showTrustScore ? (
-                  <ScoreRing score={org.trust_score ?? 0} size="xl" showLabel />
+                  <ScoreRing score={org.amanah_index_score ?? 0} size="lg" showLabel />
                 ) : (
                   <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50 text-sm font-semibold text-emerald-700 ring-1 ring-emerald-100">
                     Amanah
@@ -116,7 +116,7 @@ export default async function CharityDetailPage({
               <div className="rounded-[28px] border border-gray-200 bg-white p-6 shadow-sm">
                 {trustGrade ? (
                   <TrustBadge
-                    score={org.trust_score ?? 0}
+                    score={org.amanah_index_score ?? 0}
                     grade={trustGrade.grade}
                     gradeLabel={trustGrade.label}
                     gradeSublabel={trustGrade.gradeSublabel}
@@ -268,7 +268,7 @@ function buildSnapshotSignals(org: PublicTrustProfile) {
       ok: Boolean(org.snapshot_status === 'published'),
     },
     {
-      label: 'Trust score can be shown',
+      label: 'Amanah Index can be shown',
       detail: 'A donor-facing score is visible when a published trust snapshot exists.',
       ok: canShowTrustScore(org),
     },
@@ -289,7 +289,7 @@ function buildPillarRows(org: PublicTrustProfile) {
     impact: 'Impact',
   };
 
-  const raw = org.pillar_scores;
+  const raw = org.amanah_index_breakdown;
   if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
     return [
       { key: 'signals', publicLabel: 'Visible trust signals', pct: canShowTrustScore(org) ? 80 : 35 },
@@ -328,6 +328,9 @@ function formatReviewStatus(value: string) {
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
 }
+
+
+
 
 
 

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { ScoreRing } from '@/components/ui/score-ring';
 import { CertifiedBadge, TierBadge } from '@/components/ui/badge';
 import { GovernanceStageBadge } from '@/components/charity/governance-stage-badge';
@@ -15,7 +15,7 @@ import { formatAmanahScoreWithMax } from '@agp/scoring';
 
 export function CharityCard({ org }: { org: PublicTrustProfile }) {
   const hasScore = canShowTrustScore(org);
-  const score = Number(org.trust_score ?? 0);
+  const score = Number(org.amanah_index_score ?? 0);
   const trustGrade = hasScore ? getTrustGrade(score) : null;
   const isCertified = org.snapshot_status === 'published' && org.review_status === 'approved';
   const stageMeta = getDirectoryStageMeta(org.governance_stage_key);
@@ -78,7 +78,7 @@ export function CharityCard({ org }: { org: PublicTrustProfile }) {
 
         <div className="mt-5 grid grid-cols-2 gap-3">
           <MiniFact
-            label="Trust score"
+            label="Amanah Index"
             value={hasScore ? formatAmanahScoreWithMax(score) : 'In progress'}
           />
           <MiniFact

@@ -1,4 +1,4 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { ScoreRing } from '@/components/ui/score-ring';
@@ -28,7 +28,7 @@ export default async function DonatePage({ params }: PageProps) {
   const supabase = await createClient();
 
   const { data: profile, error } = await supabase
-    .from('v_amanahhub_public_trust_profiles_live_score')
+    .from('v_amanahhub_public_profiles')
     .select('*')
     .eq('organization_id', orgId)
     .maybeSingle();
@@ -42,7 +42,7 @@ export default async function DonatePage({ params }: PageProps) {
   }
 
   const org = profile as PublicTrustProfile;
-  const score = Number(org.trust_score ?? 0);
+  const score = Number(org.amanah_index_score ?? 0);
   const hasScore = Number.isFinite(score) && score > 0;
   const stageMeta = getDirectoryStageMeta(org.governance_stage_key);
   const summary = getPublicProfileSummary(org) ?? stageMeta.description;
@@ -95,7 +95,7 @@ export default async function DonatePage({ params }: PageProps) {
         </div>
 
         <div className="grid gap-4 border-t border-gray-100 p-6 sm:grid-cols-3 sm:p-8">
-          <InfoCard label="Trust score" value={hasScore ? formatAmanahScoreWithMax(score) : 'In progress'} />
+          <InfoCard label="Amanah Index" value={hasScore ? formatAmanahScoreWithMax(score) : 'In progress'} />
           <InfoCard label="Public profile" value={org.snapshot_status === 'published' ? 'Published' : 'Building'} />
           <InfoCard label="Governance stage" value={org.governance_stage_label ?? stageMeta.label} />
         </div>
@@ -106,7 +106,7 @@ export default async function DonatePage({ params }: PageProps) {
           <h2 className="text-lg font-semibold text-gray-950">Donation flow placeholder</h2>
           <p className="mt-3 text-sm leading-7 text-gray-600">
             This page is restored as an AmanahHub donor-facing route. Connect the donation form/payment flow here.
-            The trust score is now read from the live public trust profile view, not from the old hardcoded snapshot tier.
+            The Amanah Index is now read from the live public trust profile view, not from the old hardcoded snapshot tier.
           </p>
           <div className="mt-6 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-800">
             Payment form integration can be added here after the score-display repair is stable.
@@ -139,3 +139,5 @@ function InfoCard({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+
