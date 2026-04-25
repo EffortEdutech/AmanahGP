@@ -1,4 +1,4 @@
-export type GovernanceJourneyStage =
+﻿export type GovernanceJourneyStage =
   | 'published_trust_profile'
   | 'governance_review_in_progress'
   | 'public_organisation_profile'
@@ -31,11 +31,11 @@ export interface PublicTrustProfile {
   snapshot_case_id: string | null;
   snapshot_status: string | null;
   review_status: string | null;
-  trust_score: number | null;
-  trust_tier: string | null;
+  amanah_index_score: number | null;
+  amanah_index_tier: string | null;
   summary_public: string | null;
   notes_public: string | null;
-  pillar_scores: Record<string, unknown> | null;
+  amanah_index_breakdown: Record<string, unknown> | null;
   signals_public: Record<string, unknown> | null;
   published_at: string | null;
   effective_from: string | null;
@@ -113,7 +113,7 @@ export function hasPublishedTrustSnapshot(profile: PublicTrustProfile) {
 }
 
 export function canShowTrustScore(profile: PublicTrustProfile) {
-  return hasPublishedTrustSnapshot(profile) && typeof profile.trust_score === 'number' && profile.trust_score > 0;
+  return hasPublishedTrustSnapshot(profile) && typeof profile.amanah_index_score === 'number' && profile.amanah_index_score > 0;
 }
 
 export function getPublicProfileSummary(profile: PublicTrustProfile) {
@@ -155,3 +155,4 @@ export function orgTypeLabel(orgType: string | null | undefined) {
   if (!orgType) return null;
   return map[orgType] ?? orgType;
 }
+
