@@ -22,6 +22,24 @@ export const PLATFORM_ROLES = {
 
 export type PlatformRole = typeof PLATFORM_ROLES[keyof typeof PLATFORM_ROLES];
 
+// Explicitly type role groups as PlatformRole[] so TypeScript does not narrow
+// `.includes()` to only the literal values in each array. This fixes Vercel
+// build errors such as:
+// "Argument of type 'PlatformRole' is not assignable to parameter of type
+//  'admin' | 'reviewer' | 'scholar' | 'super_admin'".
+const CONSOLE_PLATFORM_ROLES: readonly PlatformRole[] = [
+  PLATFORM_ROLES.ADMIN,
+  PLATFORM_ROLES.REVIEWER,
+  PLATFORM_ROLES.SCHOLAR,
+  PLATFORM_ROLES.SUPER_ADMIN,
+];
+
+const AMANAH_OS_BLOCKED_PLATFORM_ROLES: readonly PlatformRole[] = [
+  PLATFORM_ROLES.ADMIN,
+  PLATFORM_ROLES.REVIEWER,
+  PLATFORM_ROLES.SCHOLAR,
+];
+
 // ── Org Roles ─────────────────────────────────────────────────
 export const ORG_ROLES = {
   VIEWER:  'org_viewer',
@@ -51,6 +69,11 @@ export function isPlatformRole(role: string, expected: PlatformRole): boolean {
   return role === expected;
 }
 
+export function isKnownPlatformRole(role: string | null | undefined): role is PlatformRole {
+  if (!role) return false;
+  return (Object.values(PLATFORM_ROLES) as readonly string[]).includes(role);
+}
+
 export function isSuperAdmin(role: string | null | undefined): boolean {
   return role === PLATFORM_ROLES.SUPER_ADMIN;
 }
@@ -60,19 +83,12 @@ export function isInternalPlatformAdmin(role: string | null | undefined): boolea
 }
 
 export function isConsolePlatformRole(role: string | null | undefined): boolean {
-  return [
-    PLATFORM_ROLES.ADMIN,
-    PLATFORM_ROLES.REVIEWER,
-    PLATFORM_ROLES.SCHOLAR,
-    PLATFORM_ROLES.SUPER_ADMIN,
-  ].includes(role as PlatformRole);
+  return isKnownPlatformRole(role) && CONSOLE_PLATFORM_ROLES.includes(role);
 }
 
 export function isAmanahOsPlatformBlockedRole(role: string | null | undefined): boolean {
   // super_admin is intentionally NOT blocked: they may impersonate / act as any charity context.
-  return [PLATFORM_ROLES.ADMIN, PLATFORM_ROLES.REVIEWER, PLATFORM_ROLES.SCHOLAR].includes(
-    role as PlatformRole,
-  );
+  return isKnownPlatformRole(role) && AMANAH_OS_BLOCKED_PLATFORM_ROLES.includes(role);
 }
 
 export function isReviewerOrAbove(role: string): boolean {
