@@ -1,14 +1,10 @@
-﻿// apps/user/app/page.tsx
-// AmanahHub â€” Premium Islamic Charity Marketplace Landing (Sprint 25)
-// Donor-first storytelling + stronger trust cues + premium visual hierarchy
+// apps/user/app/page.tsx
+// AmanahHub - Premium Islamic Charity Marketplace Landing
 
 import Link from 'next/link';
 import { createClient } from '@/lib/supabase/server';
-import { ScoreRing } from '@/components/ui/score-ring';
-import { CertifiedBadge, TierBadge } from '@/components/ui/badge';
-import { GovernanceStageBadge } from '@/components/charity/governance-stage-badge';
+import { CharityCard } from '@/components/charity/charity-card';
 import {
-  getPublicProfileSummary,
   groupProfilesByStage,
   type PublicTrustProfile,
   type GovernanceJourneyStage,
@@ -22,7 +18,7 @@ const FEATURED_STAGE_ORDER: GovernanceJourneyStage[] = [
 ];
 
 export const metadata = {
-  title: 'AmanahHub â€” Trusted Giving. Transparent Governance.',
+  title: 'AmanahHub - Trusted Giving. Transparent Governance.',
 };
 
 export default async function HomePage() {
@@ -51,12 +47,10 @@ export default async function HomePage() {
 
   return (
     <div className="bg-white text-gray-900">
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ HERO â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="relative overflow-hidden border-b border-emerald-100 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%),linear-gradient(to_bottom,_#ffffff,_#f8fafc)]">
         <div className="absolute inset-0 pointer-events-none opacity-[0.06] [background-image:radial-gradient(circle,_#047857_1px,_transparent_1px)] [background-size:24px_24px]" />
 
         <div className="relative mx-auto grid max-w-7xl gap-10 px-4 py-16 lg:grid-cols-[1.08fr_0.92fr] lg:py-24">
-          {/* Left */}
           <div className="max-w-2xl">
             <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/80 px-3 py-1 text-[11px] font-medium text-emerald-800 shadow-sm backdrop-blur">
               <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
@@ -69,7 +63,7 @@ export default async function HomePage() {
 
             <p className="mt-5 max-w-xl text-[15px] leading-8 text-gray-600 sm:text-[16px]">
               AmanahHub helps donors discover Islamic charities with visible governance signals,
-              independent trust verification, and real operational transparency â€” so your sadaqah
+              independent trust verification, and real operational transparency - so your sadaqah
               reaches organisations you can support with confidence.
             </p>
 
@@ -88,10 +82,9 @@ export default async function HomePage() {
               </Link>
             </div>
 
-            {/* Trust points */}
             <div className="mt-8 grid gap-3 sm:grid-cols-3">
               {[
-                ['Non-custodial', 'Donations go directly to the charityâ€™s own gateway'],
+                ['Non-custodial', "Donations go directly to the charity's own gateway"],
                 ['Visible trust signals', 'Donors see governance and reporting signals publicly'],
                 ['Inclusive growth', 'Organisations are welcomed while improving step by step'],
               ].map(([title, desc]) => (
@@ -103,7 +96,6 @@ export default async function HomePage() {
             </div>
           </div>
 
-          {/* Right trust showcase */}
           <div className="lg:pl-4">
             <div className="rounded-[28px] border border-emerald-100 bg-white p-5 shadow-[0_25px_80px_-35px_rgba(16,185,129,0.35)]">
               <div className="mb-4 flex items-center justify-between">
@@ -134,7 +126,7 @@ export default async function HomePage() {
 
               <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
                 <p className="text-[12px] font-semibold text-emerald-800">
-                  â€œTrust is not a slogan â€” it should be visible before a donor gives.â€
+                  &quot;Trust is not a slogan - it should be visible before a donor gives.&quot;
                 </p>
                 <p className="mt-2 text-[11px] leading-6 text-emerald-700/90">
                   AmanahHub is designed so donors do not have to guess whether an organisation is
@@ -146,7 +138,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ STATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="border-b border-gray-100 bg-white">
         <div className="mx-auto grid max-w-7xl gap-4 px-4 py-8 sm:grid-cols-3">
           <StatCard value={String(orgCount ?? 0)} label="Listed organisations" />
@@ -155,7 +146,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ WHY AMANAHHUB â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="mx-auto max-w-7xl px-4 py-16">
         <div className="max-w-3xl">
           <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-emerald-700">
@@ -182,12 +172,11 @@ export default async function HomePage() {
           />
           <FeatureCard
             title="Give directly, safely"
-            desc="AmanahHub is non-custodial. Donations are routed through the charityâ€™s own registered payment flow."
+            desc="AmanahHub is non-custodial. Donations are routed through the charity's own registered payment flow."
           />
         </div>
       </section>
 
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ FEATURED CHARITIES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="border-y border-gray-100 bg-gray-50/70">
         <div className="mx-auto max-w-7xl px-4 py-16">
           <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -199,7 +188,7 @@ export default async function HomePage() {
                 Explore organisations by trust and governance journey
               </h2>
               <p className="mt-2 max-w-2xl text-[14px] leading-7 text-gray-600">
-                Organisations appear across different stages â€” from published trust profiles to those still
+                Organisations appear across different stages - from published trust profiles to those still
                 progressing in governance and public readiness.
               </p>
             </div>
@@ -208,7 +197,7 @@ export default async function HomePage() {
               href="/charities"
               className="inline-flex items-center text-sm font-semibold text-emerald-700 hover:text-emerald-800"
             >
-              View full directory â†’
+              View full directory <span aria-hidden="true" className="ml-1">&rarr;</span>
             </Link>
           </div>
 
@@ -236,56 +225,9 @@ export default async function HomePage() {
                     </div>
 
                     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                      {items.slice(0, 3).map((org) => {
-                        const isPublished = org.snapshot_status === 'published' && org.review_status === 'approved';
-                        const hasScore = !!org.has_published_snapshot && (org.amanah_index_score ?? 0) > 0;
-                        const summary = getPublicProfileSummary(org);
-
-                        return (
-                          <Link
-                            key={org.organization_id}
-                            href={`/charities/${org.organization_id}`}
-                            className="group rounded-3xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-200 hover:shadow-md"
-                          >
-                            <div className="flex items-start gap-4">
-                              {hasScore ? (
-                                <ScoreRing score={org.amanah_index_score} size="lg" showLabel />
-                              ) : (
-                                <div className="flex h-16 w-16 flex-shrink-0 items-center justify-center rounded-full bg-emerald-50 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
-                                  Amanah
-                                </div>
-                              )}
-
-                              <div className="min-w-0 flex-1">
-                                <div className="flex flex-wrap gap-1.5">
-                                  <GovernanceStageBadge stage={org.governance_stage_key} />
-                                  {isPublished ? <CertifiedBadge /> : null}
-                                  {hasScore ? <TierBadge score={org.amanah_index_score ?? 0} /> : null}
-                                </div>
-
-                                <h3 className="mt-3 text-[17px] font-semibold leading-snug text-gray-900 transition group-hover:text-emerald-800">
-                                  {org.name}
-                                </h3>
-
-                                <p className="mt-1 text-[12px] text-gray-500">
-                                  {[org.org_type, org.state].filter(Boolean).join(' Â· ') || 'Organisation'}
-                                </p>
-
-                                <p className="mt-3 line-clamp-3 text-[13px] leading-6 text-gray-600">
-                                  {summary || meta.description}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center justify-between border-t border-gray-100 pt-4">
-                              <span className="text-[11px] font-medium text-gray-500">
-                                {org.governance_stage_label ?? meta.label}
-                              </span>
-                              <span className="text-[12px] font-semibold text-emerald-700">View profile â†’</span>
-                            </div>
-                          </Link>
-                        );
-                      })}
+                      {items.slice(0, 3).map((org) => (
+                        <CharityCard key={org.organization_id} org={org} />
+                      ))}
                     </div>
                   </div>
                 );
@@ -295,7 +237,6 @@ export default async function HomePage() {
         </div>
       </section>
 
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ DONOR EXPLANATION â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="mx-auto max-w-7xl px-4 py-16">
         <div className="grid gap-8 lg:grid-cols-[0.95fr_1.05fr]">
           <div>
@@ -318,13 +259,12 @@ export default async function HomePage() {
             />
             <QuestionCard
               q="Can I give without uncertainty?"
-              a="AmanahHub keeps donations non-custodial and connects donors directly to the charityâ€™s own payment route."
+              a="AmanahHub keeps donations non-custodial and connects donors directly to the charity's own payment route."
             />
           </div>
         </div>
       </section>
 
-      {/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ CTA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */}
       <section className="mx-auto max-w-7xl px-4 pb-20">
         <div className="overflow-hidden rounded-[32px] border border-emerald-200 bg-gradient-to-br from-emerald-700 via-emerald-800 to-emerald-900 px-6 py-10 text-white shadow-[0_30px_90px_-35px_rgba(4,120,87,0.7)] sm:px-8 lg:px-12 lg:py-12">
           <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-center">
@@ -361,8 +301,6 @@ export default async function HomePage() {
   );
 }
 
-/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ SMALL COMPONENTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
-
 function StatCard({ value, label }: { value: string; label: string }) {
   return (
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
@@ -376,7 +314,7 @@ function FeatureCard({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
       <div className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700">
-        âœ¦
+        <SparkIcon />
       </div>
       <h3 className="mt-4 text-lg font-semibold text-gray-900">{title}</h3>
       <p className="mt-2 text-[14px] leading-7 text-gray-600">{desc}</p>
@@ -393,7 +331,11 @@ function QuestionCard({ q, a }: { q: string; a: string }) {
   );
 }
 
-
-
-
-
+function SparkIcon() {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5" fill="currentColor">
+      <path d="M12 2l1.8 6.2L20 10l-6.2 1.8L12 18l-1.8-6.2L4 10l6.2-1.8L12 2z" />
+      <path d="M18 16l.9 3.1L22 20l-3.1.9L18 24l-.9-3.1L14 20l3.1-.9L18 16z" />
+    </svg>
+  );
+}
