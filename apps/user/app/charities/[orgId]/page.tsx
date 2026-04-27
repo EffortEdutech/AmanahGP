@@ -2,12 +2,15 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { TrustBadge } from '@/components/ui/trust-badge';
+import { TrustSnapshotPanel } from '@/components/charity/trust-snapshot-panel';
+import { TrustPillarPanel } from '@/components/charity/trust-pillar-panel';
 import {
   type PublicTrustEvent,
   type PublicTrustProfile,
   canShowTrustScore,
   getDirectoryStageMeta,
   getPublicProfileSummary,
+  hasPublishedTrustSnapshot,
   orgTypeLabel,
 } from '@/lib/public-trust';
 import { getTrustGrade } from '@/lib/trust';
@@ -18,35 +21,51 @@ type PageProps = {
   params: Promise<{ orgId: string }>;
 };
 
+type SnapshotSignal = {
+  label: string;
+  detail: string;
+  ok: boolean;
+};
+
+type PillarData = {
+  key: string;
+  publicLabel: string;
+  pct: number;
+};
+
 export default async function CharityProfilePage({ params }: PageProps) {
   const { orgId } = await params;
   const supabase = await createClient();
 
-  const { data: profile, error } = await supabase
-    .from('v_amanahhub_public_profiles')
-    .select('*')
-    .eq('organization_id', orgId)
-    .maybeSingle();
+  const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
+    supabase
+      .from('v_amanahhub_public_profiles')
+      .select('*')
+      .eq('organization_id', orgId)
+      .maybeSingle(),
+    supabase
+      .from('v_amanahhub_public_trust_events')
+      .select('*')
+      .eq('organization_id', orgId)
+      .order('occurred_at', { ascending: false, nullsFirst: false })
+      .limit(12),
+  ]);
 
-  if (error) throw new Error(error.message);
+  if (profileError) throw new Error(profileError.message);
+  if (eventsError) throw new Error(eventsError.message);
   if (!profile) notFound();
 
   const org = profile as PublicTrustProfile;
+  const timeline = (events ?? []) as PublicTrustEvent[];
   const stageMeta = getDirectoryStageMeta(org.governance_stage_key);
+  const hasPublishedSnapshot = hasPublishedTrustSnapshot(org);
   const hasScore = canShowTrustScore(org);
   const score = Number(org.amanah_index_score ?? 0);
   const trustGrade = hasScore ? getTrustGrade(score) : null;
   const summary = getPublicProfileSummary(org) ?? stageMeta.description;
   const isCertified = org.snapshot_status === 'published' && org.review_status === 'approved';
-
-  const { data: events } = await supabase
-    .from('v_public_trust_timeline')
-    .select('*')
-    .eq('organization_id', org.organization_id)
-    .order('occurred_at', { ascending: false, nullsFirst: false })
-    .limit(8);
-
-  const timeline = (events ?? []) as PublicTrustEvent[];
+  const snapshotSignals = toSnapshotSignals(org.signals_public, org);
+  const pillarBreakdown = toPillars(org.amanah_index_breakdown);
 
   return (
     <div className="bg-white">
@@ -132,25 +151,50 @@ export default async function CharityProfilePage({ params }: PageProps) {
           <Panel title="Why donors may consider this organisation">
             <p className="text-[14px] leading-8 text-slate-600">{summary}</p>
             {org.notes_public ? (
-              <p className="mt-4 text-[14px] leading-8 text-slate-600">{org.notes_public}</p>
+              <p className="mt-4 whitespace-pre-wrap text-[14px] leading-8 text-slate-600">{org.notes_public}</p>
             ) : null}
           </Panel>
 
+          {hasPublishedSnapshot ? (
+            <section className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+              <TrustSnapshotPanel signals={snapshotSignals} orgName={org.name} />
+              <TrustPillarPanel pillars={pillarBreakdown} />
+            </section>
+          ) : (
+            <Panel title="Trust snapshot in progress">
+              <p className="text-sm leading-7 text-slate-600">
+                A full trust snapshot is not published yet. Donors can still view the organisation profile and follow public governance updates as they are released.
+              </p>
+            </Panel>
+          )}
+
           <Panel title="Public trust timeline">
             {timeline.length === 0 ? (
-              <p className="text-sm text-slate-500">No public trust events have been published yet.</p>
+              <p className="text-sm text-slate-500">
+                No public timeline items have been published yet. New milestones will appear here as this organisation progresses through its amanah journey.
+              </p>
             ) : (
               <div className="space-y-4">
                 {timeline.map((event) => (
                   <div key={event.id} className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
                     <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                      <p className="text-sm font-semibold text-slate-900">
-                        {event.event_title ?? formatEventType(event.event_type)}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 ring-1 ring-slate-200">
+                          {formatEventType(event.event_type)}
+                        </span>
+                        {event.event_category ? (
+                          <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 ring-1 ring-emerald-100">
+                            {formatEventType(event.event_category)}
+                          </span>
+                        ) : null}
+                      </div>
                       <p className="text-xs font-medium text-slate-400">
                         {formatDate(event.occurred_at ?? event.published_at)}
                       </p>
                     </div>
+                    <p className="mt-3 text-sm font-semibold text-slate-900">
+                      {event.event_title ?? 'Public governance update'}
+                    </p>
                     {event.event_summary ? (
                       <p className="mt-2 text-sm leading-7 text-slate-600">{event.event_summary}</p>
                     ) : null}
@@ -170,6 +214,8 @@ export default async function CharityProfilePage({ params }: PageProps) {
               <Detail label="Registration" value={org.registration_no ?? 'Not disclosed'} />
               <Detail label="Oversight" value={org.oversight_authority ?? 'Not disclosed'} />
               <Detail label="Website" value={org.website_url ?? 'Not disclosed'} isLink />
+              <Detail label="Email" value={org.contact_email ?? 'Not disclosed'} />
+              <Detail label="Phone" value={org.contact_phone ?? 'Not disclosed'} />
             </dl>
           </Panel>
 
@@ -178,6 +224,12 @@ export default async function CharityProfilePage({ params }: PageProps) {
             <p className="mt-2 text-sm leading-7 text-slate-600">
               {org.governance_stage_description ?? stageMeta.description}
             </p>
+            <div className="mt-4 space-y-2 text-xs text-slate-500">
+              {org.current_case_code ? <p><span className="font-semibold text-slate-700">Current case:</span> {org.current_case_code}</p> : null}
+              {org.current_case_status ? <p><span className="font-semibold text-slate-700">Review status:</span> {formatEventType(org.current_case_status)}</p> : null}
+              {org.published_at ? <p><span className="font-semibold text-slate-700">Published:</span> {formatDate(org.published_at)}</p> : null}
+              {org.public_updated_at ? <p><span className="font-semibold text-slate-700">Updated:</span> {formatDate(org.public_updated_at)}</p> : null}
+            </div>
           </Panel>
         </aside>
       </section>
@@ -198,7 +250,7 @@ function Detail({ label, value, isLink }: { label: string; value: string; isLink
   return (
     <div>
       <dt className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-400">{label}</dt>
-      <dd className="mt-1 text-slate-700">
+      <dd className="mt-1 break-words text-slate-700">
         {isLink && value.startsWith('http') ? (
           <a href={value} target="_blank" rel="noreferrer" className="font-medium text-emerald-700 hover:text-emerald-800">
             {value}
@@ -218,9 +270,153 @@ function formatDate(value: string | null | undefined) {
   return date.toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
-function formatEventType(type: string) {
+function formatEventType(type: string | null | undefined) {
+  if (!type) return 'Update';
   return type
     .split('_')
+    .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
+}
+
+function toSnapshotSignals(value: unknown, org: PublicTrustProfile): SnapshotSignal[] {
+  const fallback: SnapshotSignal[] = [
+    {
+      label: 'Published public profile',
+      detail: org.snapshot_status === 'published'
+        ? 'A donor-facing trust profile has been published.'
+        : 'The public trust profile is being prepared.',
+      ok: org.snapshot_status === 'published',
+    },
+    {
+      label: 'Certification review approved',
+      detail: org.review_status === 'approved'
+        ? 'The latest trust review status is approved.'
+        : 'The latest trust review is not yet approved.',
+      ok: org.review_status === 'approved',
+    },
+    {
+      label: 'Amanah Index available',
+      detail: typeof org.amanah_index_score === 'number'
+        ? `Current Amanah Index is ${org.amanah_index_score.toFixed(1)}/100.`
+        : 'Amanah Index is not yet available.',
+      ok: typeof org.amanah_index_score === 'number' && org.amanah_index_score > 0,
+    },
+    {
+      label: 'Governance journey visible',
+      detail: org.governance_stage_label ?? 'Governance stage is published for donors.',
+      ok: Boolean(org.governance_stage_key),
+    },
+    {
+      label: 'Organisation identity available',
+      detail: org.registration_no ? `Registration number published: ${org.registration_no}.` : 'Registration number is not disclosed.',
+      ok: Boolean(org.registration_no),
+    },
+  ];
+
+  if (!value || typeof value !== 'object') return fallback;
+
+  const fromArray = Array.isArray(value) ? value : null;
+  if (fromArray) {
+    const signals = fromArray
+      .map((item) => normalizeSignal(item))
+      .filter((item): item is SnapshotSignal => Boolean(item));
+    return signals.length > 0 ? signals : fallback;
+  }
+
+  const objectSignals = Object.entries(value as Record<string, unknown>)
+    .map(([key, item]) => normalizeSignal(item, key))
+    .filter((item): item is SnapshotSignal => Boolean(item));
+
+  return objectSignals.length > 0 ? objectSignals : fallback;
+}
+
+function normalizeSignal(item: unknown, fallbackKey?: string): SnapshotSignal | null {
+  if (!item || typeof item !== 'object') {
+    if (!fallbackKey) return null;
+    return {
+      label: formatEventType(fallbackKey),
+      detail: 'Public signal available.',
+      ok: Boolean(item),
+    };
+  }
+
+  const row = item as Record<string, unknown>;
+  return {
+    label: stringValue(row.label ?? row.title ?? row.name ?? fallbackKey, 'Public trust signal'),
+    detail: stringValue(row.detail ?? row.description ?? row.summary, 'Signal derived from available public trust data.'),
+    ok: booleanValue(row.ok ?? row.passed ?? row.status ?? row.value),
+  };
+}
+
+function toPillars(value: unknown): PillarData[] {
+  const fallback: PillarData[] = [
+    { key: 'financial_integrity', publicLabel: 'Financial Integrity', pct: 0 },
+    { key: 'governance', publicLabel: 'Governance', pct: 0 },
+    { key: 'compliance', publicLabel: 'Compliance', pct: 0 },
+    { key: 'transparency', publicLabel: 'Transparency', pct: 0 },
+    { key: 'impact', publicLabel: 'Impact', pct: 0 },
+  ];
+
+  if (!value || typeof value !== 'object') return fallback;
+
+  if (Array.isArray(value)) {
+    const pillars = value
+      .map((item) => normalizePillar(item))
+      .filter((item): item is PillarData => Boolean(item));
+    return pillars.length > 0 ? pillars : fallback;
+  }
+
+  const pillars = Object.entries(value as Record<string, unknown>)
+    .map(([key, item]) => normalizePillar(item, key))
+    .filter((item): item is PillarData => Boolean(item));
+
+  return pillars.length > 0 ? pillars : fallback;
+}
+
+function normalizePillar(item: unknown, fallbackKey?: string): PillarData | null {
+  if (typeof item === 'number') {
+    return {
+      key: fallbackKey ?? 'pillar',
+      publicLabel: formatEventType(fallbackKey ?? 'pillar'),
+      pct: clampPercent(item),
+    };
+  }
+
+  if (!item || typeof item !== 'object') return null;
+
+  const row = item as Record<string, unknown>;
+  const key = stringValue(row.key ?? row.code ?? fallbackKey, 'pillar');
+  return {
+    key,
+    publicLabel: stringValue(row.publicLabel ?? row.public_label ?? row.label ?? row.name, formatEventType(key)),
+    pct: clampPercent(numberValue(row.pct ?? row.percent ?? row.percentage ?? row.score ?? row.value)),
+  };
+}
+
+function stringValue(value: unknown, fallback: string) {
+  return typeof value === 'string' && value.trim().length > 0 ? value : fallback;
+}
+
+function numberValue(value: unknown) {
+  if (typeof value === 'number') return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
+}
+
+function booleanValue(value: unknown) {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value > 0;
+  if (typeof value === 'string') {
+    const normalized = value.toLowerCase();
+    return normalized === 'true' || normalized === 'passed' || normalized === 'ok' || normalized === 'approved' || normalized === 'published';
+  }
+  return Boolean(value);
+}
+
+function clampPercent(value: number) {
+  return Math.min(100, Math.max(0, Number.isFinite(value) ? value : 0));
 }
