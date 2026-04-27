@@ -2,11 +2,19 @@
 // packages/config/src/roles.ts
 // Amanah Governance Platform — Role definitions (shared)
 // Single source of truth for platform and org roles
+//
+// Access model v1:
+// - super_admin: global owner / emergency access; may enter AmanahHub,
+//   amanahOS, and AGP Console.
+// - admin: internal platform staff; AGP Console only.
+// - reviewer / scholar: specialist platform roles; AGP Console only.
+// - donor: public donor role; AmanahHub donor flows.
 // =============================================================
 
 // ── Platform Roles ────────────────────────────────────────────
 export const PLATFORM_ROLES = {
   DONOR:       'donor',
+  ADMIN:       'admin',
   REVIEWER:    'reviewer',
   SCHOLAR:     'scholar',
   SUPER_ADMIN: 'super_admin',
@@ -43,12 +51,32 @@ export function isPlatformRole(role: string, expected: PlatformRole): boolean {
   return role === expected;
 }
 
-export function isReviewerOrAbove(role: string): boolean {
-  return role === PLATFORM_ROLES.REVIEWER || role === PLATFORM_ROLES.SUPER_ADMIN;
+export function isSuperAdmin(role: string | null | undefined): boolean {
+  return role === PLATFORM_ROLES.SUPER_ADMIN;
 }
 
-export function isSuperAdmin(role: string): boolean {
-  return role === PLATFORM_ROLES.SUPER_ADMIN;
+export function isInternalPlatformAdmin(role: string | null | undefined): boolean {
+  return role === PLATFORM_ROLES.ADMIN || role === PLATFORM_ROLES.SUPER_ADMIN;
+}
+
+export function isConsolePlatformRole(role: string | null | undefined): boolean {
+  return [
+    PLATFORM_ROLES.ADMIN,
+    PLATFORM_ROLES.REVIEWER,
+    PLATFORM_ROLES.SCHOLAR,
+    PLATFORM_ROLES.SUPER_ADMIN,
+  ].includes(role as PlatformRole);
+}
+
+export function isAmanahOsPlatformBlockedRole(role: string | null | undefined): boolean {
+  // super_admin is intentionally NOT blocked: they may impersonate / act as any charity context.
+  return [PLATFORM_ROLES.ADMIN, PLATFORM_ROLES.REVIEWER, PLATFORM_ROLES.SCHOLAR].includes(
+    role as PlatformRole,
+  );
+}
+
+export function isReviewerOrAbove(role: string): boolean {
+  return role === PLATFORM_ROLES.REVIEWER || role === PLATFORM_ROLES.SUPER_ADMIN;
 }
 
 // ── Onboarding statuses ───────────────────────────────────────

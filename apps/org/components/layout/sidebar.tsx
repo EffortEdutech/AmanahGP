@@ -4,7 +4,7 @@
 //
 // Receives currentOrgId from OrgShell (which gets it from /org/[orgId]/layout.tsx).
 // All nav hrefs are built as /org/${currentOrgId}/path.
-// Org-switcher renders when the user belongs to more than one organisation.
+// super_admin is treated as manager-level in amanahOS so they can act as the charity context.
 
 import { useState } from 'react';
 import Link from 'next/link';
@@ -28,6 +28,11 @@ interface SidebarProps {
   showMobileClose?: boolean;
 }
 
+function roleLabel(role: string) {
+  if (role === 'super_admin') return 'Super admin';
+  return role.replace('org_', '').replaceAll('_', ' ');
+}
+
 export function Sidebar({
   currentOrgId,
   user,
@@ -39,7 +44,6 @@ export function Sidebar({
   const pathname  = usePathname();
   const [switcherOpen, setSwitcherOpen] = useState(false);
 
-  // All hrefs are rooted at /org/${currentOrgId}
   const base = `/org/${currentOrgId}`;
 
   const active  = (suffix: string) =>
@@ -48,7 +52,7 @@ export function Sidebar({
 
   const contextOrg  = orgs.find((o) => o.organization_id === currentOrgId) ?? orgs[0];
   const role        = contextOrg?.org_role ?? '';
-  const isManager   = ['org_admin', 'org_manager'].includes(role);
+  const isManager   = ['org_admin', 'org_manager', 'super_admin'].includes(role);
   const hasMultiOrg = orgs.length > 1;
 
   const onboardingBadge = () => {
@@ -98,13 +102,17 @@ export function Sidebar({
                 <span className={`rounded-full px-1.5 py-0.5 text-[9px] font-medium ${badge.cls}`}>
                   {badge.label}
                 </span>
+                {role === 'super_admin' && (
+                  <span className="rounded-full bg-purple-50 px-1.5 py-0.5 text-[9px] font-medium text-purple-700">
+                    All org access
+                  </span>
+                )}
               </div>
               <p className="mt-0.5 text-[9px] capitalize text-gray-400">
-                {role.replace('org_', '')}
+                {roleLabel(role)}
               </p>
             </div>
 
-            {/* Org-switcher toggle — only shown when user has multiple orgs */}
             {hasMultiOrg && (
               <button
                 type="button"
@@ -117,7 +125,6 @@ export function Sidebar({
             )}
           </div>
 
-          {/* Org list dropdown */}
           {switcherOpen && hasMultiOrg && (
             <div className="mt-2 rounded-lg border border-gray-200 bg-white shadow-sm overflow-hidden">
               {orgs.map((org) => (

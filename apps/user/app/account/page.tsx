@@ -1,5 +1,9 @@
 // apps/user/app/account/page.tsx
 // AmanahHub — Donor account page
+//
+// Access model:
+// - super_admin is allowed to enter for testing / emergency support.
+// - admin / reviewer / scholar are console-only roles and are redirected away from donor account.
 
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
@@ -8,6 +12,8 @@ import { StatusBadge } from '@/components/ui/badge';
 import { signOut } from '@/app/(auth)/actions';
 
 export const metadata = { title: 'My Account | AmanahHub' };
+
+const DONOR_APP_BLOCKED_PLATFORM_ROLES = ['admin', 'reviewer', 'scholar'];
 
 type UserProfile = {
   id: string;
@@ -56,6 +62,12 @@ export default async function AccountPage() {
     .single();
 
   const profile = (profileData ?? null) as UserProfile | null;
+
+  if (DONOR_APP_BLOCKED_PLATFORM_ROLES.includes(profile?.platform_role ?? '')) {
+    const consoleUrl = process.env.NEXT_PUBLIC_CONSOLE_URL;
+    if (consoleUrl) redirect(consoleUrl);
+    redirect('/?error=console_role_only');
+  }
 
   const { data: donationsData } = await supabase
     .from('donation_transactions')

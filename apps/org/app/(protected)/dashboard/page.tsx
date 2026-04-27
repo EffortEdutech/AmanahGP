@@ -1,17 +1,18 @@
 // apps/org/app/(protected)/dashboard/page.tsx
 // amanahOS — Dashboard entry redirect
 //
-// This page has ONE job: find the user's first org membership and redirect
-// to /org/[orgId]/dashboard. It is the canonical landing point after login.
-//
-// For users with multiple orgs, this always lands on the oldest membership.
-// Switching orgs is done via the sidebar org-switcher in /org/[orgId] context.
+// Access model:
+// - super_admin: can enter amanahOS and is redirected to the first charity.
+// - admin / reviewer / scholar: console-only roles, blocked from amanahOS.
+// - normal org members: redirected to their first active organisation membership.
 
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 
 export const metadata = { title: 'amanahOS' };
+
+const AMANAHOS_BLOCKED_PLATFORM_ROLES = ['admin', 'reviewer', 'scholar'];
 
 export default async function DashboardRedirectPage() {
   const supabase = await createClient();
@@ -28,13 +29,27 @@ export default async function DashboardRedirectPage() {
 
   if (!platformUser) redirect('/no-access?reason=no_user_record');
 
-  // Platform-only roles should not enter the org workspace
-  if (['reviewer', 'scholar', 'super_admin'].includes(platformUser.platform_role)) {
+  if (AMANAHOS_BLOCKED_PLATFORM_ROLES.includes(platformUser.platform_role)) {
     const consoleUrl = process.env.NEXT_PUBLIC_CONSOLE_URL ?? '#';
     redirect(`/no-access?redirect=${encodeURIComponent(consoleUrl)}&reason=platform_role`);
   }
 
-  // Find the first (oldest) org membership — the redirect target
+  if (platformUser.platform_role === 'super_admin') {
+    const { data: firstOrg, error: orgError } = await service
+      .from('organizations')
+      .select('id')
+      .order('name', { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (orgError) {
+      console.error('[amanahOS] super_admin organization lookup failed:', orgError.message);
+    }
+
+    if (!firstOrg) redirect('/no-access?reason=no_organizations_available');
+    redirect(`/org/${firstOrg.id}/dashboard`);
+  }
+
   const { data: membership } = await service
     .from('org_members')
     .select('organization_id')
@@ -42,7 +57,7 @@ export default async function DashboardRedirectPage() {
     .eq('status', 'active')
     .order('created_at', { ascending: true })
     .limit(1)
-    .single();
+    .maybeSingle();
 
   if (!membership) redirect('/no-access?reason=no_org_membership');
 
