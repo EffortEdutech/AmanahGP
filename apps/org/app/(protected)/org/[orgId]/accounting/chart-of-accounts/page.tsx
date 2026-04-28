@@ -6,6 +6,7 @@ import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 
+import { getOrgAccessOrRedirect } from '@/lib/access/org-access';
 export const metadata = { title: 'Chart of accounts — amanahOS' };
 
 const TYPE_ORDER = ['asset', 'liability', 'equity', 'income', 'expense'];
@@ -35,20 +36,7 @@ export default async function ChartOfAccountsPage({
   const supabase = await createClient();
   const service  = createServiceClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: platformUser } = await supabase
-    .from('users').select('id').eq('auth_provider_user_id', user.id).single();
-  if (!platformUser) redirect('/no-access?reason=no_user_record');
-
-  const { data: membership } = await service
-    .from('org_members')
-    .select('organization_id, org_role, organizations(name)')
-    .eq('organization_id', orgId)
-    .eq('user_id', platformUser.id).eq('status', 'active')
-    .single();
-  if (!membership) redirect('/no-access?reason=not_member_of_org');
+  const { authUser: user, platformUser, membership, isManager: accessIsManager, isSuperAdmin } = await getOrgAccessOrRedirect(orgId);
 
   const { data: accounts } = await service
     .from('accounts')

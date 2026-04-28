@@ -12,6 +12,7 @@ import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { EvidenceUploader }    from '@/components/reports/evidence-uploader';
 import { ReportActions }       from '@/components/reports/report-actions';
+import { getOrgAccessOrRedirect } from '@/lib/access/org-access';
 function relationOne<T>(value: unknown): T | null {
   if (Array.isArray(value)) {
     return (value[0] as T | undefined) ?? null;
@@ -45,21 +46,8 @@ export default async function ReportDetailPage({
   const supabase = await createClient();
   const service  = createServiceClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: platformUser } = await supabase
-    .from('users').select('id')
-    .eq('auth_provider_user_id', user.id).single();
-  if (!platformUser) redirect('/no-access?reason=no_user_record');
-
-  const { data: membership } = await service
-    .from('org_members').select('organization_id, org_role')
-    .eq('organization_id', orgId)
-    .eq('user_id', platformUser.id).eq('status', 'active')
-    .single();
-  if (!membership) redirect('/no-access?reason=not_member_of_org');
-  const isManager = ['org_admin', 'org_manager'].includes(membership.org_role);
+  const { authUser: user, platformUser, membership, isManager: accessIsManager, isSuperAdmin } = await getOrgAccessOrRedirect(orgId);
+  const isManager = accessIsManager;
 
   // Load report (must belong to this org)
   const { data: report } = await service

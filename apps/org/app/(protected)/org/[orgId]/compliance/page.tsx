@@ -9,6 +9,7 @@ import Link                      from 'next/link';
 import { createClient }          from '@/lib/supabase/server';
 import { createServiceClient }   from '@/lib/supabase/service';
 import { AuditPackageButton }    from '@/components/compliance/audit-package-button';
+import { getOrgAccessOrRedirect } from '@/lib/access/org-access';
 function relationOne<T>(value: unknown): T | null {
   if (Array.isArray(value)) {
     return (value[0] as T | undefined) ?? null;
@@ -28,21 +29,7 @@ export default async function CompliancePage({
   const supabase = await createClient();
   const service  = createServiceClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: platformUser } = await supabase
-    .from('users').select('id')
-    .eq('auth_provider_user_id', user.id).single();
-  if (!platformUser) redirect('/no-access?reason=no_user_record');
-
-  const { data: membership } = await service
-    .from('org_members')
-    .select('organization_id, org_role, organizations(id, name, org_type, oversight_authority, fund_types, registration_no, contact_email, state)')
-    .eq('organization_id', orgId)
-    .eq('user_id', platformUser.id).eq('status', 'active')
-    .single();
-  if (!membership) redirect('/no-access?reason=not_member_of_org');
+  const { authUser: user, platformUser, membership, isManager: accessIsManager, isSuperAdmin } = await getOrgAccessOrRedirect(orgId);
   const orgRaw = membership.organizations;
   const org = (Array.isArray(orgRaw) ? orgRaw[0] : orgRaw) as {
     id: string; name: string; org_type: string | null | undefined;

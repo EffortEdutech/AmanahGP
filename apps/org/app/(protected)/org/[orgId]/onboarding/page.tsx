@@ -14,6 +14,7 @@ import { createClient }          from '@/lib/supabase/server';
 import { createServiceClient }   from '@/lib/supabase/service';
 import { getOnboardingState }    from '@/lib/onboarding-state';
 
+import { getOrgAccessOrRedirect } from '@/lib/access/org-access';
 export const metadata = { title: 'Amanah Ready — amanahOS' };
 
 export default async function OnboardingPage({
@@ -25,21 +26,7 @@ export default async function OnboardingPage({
   const supabase = await createClient();
   const service  = createServiceClient();
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const { data: platformUser } = await supabase
-    .from('users').select('id, display_name')
-    .eq('auth_provider_user_id', user.id).single();
-  if (!platformUser) redirect('/no-access?reason=no_user_record');
-
-  const { data: membership } = await service
-    .from('org_members')
-    .select('organization_id, org_role, organizations(id, name)')
-    .eq('organization_id', orgId)
-    .eq('user_id', platformUser.id).eq('status', 'active')
-    .single();
-  if (!membership) redirect('/no-access?reason=not_member_of_org');
+  const { authUser: user, platformUser, membership, isManager: accessIsManager, isSuperAdmin } = await getOrgAccessOrRedirect(orgId);
   const state = await getOnboardingState(service, orgId);
 
   const gradeLabel =
