@@ -62,12 +62,10 @@ export function ConsoleLayoutClient({
                 <ShieldCheck size={18} color="#ffffff" />
               </div>
 
-              {!collapsed ? (
-                <div>
-                  <div className="kicker" style={{ letterSpacing: "0.08em" }}>AGP Console</div>
-                  <div className="agp-console-brand__sub">Governance Control Plane</div>
-                </div>
-              ) : null}
+              <div className="agp-console-collapsible">
+                <div className="kicker" style={{ letterSpacing: "0.08em" }}>AGP Console</div>
+                <div className="agp-console-brand__sub">Governance Control Plane</div>
+              </div>
             </div>
 
             <button
@@ -86,12 +84,10 @@ export function ConsoleLayoutClient({
           <nav className="agp-console-nav">
             {CONSOLE_NAV_GROUPS.map((group) => (
               <div key={group.title} className="agp-console-nav-group">
-                {!collapsed ? (
-                  <div className="agp-console-nav-group__title-wrap">
-                    <div className="agp-console-nav-group__title">{group.title}</div>
-                    <div className="agp-console-nav-group__desc">{group.description}</div>
-                  </div>
-                ) : null}
+                <div className="agp-console-nav-group__title-wrap agp-console-collapsible">
+                  <div className="agp-console-nav-group__title">{group.title}</div>
+                  <div className="agp-console-nav-group__desc">{group.description}</div>
+                </div>
 
                 <div className="nav-list">
                   {group.items.map((item) => {
@@ -107,7 +103,7 @@ export function ConsoleLayoutClient({
                         title={item.label}
                       >
                         <Icon size={16} strokeWidth={2} />
-                        {!collapsed ? <span>{item.label}</span> : null}
+                        <span className="agp-console-nav-label agp-console-collapsible">{item.label}</span>
                       </Link>
                     );
                   })}
@@ -124,23 +120,19 @@ export function ConsoleLayoutClient({
                 {userEmail ? userInitials(userEmail) : "?"}
               </div>
 
-              {!collapsed ? (
-                <div className="agp-console-user__meta">
-                  <div className="agp-console-user__email">{userEmail ?? "Signed in"}</div>
-                  <div className="agp-console-user__role">{roleLabel}</div>
-                </div>
-              ) : null}
+              <div className="agp-console-user__meta agp-console-collapsible">
+                <div className="agp-console-user__email">{userEmail ?? "Signed in"}</div>
+                <div className="agp-console-user__role">{roleLabel}</div>
+              </div>
             </div>
 
             <div style={{ marginTop: 14 }}>
               <LogoutButton />
             </div>
 
-            {!collapsed ? (
-              <div className="agp-console-helper-links">
-                <Link href="/flow-map" className="btn btn-secondary">Open Flow Map</Link>
-              </div>
-            ) : null}
+            <div className="agp-console-helper-links agp-console-collapsible">
+              <Link href="/flow-map" className="btn btn-secondary">Open Flow Map</Link>
+            </div>
           </div>
         </aside>
 
@@ -270,6 +262,10 @@ export function ConsoleLayoutClient({
           justify-content: center;
         }
 
+        .agp-console-sidebar[data-collapsed='true'] .agp-console-collapsible {
+          display: none;
+        }
+
         .agp-console-sidebar__footer {
           margin-top: 16px;
         }
@@ -317,9 +313,55 @@ export function ConsoleLayoutClient({
           }
 
           .agp-console-sidebar {
-            position: relative;
-            top: 0;
-            max-height: none;
+            position: sticky;
+            top: 8px;
+            z-index: 40;
+            width: 100%;
+            max-height: min(68vh, 620px);
+            max-height: min(68dvh, 620px);
+            overflow: hidden;
+            padding: 12px;
+            border-radius: 14px;
+            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+          }
+
+          .agp-console-sidebar[data-collapsed='true'] .agp-console-brand > .agp-console-collapsible,
+          .agp-console-sidebar[data-collapsed='true'] .agp-console-user__meta,
+          .agp-console-sidebar[data-collapsed='true'] .agp-console-helper-links {
+            display: block;
+          }
+
+          .agp-console-sidebar[data-collapsed='true'] .agp-console-nav-group__title-wrap {
+            display: grid;
+          }
+
+          .agp-console-sidebar[data-collapsed='true'] .agp-console-nav-label {
+            display: inline;
+          }
+
+          .agp-console-sidebar__header {
+            margin-bottom: 10px;
+          }
+
+          .agp-console-toggle {
+            display: none;
+          }
+
+          .agp-console-nav {
+            max-height: calc(min(68vh, 620px) - 168px);
+            max-height: calc(min(68dvh, 620px) - 168px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            padding-right: 4px;
+          }
+
+          .agp-console-nav-link,
+          .agp-console-sidebar[data-collapsed='true'] .agp-console-nav-link {
+            justify-content: flex-start;
+          }
+
+          .agp-console-sidebar__footer {
+            margin-top: 12px;
           }
         }
       `}</style>
