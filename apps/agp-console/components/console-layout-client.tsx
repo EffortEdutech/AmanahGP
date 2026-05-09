@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Menu, ShieldCheck, X } from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { CONSOLE_NAV_GROUPS } from "@/lib/console/navigation";
 
@@ -30,6 +30,7 @@ export function ConsoleLayoutClient({
   children,
 }: ConsoleLayoutClientProps) {
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -50,12 +51,46 @@ export function ConsoleLayoutClient({
     } catch {}
   }, [collapsed, mounted]);
 
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth > 1024) setMobileSidebarOpen(false);
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
   const gridTemplateColumns = useMemo(() => (collapsed ? "88px minmax(0, 1fr)" : "300px minmax(0, 1fr)"), [collapsed]);
 
   return (
     <div className="page-shell">
+      <div className="agp-console-mobile-bar">
+        <button
+          type="button"
+          className="btn btn-secondary agp-console-mobile-menu"
+          onClick={() => setMobileSidebarOpen(true)}
+          aria-label="Open sidebar"
+        >
+          <Menu size={18} />
+        </button>
+
+        <div className="agp-console-mobile-title">
+          <div className="agp-console-mobile-title__brand">AGP Console</div>
+          <div className="agp-console-mobile-title__page">{title}</div>
+        </div>
+      </div>
+
+      {mobileSidebarOpen ? (
+        <button
+          type="button"
+          aria-label="Close sidebar overlay"
+          className="agp-console-mobile-backdrop"
+          onClick={() => setMobileSidebarOpen(false)}
+        />
+      ) : null}
+
       <div className="agp-console-layout" style={{ display: "grid", gridTemplateColumns, gap: 20, alignItems: "start" }}>
-        <aside className="panel agp-console-sidebar" data-collapsed={collapsed}>
+        <aside className="panel agp-console-sidebar" data-collapsed={collapsed} data-mobile-open={mobileSidebarOpen}>
           <div className="agp-console-sidebar__header">
             <div className="agp-console-brand">
               <div className="agp-console-brand__icon">
@@ -76,6 +111,15 @@ export function ConsoleLayoutClient({
               title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
             >
               {collapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary agp-console-mobile-close"
+              onClick={() => setMobileSidebarOpen(false)}
+              aria-label="Close sidebar"
+            >
+              <X size={16} />
             </button>
           </div>
 
@@ -101,6 +145,7 @@ export function ConsoleLayoutClient({
                         href={item.href}
                         data-active={isActive}
                         title={item.label}
+                        onClick={() => setMobileSidebarOpen(false)}
                       >
                         <Icon size={16} strokeWidth={2} />
                         <span className="agp-console-nav-label agp-console-collapsible">{item.label}</span>
@@ -131,7 +176,9 @@ export function ConsoleLayoutClient({
             </div>
 
             <div className="agp-console-helper-links agp-console-collapsible">
-              <Link href="/flow-map" className="btn btn-secondary">Open Flow Map</Link>
+              <Link href="/flow-map" className="btn btn-secondary" onClick={() => setMobileSidebarOpen(false)}>
+                Open Flow Map
+              </Link>
             </div>
           </div>
         </aside>
@@ -168,6 +215,14 @@ export function ConsoleLayoutClient({
       </div>
 
       <style jsx>{`
+        .agp-console-mobile-bar {
+          display: none;
+        }
+
+        .agp-console-mobile-backdrop {
+          display: none;
+        }
+
         .agp-console-sidebar {
           position: sticky;
           top: 16px;
@@ -212,6 +267,13 @@ export function ConsoleLayoutClient({
         }
 
         .agp-console-toggle {
+          padding-inline: 10px;
+          min-width: 38px;
+          height: 34px;
+        }
+
+        .agp-console-mobile-close {
+          display: none;
           padding-inline: 10px;
           min-width: 38px;
           height: 34px;
@@ -308,21 +370,79 @@ export function ConsoleLayoutClient({
         }
 
         @media (max-width: 1024px) {
+          .agp-console-mobile-bar {
+            position: sticky;
+            top: 0;
+            z-index: 30;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: -4px 0 12px;
+            padding: 10px 0;
+            background: #f1f5f9;
+          }
+
+          .agp-console-mobile-menu {
+            width: 40px;
+            height: 38px;
+            padding: 0;
+            flex-shrink: 0;
+          }
+
+          .agp-console-mobile-title {
+            min-width: 0;
+          }
+
+          .agp-console-mobile-title__brand {
+            font-size: 12px;
+            font-weight: 700;
+            color: #047857;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
+          }
+
+          .agp-console-mobile-title__page {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f172a;
+          }
+
+          .agp-console-mobile-backdrop {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: block;
+            border: 0;
+            background: rgba(15, 23, 42, 0.42);
+            padding: 0;
+          }
+
           .agp-console-layout {
             grid-template-columns: 1fr !important;
           }
 
           .agp-console-sidebar {
-            position: sticky;
-            top: 8px;
-            z-index: 40;
-            width: 100%;
-            max-height: min(68vh, 620px);
-            max-height: min(68dvh, 620px);
+            position: fixed;
+            inset: 0 auto 0 0;
+            z-index: 60;
+            width: min(320px, 86vw);
+            max-width: 86vw;
+            height: 100vh;
+            height: 100dvh;
+            max-height: none;
             overflow: hidden;
-            padding: 12px;
-            border-radius: 14px;
-            box-shadow: 0 12px 28px rgba(15, 23, 42, 0.12);
+            padding: 14px;
+            border-radius: 0 16px 16px 0;
+            box-shadow: 18px 0 36px rgba(15, 23, 42, 0.18);
+            transform: translateX(-105%);
+            transition: transform 180ms ease;
+          }
+
+          .agp-console-sidebar[data-mobile-open='true'] {
+            transform: translateX(0);
           }
 
           .agp-console-sidebar[data-collapsed='true'] .agp-console-brand > .agp-console-collapsible,
@@ -347,9 +467,14 @@ export function ConsoleLayoutClient({
             display: none;
           }
 
+          .agp-console-mobile-close {
+            display: inline-flex;
+          }
+
           .agp-console-nav {
-            max-height: calc(min(68vh, 620px) - 168px);
-            max-height: calc(min(68dvh, 620px) - 168px);
+            flex: 1;
+            min-height: 0;
+            max-height: none;
             overflow-y: auto;
             overscroll-behavior: contain;
             padding-right: 4px;
