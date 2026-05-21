@@ -14,11 +14,13 @@ import {
   orgTypeLabel,
 } from '@/lib/public-trust';
 import { getTrustGrade } from '@/lib/trust';
+import { datasetQuerySuffix, isOrganizationVisibleForDataset, resolveDatasetMode } from '@/lib/data-origin';
 
 export const dynamic = 'force-dynamic';
 
 type PageProps = {
   params: Promise<{ orgId: string }>;
+  searchParams?: Promise<{ dataset?: string }>;
 };
 
 type SnapshotSignal = {
@@ -33,8 +35,10 @@ type PillarData = {
   pct: number;
 };
 
-export default async function CharityProfilePage({ params }: PageProps) {
+export default async function CharityProfilePage({ params, searchParams }: PageProps) {
   const { orgId } = await params;
+  const datasetMode = resolveDatasetMode((await searchParams)?.dataset);
+  const hrefSuffix = datasetQuerySuffix(datasetMode);
   const supabase = await createClient();
 
   const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
@@ -54,6 +58,7 @@ export default async function CharityProfilePage({ params }: PageProps) {
   if (profileError) throw new Error(profileError.message);
   if (eventsError) throw new Error(eventsError.message);
   if (!profile) notFound();
+  if (!(await isOrganizationVisibleForDataset(supabase, orgId, datasetMode))) notFound();
 
   const org = profile as PublicTrustProfile;
   const timeline = (events ?? []) as PublicTrustEvent[];
@@ -71,7 +76,7 @@ export default async function CharityProfilePage({ params }: PageProps) {
     <div className="bg-white">
       <section className="border-b border-emerald-100 bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.08),_transparent_35%),linear-gradient(to_bottom,_#ffffff,_#f8fafc)]">
         <div className="mx-auto max-w-7xl px-4 py-8 sm:py-10">
-          <Link href="/charities" className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
+          <Link href={`/charities${hrefSuffix}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
             <span aria-hidden="true">&larr;</span> Back to directory
           </Link>
 
@@ -136,7 +141,7 @@ export default async function CharityProfilePage({ params }: PageProps) {
                 </div>
               )}
               <Link
-                href={`/donate/${org.organization_id}`}
+                href={`/donate/${org.organization_id}${hrefSuffix}`}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800"
               >
                 Donate to this organisation

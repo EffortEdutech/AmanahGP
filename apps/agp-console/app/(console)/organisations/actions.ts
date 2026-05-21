@@ -8,6 +8,7 @@ import { getCurrentPublicUser, writeAuditLog } from "@/lib/console/server";
 
 const ONBOARDING_STATUSES = ["draft", "submitted", "changes_requested", "approved", "rejected"] as const;
 const LISTING_STATUSES = ["private", "listed", "unlisted", "suspended"] as const;
+const DATA_ORIGINS = ["actual", "seed", "demo", "test"] as const;
 
 const organizationSchema = z.object({
   name: z.string().trim().min(2, "Display name is required"),
@@ -22,6 +23,7 @@ const organizationSchema = z.object({
   state: z.string().trim().optional().transform((value) => value || null),
   oversight_authority: z.string().trim().optional().transform((value) => value || null),
   summary: z.string().trim().optional().transform((value) => value || null),
+  data_origin: z.enum(DATA_ORIGINS).default("actual"),
   onboarding_status: z.enum(ONBOARDING_STATUSES).default("draft"),
   listing_status: z.enum(LISTING_STATUSES).default("private"),
 });
@@ -68,6 +70,7 @@ export async function createOrganizationAction(formData: FormData) {
     state: formData.get("state"),
     oversight_authority: formData.get("oversight_authority"),
     summary: formData.get("summary"),
+    data_origin: formData.get("data_origin") || "actual",
     onboarding_status: formData.get("onboarding_status") || "draft",
     listing_status: formData.get("listing_status") || "private",
   });
@@ -112,6 +115,7 @@ export async function createOrganizationAction(formData: FormData) {
       legal_name: payload.legal_name,
       onboarding_status: payload.onboarding_status,
       listing_status: payload.listing_status,
+      data_origin: payload.data_origin,
     },
   });
 
@@ -137,6 +141,7 @@ export async function updateOrganizationAction(formData: FormData) {
     state: formData.get("state"),
     oversight_authority: formData.get("oversight_authority"),
     summary: formData.get("summary"),
+    data_origin: formData.get("data_origin") || "actual",
     onboarding_status: formData.get("onboarding_status") || "draft",
     listing_status: formData.get("listing_status") || "private",
   });
@@ -196,6 +201,7 @@ export async function updateOrganizationAction(formData: FormData) {
       legal_name: payload.legal_name,
       onboarding_status: payload.onboarding_status,
       listing_status: payload.listing_status,
+      data_origin: payload.data_origin,
     },
   });
 

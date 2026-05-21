@@ -81,6 +81,16 @@ export function OrganizationForm({
             ))}
           </select>
         </div>
+
+        <div className="field">
+          <label htmlFor="data_origin">Dataset</label>
+          <select className="select" id="data_origin" name="data_origin" defaultValue={organization?.data_origin ?? "actual"}>
+            <option value="actual">Actual charity</option>
+            <option value="seed">Seed / study charity</option>
+            <option value="demo">Demo charity</option>
+            <option value="test">Test charity</option>
+          </select>
+        </div>
       </div>
 
       <div className="field">
@@ -99,7 +109,7 @@ export function OrganizationForm({
       </div>
 
       <div className="notice">
-        Canonical lifecycle uses only onboarding_status and listing_status. Workspace status and owner_user_id are removed.
+        Dataset separates actual charities from seed/study records. Production AmanahHub publishes actual charities only.
       </div>
 
       <div className="row">

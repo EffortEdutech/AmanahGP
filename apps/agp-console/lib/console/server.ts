@@ -17,6 +17,7 @@ export type OrganizationRow = {
   address_text: string | null;
   oversight_authority: string | null;
   summary: string | null;
+  data_origin: string;
   onboarding_status: string;
   listing_status: string;
   onboarding_submitted_at: string | null;
@@ -32,6 +33,7 @@ export type ComplianceOrganizationRow = {
   legal_name: string | null;
   registration_no: string | null;
   org_type: string | null;
+  data_origin: string;
   onboarding_status: string;
   listing_status: string;
   active_members: number;
@@ -205,9 +207,15 @@ export async function getDashboardStats() {
   };
 }
 
-export async function listOrganizations() {
+export type OrganizationDatasetFilter = "actual" | "seed" | "all";
+
+export function normalizeOrganizationDataset(value?: string | null): OrganizationDatasetFilter {
+  return value === "seed" || value === "all" ? value : "actual";
+}
+
+export async function listOrganizations(dataset: OrganizationDatasetFilter = "actual") {
   const supabase = await createSupabaseServerClient();
-  const { data, error } = await supabase
+  let query = supabase
     .from("organizations")
     .select(
       `
@@ -224,6 +232,7 @@ export async function listOrganizations() {
         address_text,
         oversight_authority,
         summary,
+        data_origin,
         onboarding_status,
         listing_status,
         onboarding_submitted_at,
@@ -234,6 +243,12 @@ export async function listOrganizations() {
       `,
     )
     .order("created_at", { ascending: false });
+
+  if (dataset !== "all") {
+    query = query.eq("data_origin", dataset);
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     throw new Error(error.message);
@@ -261,6 +276,7 @@ export async function getOrganizationById(orgId: string) {
         address_text,
         oversight_authority,
         summary,
+        data_origin,
         onboarding_status,
         listing_status,
         onboarding_submitted_at,
@@ -839,13 +855,19 @@ function deriveCompliance(input: {
   return { riskLevel, issues };
 }
 
-export async function listComplianceOrganizations(): Promise<ComplianceOrganizationRow[]> {
+export async function listComplianceOrganizations(dataset: OrganizationDatasetFilter = "actual"): Promise<ComplianceOrganizationRow[]> {
   const supabase = await createSupabaseServerClient();
-  const [orgsResp, membersResp, invitesResp, appsResp, subsResp, billingResp, auditResp] = await Promise.all([
-    supabase
+  let orgQuery = supabase
       .from("organizations")
-      .select("id, name, legal_name, registration_no, org_type, onboarding_status, listing_status, updated_at")
-      .order("created_at", { ascending: false }),
+      .select("id, name, legal_name, registration_no, org_type, data_origin, onboarding_status, listing_status, updated_at")
+      .order("created_at", { ascending: false });
+
+  if (dataset !== "all") {
+    orgQuery = orgQuery.eq("data_origin", dataset);
+  }
+
+  const [orgsResp, membersResp, invitesResp, appsResp, subsResp, billingResp, auditResp] = await Promise.all([
+    orgQuery,
     supabase
       .from("org_members")
       .select("organization_id, status"),
@@ -955,6 +977,7 @@ export async function listComplianceOrganizations(): Promise<ComplianceOrganizat
       legal_name: org.legal_name,
       registration_no: org.registration_no,
       org_type: org.org_type,
+      data_origin: org.data_origin,
       onboarding_status: org.onboarding_status,
       listing_status: org.listing_status,
       active_members,
@@ -969,8 +992,8 @@ export async function listComplianceOrganizations(): Promise<ComplianceOrganizat
   });
 }
 
-export async function getComplianceSummary() {
-  const rows = await listComplianceOrganizations();
+export async function getComplianceSummary(dataset: OrganizationDatasetFilter = "actual") {
+  const rows = await listComplianceOrganizations(dataset);
   return {
     total: rows.length,
     good: rows.filter((row) => row.risk_level === "good").length,

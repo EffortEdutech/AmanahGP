@@ -16,6 +16,7 @@ export function ComplianceOrganizationsTable({ rows }: { rows: ComplianceOrganiz
           <tr>
             <th>Organisation</th>
             <th>Risk</th>
+            <th>Dataset</th>
             <th>Lifecycle</th>
             <th>Members</th>
             <th>Apps</th>
@@ -36,6 +37,11 @@ export function ComplianceOrganizationsTable({ rows }: { rows: ComplianceOrganiz
               </td>
               <td>
                 <span className={riskBadgeClass(row.risk_level)}>{titleCase(row.risk_level)}</span>
+              </td>
+              <td>
+                <span className={row.data_origin === "seed" ? "badge badge-amber" : "badge badge-green"}>
+                  {titleCase(row.data_origin)}
+                </span>
               </td>
               <td>
                 <div className="row">
@@ -64,7 +70,7 @@ export function ComplianceOrganizationsTable({ rows }: { rows: ComplianceOrganiz
 
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={8} className="muted">No organisations found.</td>
+              <td colSpan={9} className="muted">No organisations found.</td>
             </tr>
           ) : null}
         </tbody>

@@ -11,7 +11,7 @@ import { getTrustGrade } from '@/lib/trust';
 type CompactGrade = 'platinum' | 'gold' | 'silver' | 'bronze' | 'foundation' | 'none' | string;
 type TrustPillVariant = 'status' | 'certified' | 'platinum' | 'gold' | 'silver' | 'bronze' | 'foundation' | 'none';
 
-export function CharityCard({ org }: { org: PublicTrustProfile }) {
+export function CharityCard({ org, hrefSuffix = '' }: { org: PublicTrustProfile; hrefSuffix?: string }) {
   const hasScore = canShowTrustScore(org);
   const score = Number(org.amanah_index_score ?? 0);
   const trustGrade = hasScore ? getTrustGrade(score) : null;
@@ -27,7 +27,7 @@ export function CharityCard({ org }: { org: PublicTrustProfile }) {
 
   return (
     <Link
-      href={`/charities/${org.organization_id}`}
+      href={`/charities/${org.organization_id}${hrefSuffix}`}
       className={`group block h-full overflow-hidden rounded-[28px] border bg-white shadow-sm ring-1 ring-black/[0.02] transition duration-200 hover:-translate-y-0.5 hover:shadow-xl ${accent.border}`}
     >
       <div className={`relative overflow-hidden bg-gradient-to-br ${accent.header} p-4 pb-5`}>

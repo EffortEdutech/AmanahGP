@@ -8,6 +8,7 @@ import {
   DIRECTORY_STAGE_META,
   groupProfilesByStage,
 } from '@/lib/public-trust';
+import { datasetQuerySuffix, filterProfilesByDataset, resolveDatasetMode } from '@/lib/data-origin';
 
 const STAGE_ORDER: GovernanceJourneyStage[] = [
   'published_trust_profile',
@@ -21,12 +22,14 @@ export const dynamic = 'force-dynamic';
 export default async function CharitiesPage({
   searchParams,
 }: {
-  searchParams?: Promise<{ q?: string; org_type?: string; state?: string }>;
+  searchParams?: Promise<{ q?: string; org_type?: string; state?: string; dataset?: string }>;
 }) {
   const params = (await searchParams) ?? {};
   const q = params.q?.trim();
   const orgType = params.org_type?.trim();
   const state = params.state?.trim();
+  const datasetMode = resolveDatasetMode(params.dataset);
+  const hrefSuffix = datasetQuerySuffix(datasetMode);
 
   const supabase = await createClient();
 
@@ -45,7 +48,7 @@ export default async function CharitiesPage({
   const { data, error } = await query;
   if (error) throw new Error(error.message);
 
-  const profiles = (data ?? []) as PublicTrustProfile[];
+  const profiles = await filterProfilesByDataset(supabase, (data ?? []) as PublicTrustProfile[], datasetMode);
   const grouped = groupProfilesByStage(profiles);
 
   return (
@@ -69,7 +72,7 @@ export default async function CharitiesPage({
           <div className="mt-8 grid gap-4 md:grid-cols-3">
             <StatCard value={String(profiles.length)} label="Visible organisations" />
             <StatCard value={String(grouped.published_trust_profile?.length ?? 0)} label="Published trust profiles" />
-            <StatCard value="Non-custodial" label="Donation model" />
+            <StatCard value={datasetMode === 'seed' ? 'Seed study' : datasetMode === 'all' ? 'All data' : 'Actual only'} label="Dataset view" />
           </div>
         </div>
       </section>
@@ -87,6 +90,7 @@ export default async function CharitiesPage({
               {profiles.length} organisation{profiles.length === 1 ? '' : 's'} found
             </p>
           </div>
+          <DatasetSwitch current={datasetMode} />
           <DirectorySearch defaultQ={q} defaultOrgType={orgType} defaultState={state} />
         </div>
       </section>
@@ -119,7 +123,7 @@ export default async function CharitiesPage({
 
                   <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
                     {items.map((profile) => (
-                      <CharityCard key={profile.organization_id} org={profile} />
+                      <CharityCard key={profile.organization_id} org={profile} hrefSuffix={hrefSuffix} />
                     ))}
                   </div>
                 </section>
@@ -173,6 +177,34 @@ function StatCard({ value, label }: { value: string; label: string }) {
     <div className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
       <div className="text-2xl font-semibold text-gray-950">{value}</div>
       <div className="mt-1 text-sm text-gray-500">{label}</div>
+    </div>
+  );
+}
+
+function DatasetSwitch({ current }: { current: 'actual' | 'seed' | 'all' }) {
+  if (process.env.VERCEL_ENV === 'production') return null;
+
+  const options = [
+    { value: 'actual', label: 'Actual' },
+    { value: 'seed', label: 'Seeds' },
+    { value: 'all', label: 'All' },
+  ] as const;
+
+  return (
+    <div className="mb-4 flex flex-wrap gap-2">
+      {options.map((option) => (
+        <Link
+          key={option.value}
+          href={option.value === 'actual' ? '/charities' : `/charities?dataset=${option.value}`}
+          className={`rounded-full px-3 py-1.5 text-xs font-semibold ring-1 ${
+            current === option.value
+              ? 'bg-emerald-700 text-white ring-emerald-700'
+              : 'bg-white text-slate-600 ring-slate-200 hover:bg-slate-50'
+          }`}
+        >
+          {option.label}
+        </Link>
+      ))}
     </div>
   );
 }

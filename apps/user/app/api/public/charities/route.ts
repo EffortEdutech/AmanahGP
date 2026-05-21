@@ -4,6 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
+import { resolveDatasetMode } from '@/lib/data-origin';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -40,6 +41,7 @@ export async function GET(request: NextRequest) {
   const orgType = searchParams.get('org_type') ?? '';
   const state = searchParams.get('state') ?? '';
   const limit = Math.min(Number(searchParams.get('limit') ?? 20), 100);
+  const datasetMode = resolveDatasetMode(searchParams.get('dataset'));
 
   const supabase = await createClient();
 
@@ -60,12 +62,38 @@ export async function GET(request: NextRequest) {
       )
     `)
     .eq('listing_status', 'listed')
+    .eq('data_origin', datasetMode === 'seed' ? 'seed' : 'actual')
     .limit(limit)
     .order('updated_at', { ascending: false });
 
   if (q) query = query.ilike('name', `%${q}%`);
   if (orgType) query = query.eq('org_type', orgType);
   if (state) query = query.eq('state', state);
+  if (datasetMode === 'all') {
+    query = supabase
+      .from('organizations')
+      .select(`
+        id,
+        name,
+        summary,
+        org_type,
+        state,
+        updated_at,
+        certification_history (
+          new_status,
+          valid_from,
+          valid_to,
+          decided_at
+        )
+      `)
+      .eq('listing_status', 'listed')
+      .limit(limit)
+      .order('updated_at', { ascending: false });
+
+    if (q) query = query.ilike('name', `%${q}%`);
+    if (orgType) query = query.eq('org_type', orgType);
+    if (state) query = query.eq('state', state);
+  }
 
   const { data, error } = await query;
 

@@ -10,6 +10,7 @@ import {
   orgTypeLabel,
 } from '@/lib/public-trust';
 import { getTrustGrade } from '@/lib/trust';
+import { datasetQuerySuffix, isOrganizationVisibleForDataset, resolveDatasetMode } from '@/lib/data-origin';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -20,10 +21,13 @@ export const metadata = {
 
 type PageProps = {
   params: Promise<{ orgId: string }>;
+  searchParams?: Promise<{ dataset?: string }>;
 };
 
-export default async function DonatePage({ params }: PageProps) {
+export default async function DonatePage({ params, searchParams }: PageProps) {
   const { orgId } = await params;
+  const datasetMode = resolveDatasetMode((await searchParams)?.dataset);
+  const hrefSuffix = datasetQuerySuffix(datasetMode);
   const supabase = await createClient();
 
   const { data: profile, error } = await supabase
@@ -34,6 +38,7 @@ export default async function DonatePage({ params }: PageProps) {
 
   if (error) throw new Error(error.message);
   if (!profile) notFound();
+  if (!(await isOrganizationVisibleForDataset(supabase, orgId, datasetMode))) notFound();
 
   const org = profile as PublicTrustProfile;
   const score = Number(org.amanah_index_score ?? 0);
@@ -50,10 +55,10 @@ export default async function DonatePage({ params }: PageProps) {
     <main className="min-h-screen bg-[radial-gradient(circle_at_top_left,_rgba(16,185,129,0.12),_transparent_30%),linear-gradient(to_bottom,_#ffffff,_#f8fafc)]">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-          <Link href={`/charities/${org.organization_id ?? orgId}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
+          <Link href={`/charities/${org.organization_id ?? orgId}${hrefSuffix}`} className="text-sm font-medium text-emerald-700 hover:text-emerald-800">
             <span aria-hidden="true">&larr;</span> Back to trust profile
           </Link>
-          <Link href="/charities" className="text-sm font-medium text-slate-500 hover:text-slate-700">
+          <Link href={`/charities${hrefSuffix}`} className="text-sm font-medium text-slate-500 hover:text-slate-700">
             Browse other charities
           </Link>
         </div>

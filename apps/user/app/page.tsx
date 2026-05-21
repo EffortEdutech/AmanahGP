@@ -10,6 +10,7 @@ import {
   type GovernanceJourneyStage,
   DIRECTORY_STAGE_META,
 } from '@/lib/public-trust';
+import { filterProfilesByDataset } from '@/lib/data-origin';
 
 const FEATURED_STAGE_ORDER: GovernanceJourneyStage[] = [
   'published_trust_profile',
@@ -31,19 +32,21 @@ export default async function HomePage() {
       .order('governance_stage_sort', { ascending: true })
       .order('amanah_index_score', { ascending: false, nullsFirst: false })
       .order('published_at', { ascending: false, nullsFirst: false })
-      .limit(9),
+      .limit(50),
     supabase
       .from('organizations')
       .select('*', { count: 'exact', head: true })
-      .eq('listing_status', 'listed'),
+      .eq('listing_status', 'listed')
+      .eq('data_origin', 'actual'),
     supabase
       .from('donations')
       .select('*', { count: 'exact', head: true })
       .eq('payment_status', 'paid'),
   ]);
 
-  const publicProfiles = (profiles ?? []) as PublicTrustProfile[];
-  const grouped = groupProfilesByStage(publicProfiles);
+  const publicProfiles = await filterProfilesByDataset(supabase, (profiles ?? []) as PublicTrustProfile[], 'actual');
+  const featuredProfiles = publicProfiles.slice(0, 9);
+  const grouped = groupProfilesByStage(featuredProfiles);
 
   return (
     <div className="bg-white text-gray-900">

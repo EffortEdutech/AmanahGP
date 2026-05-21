@@ -3,12 +3,13 @@ import { CirclePlus, Eye, Pencil } from "lucide-react";
 import { ConsoleShell } from "@/components/console-shell";
 import { requireConsoleAccess } from "@/lib/console/access";
 import { formatDate, statusBadgeClass, titleCase } from "@/lib/console/mappers";
-import { listOrganizations } from "@/lib/console/server";
+import { listOrganizations, normalizeOrganizationDataset } from "@/lib/console/server";
 
-export default async function OrganisationsPage({ searchParams }: { searchParams: Promise<{ error?: string }> }) {
+export default async function OrganisationsPage({ searchParams }: { searchParams: Promise<{ error?: string; dataset?: string }> }) {
   const { user, roles } = await requireConsoleAccess("organizations.read");
-  const organizations = await listOrganizations();
-  const { error } = await searchParams;
+  const { error, dataset } = await searchParams;
+  const datasetFilter = normalizeOrganizationDataset(dataset);
+  const organizations = await listOrganizations(datasetFilter);
 
   return (
     <ConsoleShell
@@ -24,13 +25,14 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
         <div className="row-between">
           <div>
             <div className="h2">Organisation registry</div>
-            <div className="muted">All AGP organisations managed from the platform control plane.</div>
+            <div className="muted">AGP organisations managed from the platform control plane.</div>
           </div>
           <Link className="btn btn-primary" href="/organisations/new">
             <CirclePlus size={16} />
             Create organisation
           </Link>
         </div>
+        <DatasetTabs current={datasetFilter} />
 
         <div className="table-wrap">
           <table className="table">
@@ -38,6 +40,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
               <tr>
                 <th>Organisation</th>
                 <th>Type</th>
+                <th>Dataset</th>
                 <th>Onboarding</th>
                 <th>Listing</th>
                 <th>Approved</th>
@@ -53,6 +56,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
                     <div className="muted">{organization.registration_no || organization.name}</div>
                   </td>
                   <td>{titleCase(organization.org_type)}</td>
+                  <td><span className={organization.data_origin === "seed" ? "badge badge-amber" : "badge badge-green"}>{titleCase(organization.data_origin)}</span></td>
                   <td><span className={statusBadgeClass(organization.onboarding_status)}>{titleCase(organization.onboarding_status)}</span></td>
                   <td><span className={statusBadgeClass(organization.listing_status)}>{titleCase(organization.listing_status)}</span></td>
                   <td>{formatDate(organization.approved_at)}</td>
@@ -74,7 +78,7 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
 
               {organizations.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="muted">No organisations yet.</td>
+                  <td colSpan={8} className="muted">No organisations yet.</td>
                 </tr>
               ) : null}
             </tbody>
@@ -82,5 +86,27 @@ export default async function OrganisationsPage({ searchParams }: { searchParams
         </div>
       </section>
     </ConsoleShell>
+  );
+}
+
+function DatasetTabs({ current }: { current: "actual" | "seed" | "all" }) {
+  const tabs = [
+    { value: "actual", label: "Actual charities", href: "/organisations" },
+    { value: "seed", label: "Seed charities", href: "/organisations?dataset=seed" },
+    { value: "all", label: "All", href: "/organisations?dataset=all" },
+  ] as const;
+
+  return (
+    <div className="row" style={{ gap: 8 }}>
+      {tabs.map((tab) => (
+        <Link
+          key={tab.value}
+          className={current === tab.value ? "btn btn-primary" : "btn btn-secondary"}
+          href={tab.href}
+        >
+          {tab.label}
+        </Link>
+      ))}
+    </div>
   );
 }
