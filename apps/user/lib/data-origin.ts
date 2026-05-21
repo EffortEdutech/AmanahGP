@@ -10,14 +10,33 @@ export function isLiveAmanahHub() {
   return process.env.VERCEL_ENV === 'production';
 }
 
-export function resolveDatasetMode(value: string | null | undefined): DatasetMode {
-  if (isLiveAmanahHub()) return 'actual';
+export async function canCurrentUserViewSeedData(supabase: SupabaseClient) {
+  if (!isLiveAmanahHub()) return true;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) return false;
+
+  const { data, error } = await supabase
+    .from('users')
+    .select('platform_role')
+    .eq('auth_provider_user_id', user.id)
+    .maybeSingle();
+
+  if (error) return false;
+  return String((data as any)?.platform_role ?? '') === 'super_admin';
+}
+
+export function resolveDatasetMode(value: string | null | undefined, canViewSeedData = !isLiveAmanahHub()): DatasetMode {
+  if (!canViewSeedData) return 'actual';
   if (value && DATASET_MODES.includes(value as DatasetMode)) return value as DatasetMode;
   return 'actual';
 }
 
-export function datasetQuerySuffix(mode: DatasetMode) {
-  return !isLiveAmanahHub() && mode !== 'actual' ? `?dataset=${mode}` : '';
+export function datasetQuerySuffix(mode: DatasetMode, canViewSeedData = !isLiveAmanahHub()) {
+  return canViewSeedData && mode !== 'actual' ? `?dataset=${mode}` : '';
 }
 
 export async function filterProfilesByDataset(

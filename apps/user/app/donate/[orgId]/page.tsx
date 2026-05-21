@@ -10,7 +10,7 @@ import {
   orgTypeLabel,
 } from '@/lib/public-trust';
 import { getTrustGrade } from '@/lib/trust';
-import { datasetQuerySuffix, isOrganizationVisibleForDataset, resolveDatasetMode } from '@/lib/data-origin';
+import { canCurrentUserViewSeedData, datasetQuerySuffix, isOrganizationVisibleForDataset, resolveDatasetMode } from '@/lib/data-origin';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -26,9 +26,10 @@ type PageProps = {
 
 export default async function DonatePage({ params, searchParams }: PageProps) {
   const { orgId } = await params;
-  const datasetMode = resolveDatasetMode((await searchParams)?.dataset);
-  const hrefSuffix = datasetQuerySuffix(datasetMode);
   const supabase = await createClient();
+  const canViewSeedData = await canCurrentUserViewSeedData(supabase);
+  const datasetMode = resolveDatasetMode((await searchParams)?.dataset, canViewSeedData);
+  const hrefSuffix = datasetQuerySuffix(datasetMode, canViewSeedData);
 
   const { data: profile, error } = await supabase
     .from('v_amanahhub_public_profiles')

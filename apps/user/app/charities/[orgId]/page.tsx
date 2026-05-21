@@ -14,7 +14,7 @@ import {
   orgTypeLabel,
 } from '@/lib/public-trust';
 import { getTrustGrade } from '@/lib/trust';
-import { datasetQuerySuffix, isOrganizationVisibleForDataset, resolveDatasetMode } from '@/lib/data-origin';
+import { canCurrentUserViewSeedData, datasetQuerySuffix, isOrganizationVisibleForDataset, resolveDatasetMode } from '@/lib/data-origin';
 
 export const dynamic = 'force-dynamic';
 
@@ -37,9 +37,10 @@ type PillarData = {
 
 export default async function CharityProfilePage({ params, searchParams }: PageProps) {
   const { orgId } = await params;
-  const datasetMode = resolveDatasetMode((await searchParams)?.dataset);
-  const hrefSuffix = datasetQuerySuffix(datasetMode);
   const supabase = await createClient();
+  const canViewSeedData = await canCurrentUserViewSeedData(supabase);
+  const datasetMode = resolveDatasetMode((await searchParams)?.dataset, canViewSeedData);
+  const hrefSuffix = datasetQuerySuffix(datasetMode, canViewSeedData);
 
   const [{ data: profile, error: profileError }, { data: events, error: eventsError }] = await Promise.all([
     supabase

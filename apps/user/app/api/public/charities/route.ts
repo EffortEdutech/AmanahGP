@@ -4,7 +4,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { resolveDatasetMode } from '@/lib/data-origin';
+import { canCurrentUserViewSeedData, resolveDatasetMode } from '@/lib/data-origin';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -41,9 +41,10 @@ export async function GET(request: NextRequest) {
   const orgType = searchParams.get('org_type') ?? '';
   const state = searchParams.get('state') ?? '';
   const limit = Math.min(Number(searchParams.get('limit') ?? 20), 100);
-  const datasetMode = resolveDatasetMode(searchParams.get('dataset'));
 
   const supabase = await createClient();
+  const canViewSeedData = await canCurrentUserViewSeedData(supabase);
+  const datasetMode = resolveDatasetMode(searchParams.get('dataset'), canViewSeedData);
 
   let query = supabase
     .from('organizations')

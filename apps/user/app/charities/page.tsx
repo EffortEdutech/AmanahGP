@@ -8,7 +8,7 @@ import {
   DIRECTORY_STAGE_META,
   groupProfilesByStage,
 } from '@/lib/public-trust';
-import { datasetQuerySuffix, filterProfilesByDataset, resolveDatasetMode } from '@/lib/data-origin';
+import { canCurrentUserViewSeedData, datasetQuerySuffix, filterProfilesByDataset, resolveDatasetMode } from '@/lib/data-origin';
 
 const STAGE_ORDER: GovernanceJourneyStage[] = [
   'published_trust_profile',
@@ -28,10 +28,11 @@ export default async function CharitiesPage({
   const q = params.q?.trim();
   const orgType = params.org_type?.trim();
   const state = params.state?.trim();
-  const datasetMode = resolveDatasetMode(params.dataset);
-  const hrefSuffix = datasetQuerySuffix(datasetMode);
 
   const supabase = await createClient();
+  const canViewSeedData = await canCurrentUserViewSeedData(supabase);
+  const datasetMode = resolveDatasetMode(params.dataset, canViewSeedData);
+  const hrefSuffix = datasetQuerySuffix(datasetMode, canViewSeedData);
 
   let query = supabase
     .from('v_amanahhub_public_profiles')
@@ -90,7 +91,7 @@ export default async function CharitiesPage({
               {profiles.length} organisation{profiles.length === 1 ? '' : 's'} found
             </p>
           </div>
-          <DatasetSwitch current={datasetMode} />
+          <DatasetSwitch current={datasetMode} canViewSeedData={canViewSeedData} />
           <DirectorySearch defaultQ={q} defaultOrgType={orgType} defaultState={state} />
         </div>
       </section>
@@ -181,8 +182,8 @@ function StatCard({ value, label }: { value: string; label: string }) {
   );
 }
 
-function DatasetSwitch({ current }: { current: 'actual' | 'seed' | 'all' }) {
-  if (process.env.VERCEL_ENV === 'production') return null;
+function DatasetSwitch({ current, canViewSeedData }: { current: 'actual' | 'seed' | 'all'; canViewSeedData: boolean }) {
+  if (!canViewSeedData) return null;
 
   const options = [
     { value: 'actual', label: 'Actual' },
