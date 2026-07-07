@@ -267,10 +267,6 @@ export function ConsoleLayoutClient({
           display: none;
         }
 
-        .agp-console-mobile-lite-nav {
-          display: none;
-        }
-
         .agp-console-sidebar {
           position: sticky;
           top: 16px;
@@ -545,56 +541,6 @@ export function ConsoleLayoutClient({
             margin-top: 12px;
           }
 
-          .agp-console-mobile-lite-nav {
-            position: fixed;
-            inset-inline: 0;
-            bottom: 0;
-            z-index: 45;
-            display: block;
-            border-top: 1px solid #e2e8f0;
-            background: rgba(255, 255, 255, 0.96);
-            padding: 6px 8px max(env(safe-area-inset-bottom), 8px);
-            box-shadow: 0 -10px 26px rgba(15, 23, 42, 0.08);
-            backdrop-filter: blur(10px);
-          }
-
-          .agp-console-mobile-lite-nav__inner {
-            display: flex;
-            align-items: center;
-            gap: 4px;
-            max-width: 448px;
-            margin: 0 auto;
-          }
-
-          .agp-console-mobile-lite-link {
-            min-width: 0;
-            flex: 1;
-            min-height: 44px;
-            border: 0;
-            border-radius: 8px;
-            background: transparent;
-            color: #64748b;
-            display: inline-flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 2px;
-            padding: 6px 4px;
-            font-size: 10px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 140ms ease, color 140ms ease;
-          }
-
-          .agp-console-mobile-lite-link[data-active='true'] {
-            background: #ecfdf5;
-            color: #047857;
-          }
-
-          .agp-console-mobile-lite-link:hover {
-            background: #f8fafc;
-            color: #0f172a;
-          }
         }
       `}</style>
     </div>
