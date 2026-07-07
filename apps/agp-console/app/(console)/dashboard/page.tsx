@@ -1,5 +1,17 @@
 import Link from "next/link";
-import { AlertTriangle, Bell, Building2, ClipboardList, Compass, PlusCircle, ShieldCheck, Wallet } from "lucide-react";
+import {
+  AlertTriangle,
+  Bell,
+  Building2,
+  ClipboardList,
+  Compass,
+  Gavel,
+  PlusCircle,
+  Radio,
+  Send,
+  ShieldCheck,
+  Wallet,
+} from "lucide-react";
 import { ConsoleShell } from "@/components/console-shell";
 import { NotificationFeed } from "@/components/notification-feed";
 import { StatsCard } from "@/components/stats-card";
@@ -31,6 +43,52 @@ export default async function DashboardPage() {
         <StatsCard label="pending invites" value={stats.pendingInvites} note="org_invitations waiting for acceptance" />
         <StatsCard label="open alerts" value={notificationSummary.total} note="Computed from canonical billing, invites, and org lifecycle tables" />
         <StatsCard label="critical alerts" value={notificationSummary.danger} note="Danger-level notifications requiring immediate action" />
+      </section>
+
+      <section className="panel section stack mobile-only">
+        <div>
+          <div className="h2">Console priorities</div>
+          <p className="muted">Fast access for platform review, escalation, and publication work on mobile.</p>
+        </div>
+        <div style={{ display: "grid", gap: 10 }}>
+          {[
+            { href: "/review-workbench", label: "Review workbench", hint: "Triage active organisation and trust reviews", icon: ShieldCheck },
+            { href: "/events", label: "Trust events", hint: "Inspect incoming governance signals", icon: Radio },
+            { href: "/cases", label: "Governance cases", hint: "Open, assign, and decide active cases", icon: Gavel },
+            { href: "/publication-command", label: "Publication command", hint: "Release donor-facing trust output", icon: Send },
+          ].map((action) => {
+            const Icon = action.icon;
+
+            return (
+              <Link
+                key={action.href}
+                href={action.href}
+                className="panel-soft"
+                style={{ minHeight: 72, padding: 14, display: "flex", alignItems: "center", gap: 12 }}
+              >
+                <span
+                  style={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: 12,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "#ecfdf5",
+                    color: "#047857",
+                    flexShrink: 0,
+                  }}
+                >
+                  <Icon size={18} />
+                </span>
+                <span style={{ minWidth: 0 }}>
+                  <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#0f172a" }}>{action.label}</span>
+                  <span style={{ display: "block", marginTop: 2, fontSize: 12, lineHeight: 1.35, color: "#64748b" }}>{action.hint}</span>
+                </span>
+              </Link>
+            );
+          })}
+        </div>
       </section>
 
       <section className="grid-cards">

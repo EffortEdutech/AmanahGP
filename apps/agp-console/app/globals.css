@@ -399,9 +399,11 @@ html, body {
 .a-card { background: #fffbeb; border: 1px solid #fde68a; border-radius: 12px; padding: 14px; }
 .sec-label { font-size: 10px; font-weight: 700; color: var(--muted-light); text-transform: uppercase; letter-spacing: 0.12em; margin-bottom: 8px; }
 .notification-card { padding: 16px; display: grid; gap: 8px; }
+.mobile-only { display: none; }
 
 @media (max-width: 980px) {
   .page-shell { padding: 12px; }
   .sidebar-layout { grid-template-columns: 1fr; }
   .sidebar { position: static; }
+  .mobile-only { display: grid; }
 }

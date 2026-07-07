@@ -2,7 +2,18 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { ChevronLeft, ChevronRight, Menu, ShieldCheck, X } from "lucide-react";
+import {
+  Bell,
+  Building2,
+  ChevronLeft,
+  ChevronRight,
+  ClipboardList,
+  LayoutDashboard,
+  Menu,
+  MoreHorizontal,
+  ShieldCheck,
+  X,
+} from "lucide-react";
 import { LogoutButton } from "@/components/logout-button";
 import { CONSOLE_NAV_GROUPS } from "@/lib/console/navigation";
 
@@ -16,6 +27,13 @@ type ConsoleLayoutClientProps = {
 };
 
 const STORAGE_KEY = "agp-console-sidebar-collapsed";
+
+const MOBILE_NAV_ITEMS = [
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/organisations", label: "Orgs", icon: Building2 },
+  { href: "/review-workbench", label: "Reviews", icon: ClipboardList },
+  { href: "/notifications", label: "Alerts", icon: Bell },
+] as const;
 
 function userInitials(email: string) {
   return email.slice(0, 2).toUpperCase();
@@ -183,7 +201,7 @@ export function ConsoleLayoutClient({
           </div>
         </aside>
 
-        <main className="stack">
+        <main className="stack agp-console-main">
           <section className="panel hero" style={{ borderLeft: "4px solid #047857" }}>
             <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
               <div className="kicker">Amanah Governance Platform</div>
@@ -214,12 +232,40 @@ export function ConsoleLayoutClient({
         </main>
       </div>
 
+      <nav className="agp-console-mobile-lite-nav" aria-label="Mobile console navigation">
+        {MOBILE_NAV_ITEMS.map((item) => {
+          const Icon = item.icon;
+          const isActive = currentPath === item.href || currentPath.startsWith(`${item.href}/`);
+
+          return (
+            <Link key={item.href} href={item.href} className="agp-console-mobile-lite-link" data-active={isActive}>
+              <Icon size={16} strokeWidth={2} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+
+        <button
+          type="button"
+          className="agp-console-mobile-lite-link"
+          onClick={() => setMobileSidebarOpen(true)}
+          aria-label="Open full console menu"
+        >
+          <MoreHorizontal size={16} strokeWidth={2} />
+          <span>More</span>
+        </button>
+      </nav>
+
       <style jsx>{`
         .agp-console-mobile-bar {
           display: none;
         }
 
         .agp-console-mobile-backdrop {
+          display: none;
+        }
+
+        .agp-console-mobile-lite-nav {
           display: none;
         }
 
@@ -370,6 +416,10 @@ export function ConsoleLayoutClient({
         }
 
         @media (max-width: 1024px) {
+          .page-shell {
+            padding-bottom: 86px;
+          }
+
           .agp-console-mobile-bar {
             position: sticky;
             top: 0;
@@ -380,6 +430,10 @@ export function ConsoleLayoutClient({
             margin: -4px 0 12px;
             padding: 10px 0;
             background: #f1f5f9;
+          }
+
+          .agp-console-main {
+            gap: 12px;
           }
 
           .agp-console-mobile-menu {
@@ -487,6 +541,44 @@ export function ConsoleLayoutClient({
 
           .agp-console-sidebar__footer {
             margin-top: 12px;
+          }
+
+          .agp-console-mobile-lite-nav {
+            position: fixed;
+            inset-inline: 0;
+            bottom: 0;
+            z-index: 45;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            border-top: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 7px 8px max(env(safe-area-inset-bottom), 8px);
+            box-shadow: 0 -10px 26px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(10px);
+          }
+
+          .agp-console-mobile-lite-link {
+            min-width: 0;
+            flex: 1;
+            min-height: 48px;
+            border: 0;
+            border-radius: 12px;
+            background: transparent;
+            color: #64748b;
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            cursor: pointer;
+          }
+
+          .agp-console-mobile-lite-link[data-active='true'] {
+            background: #ecfdf5;
+            color: #047857;
           }
         }
       `}</style>
