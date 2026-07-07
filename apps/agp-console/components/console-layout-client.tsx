@@ -233,27 +233,29 @@ export function ConsoleLayoutClient({
       </div>
 
       <nav className="agp-console-mobile-lite-nav" aria-label="Mobile console navigation">
-        {MOBILE_NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = currentPath === item.href || currentPath.startsWith(`${item.href}/`);
+        <div className="agp-console-mobile-lite-nav__inner">
+          {MOBILE_NAV_ITEMS.map((item) => {
+            const Icon = item.icon;
+            const isActive = currentPath === item.href || currentPath.startsWith(`${item.href}/`);
 
-          return (
-            <Link key={item.href} href={item.href} className="agp-console-mobile-lite-link" data-active={isActive}>
-              <Icon size={16} strokeWidth={2} />
-              <span>{item.label}</span>
-            </Link>
-          );
-        })}
+            return (
+              <Link key={item.href} href={item.href} className="agp-console-mobile-lite-link" data-active={isActive}>
+                <Icon size={15} strokeWidth={2} />
+                <span>{item.label}</span>
+              </Link>
+            );
+          })}
 
-        <button
-          type="button"
-          className="agp-console-mobile-lite-link"
-          onClick={() => setMobileSidebarOpen(true)}
-          aria-label="Open full console menu"
-        >
-          <MoreHorizontal size={16} strokeWidth={2} />
-          <span>More</span>
-        </button>
+          <button
+            type="button"
+            className="agp-console-mobile-lite-link"
+            onClick={() => setMobileSidebarOpen(true)}
+            aria-label="Open full console menu"
+          >
+            <MoreHorizontal size={15} strokeWidth={2} />
+            <span>More</span>
+          </button>
+        </div>
       </nav>
 
       <style jsx>{`
@@ -548,37 +550,50 @@ export function ConsoleLayoutClient({
             inset-inline: 0;
             bottom: 0;
             z-index: 45;
+            display: block;
+            border-top: 1px solid #e2e8f0;
+            background: rgba(255, 255, 255, 0.96);
+            padding: 6px 8px max(env(safe-area-inset-bottom), 8px);
+            box-shadow: 0 -10px 26px rgba(15, 23, 42, 0.08);
+            backdrop-filter: blur(10px);
+          }
+
+          .agp-console-mobile-lite-nav__inner {
             display: flex;
             align-items: center;
             gap: 4px;
-            border-top: 1px solid #e2e8f0;
-            background: rgba(255, 255, 255, 0.96);
-            padding: 7px 8px max(env(safe-area-inset-bottom), 8px);
-            box-shadow: 0 -10px 26px rgba(15, 23, 42, 0.08);
-            backdrop-filter: blur(10px);
+            max-width: 448px;
+            margin: 0 auto;
           }
 
           .agp-console-mobile-lite-link {
             min-width: 0;
             flex: 1;
-            min-height: 48px;
+            min-height: 44px;
             border: 0;
-            border-radius: 12px;
+            border-radius: 8px;
             background: transparent;
             color: #64748b;
             display: inline-flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 3px;
+            gap: 2px;
+            padding: 6px 4px;
             font-size: 10px;
-            font-weight: 700;
+            font-weight: 600;
             cursor: pointer;
+            transition: background-color 140ms ease, color 140ms ease;
           }
 
           .agp-console-mobile-lite-link[data-active='true'] {
             background: #ecfdf5;
             color: #047857;
+          }
+
+          .agp-console-mobile-lite-link:hover {
+            background: #f8fafc;
+            color: #0f172a;
           }
         }
       `}</style>
