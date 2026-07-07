@@ -149,8 +149,8 @@ export default async function DashboardPage({
     scoreVersion ? 'Foundation' : '—';
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-gray-900">{org.name}</h1>
           <p className="text-sm text-gray-500 mt-0.5 capitalize">
@@ -165,7 +165,7 @@ export default async function DashboardPage({
         {!onboardingState.isComplete && (
           <Link
             href={`${basePath}/onboarding`}
-            className="text-[11px] font-medium px-3 py-1.5 rounded-lg bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
+            className="inline-flex min-h-10 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-[12px] font-medium text-blue-700 transition-colors hover:bg-blue-100 sm:min-h-0 sm:py-1.5 sm:text-[11px]"
           >
             {onboardingState.completedCount}/{onboardingState.totalSteps} setup steps
           </Link>
@@ -206,7 +206,40 @@ export default async function DashboardPage({
       </div>
 
       {onboardingState.isComplete && (
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <section className="space-y-3 sm:hidden">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="text-sm font-semibold text-gray-800">Today's work</h2>
+            <Link href={`${basePath}/accounting`} className="text-[11px] font-medium text-emerald-700 hover:text-emerald-800">
+              Accounting
+            </Link>
+          </div>
+          <div className="grid grid-cols-1 gap-3">
+            {[
+              { href: '/accounting/transactions/new', label: 'Record transaction', hint: 'Income, expense, transfer', code: 'TX' },
+              { href: '/accounting/payment-requests/new', label: 'Payment request', hint: 'Request approval before payment', code: 'PR' },
+              { href: '/reports/new', label: 'Submit project report', hint: 'Progress update with evidence', code: 'RP' },
+              { href: '/accounting/close', label: 'Month close', hint: 'Lock the accounting period', code: 'CL' },
+            ].map((action) => (
+              <Link
+                key={action.href}
+                href={`${basePath}${action.href}`}
+                className="flex min-h-[72px] items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 transition-all hover:border-emerald-300 hover:shadow-sm"
+              >
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md bg-emerald-50 text-[11px] font-bold text-emerald-700">
+                  {action.code}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold text-gray-800">{action.label}</span>
+                  <span className="mt-0.5 block text-[11px] leading-snug text-gray-400">{action.hint}</span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {onboardingState.isComplete && (
+        <div className="hidden grid-cols-2 gap-3 sm:grid sm:grid-cols-4">
           {[
             { href: '/accounting/transactions/new', label: 'Record transaction', icon: '⇄' },
             { href: '/accounting/payment-requests/new', label: 'Payment request', icon: '✉' },
@@ -227,7 +260,7 @@ export default async function DashboardPage({
 
       <div>
         <h2 className="text-sm font-semibold text-gray-700 mb-3">Workspace</h2>
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
           <ModuleCard href={`${basePath}/accounting`} icon="$" label="Accounting" description="Fund accounting, transactions, financial statements" />
           <ModuleCard href={`${basePath}/trust`} icon="▲" label="Trust score" description="Amanah Index breakdown and improvement tips" />
           <ModuleCard href={`${basePath}/accounting/payment-requests`} icon="✉" label="Payment requests" description="Approval workflow — segregation of duties" />

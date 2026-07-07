@@ -146,3 +146,6 @@ vite.config.ts.timestamp-*
 .env.local
 .env*.local
 scripts/node_modules/
+# Graphify generated graph output
+graphify-out/
+.graphify-work/

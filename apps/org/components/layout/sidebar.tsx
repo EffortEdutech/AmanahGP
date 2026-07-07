@@ -65,7 +65,7 @@ export function Sidebar({
   const badge = onboardingBadge();
 
   return (
-    <aside className="flex h-full w-56 max-w-[85vw] flex-shrink-0 flex-col border-r border-gray-100 bg-white shadow-sm lg:max-w-none lg:shadow-none">
+    <aside className="flex h-full w-72 max-w-[86vw] flex-shrink-0 flex-col border-r border-gray-100 bg-white shadow-sm lg:w-56 lg:max-w-none lg:shadow-none">
       <div className="flex flex-shrink-0 items-center justify-between gap-2 border-b border-gray-100 px-3 py-3">
         <div className="flex min-w-0 items-center gap-2">
           <div className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md bg-emerald-600">
@@ -153,7 +153,7 @@ export function Sidebar({
         </div>
       )}
 
-      <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 py-2">
+      <nav className="flex-1 space-y-1 overflow-y-auto px-2 py-2 lg:space-y-0.5">
         <NavLink href={`${base}/dashboard`} label="Dashboard" icon="▣" isActive={exact('/dashboard')} onClick={onNavigate} />
         <NavLink href={`${base}/onboarding`} label="Amanah Ready" icon="◉" isActive={active('/onboarding')} onClick={onNavigate} />
 
@@ -241,7 +241,7 @@ function NavLink({
     <Link
       href={href}
       onClick={onClick}
-      className={`flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-[12px] transition-colors ${
+      className={`flex w-full items-center gap-2 rounded-md px-2.5 py-2.5 text-[13px] transition-colors lg:px-2 lg:py-1.5 lg:text-[12px] ${
         isActive
           ? 'bg-emerald-50 font-medium text-emerald-800'
           : 'text-gray-500 hover:bg-gray-100 hover:text-gray-800'
