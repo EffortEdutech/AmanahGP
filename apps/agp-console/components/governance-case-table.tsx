@@ -56,13 +56,16 @@ export function GovernanceCaseTable({ rows }: { rows: GovernanceReviewCaseRow[] 
               <td>{row.due_at ? formatDate(row.due_at) : "—"}</td>
               <td>{formatDateTime(row.updated_at)}</td>
               <td>
-                <div style={{ display: "grid", gap: 8 }}>
-                  <Link className="btn btn-secondary" href={`/cases/${row.id}`}>Open</Link>
-                  <Link className="btn btn-secondary" href={`/cases/${row.id}/assignments`}>Assignments</Link>
-                  <Link className="btn btn-secondary" href={`/cases/${row.id}/dossier`}>Dossier</Link>
-                  <Link className="btn btn-secondary" href={workspaceLink(row)}>{workspaceLabel(row)}</Link>
-                  <Link className="btn btn-secondary" href={`/organisations/${row.organization_id}`}>Organisation</Link>
-                </div>
+                <details className="action-menu">
+                  <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
+                  <div className="action-menu__dropdown">
+                    <Link className="action-menu__item action-menu__item--primary" href={`/cases/${row.id}`}>Open case</Link>
+                    <Link className="action-menu__item" href={workspaceLink(row)}>{workspaceLabel(row)}</Link>
+                    <Link className="action-menu__item" href={`/cases/${row.id}/assignments`}>Assignments</Link>
+                    <Link className="action-menu__item" href={`/cases/${row.id}/dossier`}>Dossier</Link>
+                    <Link className="action-menu__item" href={`/organisations/${row.organization_id}`}>Organisation</Link>
+                  </div>
+                </details>
               </td>
             </tr>
           ))}

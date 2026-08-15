@@ -4,7 +4,6 @@ import {
   Bell,
   Building2,
   ClipboardList,
-  Compass,
   Gavel,
   PlusCircle,
   Radio,
@@ -28,91 +27,81 @@ export default async function DashboardPage() {
     listAuditLogs(5),
   ]);
 
+  const hasAlerts = notificationSummary.total > 0;
+  const hasCritical = notificationSummary.danger > 0;
+
   return (
     <ConsoleShell
       title="Dashboard"
-      description="Monitor organisations, govern review flow, publish donor-safe trust profiles, and control the AGP platform from one place."
+      description="Platform overview — organisations, active alerts, and recent governance activity."
       currentPath="/dashboard"
       roles={roles}
       userEmail={user.email}
     >
+      {/* Platform stats */}
       <section className="grid-cards">
-        <StatsCard label="organizations" value={stats.organizations} note="Canonical public.organizations" />
-        <StatsCard label="app installations" value={stats.installations} note="Enabled org workspaces and modules" />
-        <StatsCard label="billing plans" value={stats.plans} note="Reusable pricing catalog" />
-        <StatsCard label="pending invites" value={stats.pendingInvites} note="org_invitations waiting for acceptance" />
-        <StatsCard label="open alerts" value={notificationSummary.total} note="Computed from canonical billing, invites, and org lifecycle tables" />
-        <StatsCard label="critical alerts" value={notificationSummary.danger} note="Danger-level notifications requiring immediate action" />
+        <StatsCard label="Organisations" value={stats.organizations} note="Registered on the platform" />
+        <StatsCard label="Active workspaces" value={stats.installations} note="Org apps currently enabled" />
+        <StatsCard label="Billing plans" value={stats.plans} note="Available subscription tiers" />
+        <StatsCard label="Pending invites" value={stats.pendingInvites} note="Awaiting member acceptance" />
+        <StatsCard
+          label="Open alerts"
+          value={notificationSummary.total}
+          note={hasAlerts ? "Requires attention" : "No active alerts"}
+          accent={hasAlerts ? "amber" : "green"}
+        />
+        <StatsCard
+          label="Critical alerts"
+          value={notificationSummary.danger}
+          note={hasCritical ? "Immediate action needed" : "None"}
+          accent={hasCritical ? "amber" : "green"}
+        />
       </section>
 
-      <section className="panel section stack mobile-only">
-        <div>
-          <div className="h2">Console priorities</div>
-          <p className="muted">Fast access for platform review, escalation, and publication work on mobile.</p>
-        </div>
-        <div style={{ display: "grid", gap: 10 }}>
-          {[
-            { href: "/review-workbench", label: "Review workbench", hint: "Triage active organisation and trust reviews", icon: ShieldCheck },
-            { href: "/events", label: "Trust events", hint: "Inspect incoming governance signals", icon: Radio },
-            { href: "/cases", label: "Governance cases", hint: "Open, assign, and decide active cases", icon: Gavel },
-            { href: "/publication-command", label: "Publication command", hint: "Release donor-facing trust output", icon: Send },
-          ].map((action) => {
-            const Icon = action.icon;
-
-            return (
-              <Link
-                key={action.href}
-                href={action.href}
-                className="panel-soft"
-                style={{ minHeight: 72, padding: 14, display: "flex", alignItems: "center", gap: 12 }}
-              >
-                <span
-                  style={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 12,
-                    display: "inline-flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    background: "#ecfdf5",
-                    color: "#047857",
-                    flexShrink: 0,
-                  }}
-                >
-                  <Icon size={18} />
-                </span>
-                <span style={{ minWidth: 0 }}>
-                  <span style={{ display: "block", fontSize: 14, fontWeight: 800, color: "#0f172a" }}>{action.label}</span>
-                  <span style={{ display: "block", marginTop: 2, fontSize: 12, lineHeight: 1.35, color: "#64748b" }}>{action.hint}</span>
-                </span>
-              </Link>
-            );
-          })}
-        </div>
-      </section>
-
+      {/* Quick actions — visible on all screen sizes */}
       <section className="grid-cards">
         <div className="panel section stack">
-          <div className="h2">Organisation Lifecycle</div>
-          <p className="muted">Create, verify, suspend, and review organisation legal profile and platform status.</p>
+          <div className="h2">Organisations</div>
+          <p className="muted">Register new organisations, verify status, and manage their platform access.</p>
           <Link className="btn btn-primary" href="/organisations/new">
             <PlusCircle size={16} />
-            Create organisation
+            Register organisation
           </Link>
-        </div>
-
-        <div className="panel section stack">
-          <div className="h2">App Provisioning</div>
-          <p className="muted">Enable apps per organisation and manage which workspaces are active.</p>
           <Link className="btn btn-secondary" href="/organisations">
             <Building2 size={16} />
-            Open organisations
+            View all organisations
           </Link>
         </div>
 
         <div className="panel section stack">
-          <div className="h2">Billing Control</div>
-          <p className="muted">Manage plans, subscriptions, invoice records, and the platform billing lifecycle.</p>
+          <div className="h2">Governance review</div>
+          <p className="muted">Process incoming trust events, manage open cases, and move reviews through the approval workflow.</p>
+          <Link className="btn btn-primary" href="/review-workbench">
+            <ShieldCheck size={16} />
+            Open review workbench
+          </Link>
+          <Link className="btn btn-secondary" href="/cases">
+            <Gavel size={16} />
+            View governance cases
+          </Link>
+        </div>
+
+        <div className="panel section stack">
+          <div className="h2">Publication</div>
+          <p className="muted">Release approved trust scores and compliance results to the public donor platform.</p>
+          <Link className="btn btn-primary" href="/publication-command">
+            <Send size={16} />
+            Publication command
+          </Link>
+          <Link className="btn btn-secondary" href="/events">
+            <Radio size={16} />
+            View trust events
+          </Link>
+        </div>
+
+        <div className="panel section stack">
+          <div className="h2">Billing &amp; plans</div>
+          <p className="muted">Manage subscription tiers, assign plans to organisations, and track the billing lifecycle.</p>
           <Link className="btn btn-secondary" href="/plans">
             <Wallet size={16} />
             View plans
@@ -120,59 +109,35 @@ export default async function DashboardPage() {
         </div>
       </section>
 
-      <section className="grid-cards">
-        <div className="panel section stack">
-          <div className="h2">Mission flow access</div>
-          <p className="muted">Open the major governance and publication pages from here without typing URLs.</p>
-          <div style={{ display: "grid", gap: 10 }}>
-            <Link className="btn btn-secondary" href="/flow-map">
-              <Compass size={16} />
-              Open console flow map
-            </Link>
-            <Link className="btn btn-secondary" href="/review-workbench">
-              <ShieldCheck size={16} />
-              Open review workbench
-            </Link>
-            <Link className="btn btn-secondary" href="/review-escalations">
-              <AlertTriangle size={16} />
-              Open review escalations
-            </Link>
-            <Link className="btn btn-secondary" href="/publication-command">
-              <ShieldCheck size={16} />
-              Open publication command
-            </Link>
-          </div>
-        </div>
-      </section>
-
+      {/* Live activity feeds */}
       <section className="grid-cards" style={{ alignItems: "start" }}>
         <div className="panel section stack">
           <div className="row-between">
             <div>
-              <div className="h2">Notification Center</div>
-              <p className="muted">Live control-plane alerts computed from canonical tables only.</p>
+              <div className="h2">Alerts</div>
+              <p className="muted">Unresolved platform alerts requiring action.</p>
             </div>
             <Link className="btn btn-secondary" href="/notifications">
               <Bell size={16} />
-              Open notifications
+              All alerts
             </Link>
           </div>
-          <NotificationFeed notifications={recentNotifications} emptyText="No active alerts right now." />
+          <NotificationFeed notifications={recentNotifications} emptyText="No active alerts — all clear." />
         </div>
 
         <div className="panel section stack">
           <div className="row-between">
             <div>
-              <div className="h2">Recent Audit Activity</div>
-              <p className="muted">Latest actions written to public.audit_logs.</p>
+              <div className="h2">Recent activity</div>
+              <p className="muted">Latest governance and platform actions.</p>
             </div>
             <Link className="btn btn-secondary" href="/audit">
               <ClipboardList size={16} />
-              Open audit log
+              Full audit log
             </Link>
           </div>
           <div className="stack">
-            {recentAudit.length === 0 ? <div className="muted">No audit logs yet.</div> : null}
+            {recentAudit.length === 0 ? <div className="muted">No recorded activity yet.</div> : null}
             {recentAudit.map((log: any) => (
               <div className="notification-card panel-soft" key={log.id}>
                 <div className="row-between">
@@ -188,6 +153,28 @@ export default async function DashboardPage() {
           </div>
         </div>
       </section>
+
+      {/* Escalations callout — only shown when critical alerts exist */}
+      {hasCritical ? (
+        <section className="panel section">
+          <div className="row-between">
+            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+              <span style={{ width: 36, height: 36, borderRadius: 10, background: "#fef3c7", display: "inline-flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                <AlertTriangle size={18} color="#b45309" />
+              </span>
+              <div>
+                <div className="h2" style={{ color: "#92400e" }}>
+                  {notificationSummary.danger} critical {notificationSummary.danger === 1 ? "alert" : "alerts"} need attention
+                </div>
+                <p className="muted">Review escalated items before the next governance cycle.</p>
+              </div>
+            </div>
+            <Link className="btn btn-secondary" href="/review-escalations">
+              View escalations
+            </Link>
+          </div>
+        </section>
+      ) : null}
     </ConsoleShell>
   );
 }

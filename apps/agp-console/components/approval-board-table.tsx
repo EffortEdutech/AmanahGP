@@ -129,12 +129,15 @@ export function ApprovalBoardTable({ rows }: { rows: ApprovalBoardRow[] }) {
                 </div>
               </td>
               <td>
-                <div style={{ display: "grid", gap: 8 }}>
-                  <Link className="btn-secondary" href={`/cases/${row.case_id}`}>Open case</Link>
-                  <Link className="btn-secondary" href={`/cases/${row.case_id}/assignments`}>Assignments</Link>
-                  <Link className="btn-secondary" href={primaryActionHref(row)}>{primaryActionLabel(row)}</Link>
-                  <Link className="btn-secondary" href={`/cases/${row.case_id}/dossier`}>Dossier</Link>
-                </div>
+                <details className="action-menu">
+                  <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
+                  <div className="action-menu__dropdown">
+                    <Link className="action-menu__item action-menu__item--primary" href={primaryActionHref(row)}>{primaryActionLabel(row)}</Link>
+                    <Link className="action-menu__item" href={`/cases/${row.case_id}`}>Case</Link>
+                    <Link className="action-menu__item" href={`/cases/${row.case_id}/assignments`}>Assignments</Link>
+                    <Link className="action-menu__item" href={`/cases/${row.case_id}/dossier`}>Dossier</Link>
+                  </div>
+                </details>
               </td>
             </tr>
           ))}

@@ -202,29 +202,15 @@ export function ConsoleLayoutClient({
         </aside>
 
         <main className="stack agp-console-main">
-          <section className="panel hero" style={{ borderLeft: "4px solid #047857" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8, flexWrap: "wrap" }}>
-              <div className="kicker">Amanah Governance Platform</div>
-              <div
-                style={{
-                  fontSize: 10,
-                  fontWeight: 700,
-                  color: "#047857",
-                  background: "#ecfdf5",
-                  border: "1px solid #a7f3d0",
-                  borderRadius: 999,
-                  padding: "2px 8px",
-                  letterSpacing: "0.06em",
-                }}
-              >
-                Canonical DB Mode
-              </div>
+          <section className="agp-page-header">
+            <div className="agp-page-header__eyebrow">
+              <span className="kicker">AGP Console</span>
+              <span className="agp-page-header__sep" aria-hidden>›</span>
+              <span className="agp-page-header__section">{title}</span>
             </div>
             <h1 className="h1">{title}</h1>
             {description ? (
-              <p className="muted" style={{ marginTop: 6, maxWidth: 860 }}>
-                {description}
-              </p>
+              <p className="muted agp-page-header__desc">{description}</p>
             ) : null}
           </section>
 
@@ -411,6 +397,41 @@ export function ConsoleLayoutClient({
         .agp-console-helper-links {
           margin-top: 12px;
           display: grid;
+        }
+
+        .agp-page-header {
+          padding: 24px 28px 20px;
+          background: var(--surface);
+          border: 1px solid var(--border);
+          border-radius: 16px;
+          border-left: 4px solid #047857;
+          box-shadow: 0 1px 3px rgba(15, 23, 42, 0.05);
+        }
+
+        .agp-page-header__eyebrow {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 10px;
+        }
+
+        .agp-page-header__sep {
+          color: #cbd5e1;
+          font-size: 13px;
+        }
+
+        .agp-page-header__section {
+          font-size: 11px;
+          font-weight: 600;
+          color: #64748b;
+          letter-spacing: 0.04em;
+        }
+
+        .agp-page-header__desc {
+          margin-top: 6px;
+          max-width: 720px;
+          font-size: 14px;
+          line-height: 1.55;
         }
 
         @media (max-width: 1024px) {

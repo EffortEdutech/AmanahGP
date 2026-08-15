@@ -60,10 +60,13 @@ export function ComplianceOrganizationsTable({ rows }: { rows: ComplianceOrganiz
               </td>
               <td>{formatDateTime(row.last_activity_at)}</td>
               <td>
-                <div className="row">
-                  <Link className="btn btn-secondary" href={`/organisations/${row.id}`}>Open</Link>
-                  <Link className="btn btn-secondary" href={`/organisations/${row.id}/billing`}>Billing</Link>
-                </div>
+                <details className="action-menu">
+                  <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
+                  <div className="action-menu__dropdown">
+                    <Link className="action-menu__item action-menu__item--primary" href={`/organisations/${row.id}`}>Open</Link>
+                    <Link className="action-menu__item" href={`/organisations/${row.id}/billing`}>Billing</Link>
+                  </div>
+                </details>
               </td>
             </tr>
           ))}

@@ -1,11 +1,18 @@
 import Link from "next/link";
+import { ShieldCheck } from "lucide-react";
 import { logoutAction } from "@/app/login/actions";
 
-const reasonMessages: Record<string, string> = {
-  no_console_role:
-    "Your login is valid, but this user does not have an active AGP Console role yet. Ask a super admin to assign platform_admin, platform_reviewer, platform_scholar, platform_auditor, platform_approver, or set public.users.platform_role to super_admin/admin.",
-  forbidden:
-    "Your account has an AGP Console role, but it does not include permission for the page you tried to open.",
+const reasons: Record<string, { title: string; message: string }> = {
+  no_console_role: {
+    title: "No console role assigned",
+    message:
+      "Your account is authenticated but does not have a Console role. Contact a super admin to assign one: reviewer, scholar, approver, auditor, or admin.",
+  },
+  forbidden: {
+    title: "Page not permitted",
+    message:
+      "Your Console role does not include access to the page you requested. Contact your admin if you believe this is incorrect.",
+  },
 };
 
 export default async function NoConsoleAccessPage({
@@ -14,29 +21,48 @@ export default async function NoConsoleAccessPage({
   searchParams: Promise<{ reason?: string }>;
 }) {
   const { reason } = await searchParams;
-  const message = reasonMessages[reason ?? ""] ?? "This account is not allowed to open AGP Console.";
+  const content = reasons[reason ?? ""] ?? {
+    title: "Access not available",
+    message: "This account does not have permission to open the AGP Console.",
+  };
 
   return (
-    <div className="page-shell">
-      <div className="panel auth-card stack">
-        <div>
-          <div className="kicker">AGP Console</div>
-          <h1 className="h1">Console access not available</h1>
-          <p className="muted">{message}</p>
+    <div className="page-shell" style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: "100vh" }}>
+      <div className="panel auth-card stack" style={{ maxWidth: 440, width: "100%" }}>
+        {/* Brand mark */}
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: "linear-gradient(135deg, #047857, #065f46)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <ShieldCheck size={22} color="#ffffff" />
+          </div>
+          <div>
+            <div className="kicker" style={{ marginBottom: 2 }}>Amanah Governance Platform</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: "#0f172a" }}>Console</div>
+          </div>
         </div>
 
-        <div className="notice notice-warning">
-          This page prevents the previous redirect loop and lets you safely sign out or return to dashboard after fixing the role.
+        <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 20 }}>
+          <h1 className="h1" style={{ fontSize: 22 }}>{content.title}</h1>
+          <p className="muted" style={{ marginTop: 6, fontSize: 14 }}>{content.message}</p>
         </div>
 
         <div className="stack">
           <Link className="btn btn-secondary" href="/dashboard">
-            Try dashboard again
+            Try dashboard
           </Link>
-
           <form action={logoutAction}>
-            <button className="btn btn-primary" type="submit">
-              Sign out and use another account
+            <button className="btn btn-primary" type="submit" style={{ width: "100%" }}>
+              Sign out
             </button>
           </form>
         </div>

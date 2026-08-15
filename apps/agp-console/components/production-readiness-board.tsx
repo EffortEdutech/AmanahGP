@@ -12,25 +12,23 @@ export function ProductionReadinessBoard({
 }) {
   return (
     <>
-      <section className="grid-cards">
-        <div className="panel section stack">
-          <div className="h2">Navigation lock</div>
-          <div className="muted">Final sidebar routes are now treated as the locked operating map for AGP Console.</div>
-          <div className="notice">Goal: every important page is reachable from the UI without typing URLs manually.</div>
-        </div>
-
-        <div className="panel section stack">
-          <div className="h2">Production signal</div>
-          <div className="muted">Use the live counts below to confirm the canonical console is connected to the expected database objects.</div>
-          <ul style={{ margin: 0, paddingLeft: 18, color: '#475569' }}>
-            <li>Organisations: {summary.organizations}</li>
-            <li>Cases: {summary.cases}</li>
-            <li>Review alerts: {summary.reviewAlerts}</li>
-            <li>Current snapshots: {summary.currentSnapshots}</li>
-            <li>Open clarifications: {summary.clarificationsOpen}</li>
-            <li>Billing plans: {summary.plans}</li>
-            <li>Platform roles: {summary.platformRoles}</li>
-          </ul>
+      <section className="panel section stack">
+        <div className="h2">Live counts</div>
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px, 1fr))", gap: 12, marginTop: 4 }}>
+          {[
+            { label: "Organisations", value: summary.organizations },
+            { label: "Cases", value: summary.cases },
+            { label: "Review alerts", value: summary.reviewAlerts },
+            { label: "Snapshots", value: summary.currentSnapshots },
+            { label: "Open clarifications", value: summary.clarificationsOpen },
+            { label: "Billing plans", value: summary.plans },
+            { label: "Platform roles", value: summary.platformRoles },
+          ].map(({ label, value }) => (
+            <div key={label} style={{ padding: "10px 14px", border: "1px solid var(--border)", borderRadius: 10 }}>
+              <div style={{ fontSize: 22, fontWeight: 700, lineHeight: 1 }}>{value}</div>
+              <div className="muted" style={{ fontSize: 12, marginTop: 4 }}>{label}</div>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -67,9 +65,7 @@ export function ProductionReadinessBoard({
                   <td><code>{item.href}</code></td>
                   <td>{item.purpose}</td>
                   <td>
-                    <Link className="btn btn-secondary" href={item.href}>
-                      Open
-                    </Link>
+                    <Link className="btn btn-secondary btn-sm" href={item.href}>Open →</Link>
                   </td>
                 </tr>
               ))}

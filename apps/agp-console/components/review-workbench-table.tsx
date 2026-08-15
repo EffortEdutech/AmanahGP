@@ -93,13 +93,16 @@ export function ReviewWorkbenchTable({ rows, currentUserId, title }: { rows: Rev
                       </div>
                     </td>
                     <td>
-                      <div style={{ display: "grid", gap: 8 }}>
-                        <Link className="btn-secondary" href={`/cases/${row.case_id}`}>Open case</Link>
-                        <Link className="btn-secondary" href={`/cases/${row.case_id}/assignments`}>Assignments</Link>
-                        <Link className="btn-secondary" href={workspaceLink(row)}>{workspaceLabel(row)}</Link>
-                        <Link className="btn-secondary" href={`/cases/${row.case_id}/dossier`}>Dossier</Link>
-                        <Link className="btn-secondary" href={`/organisations/${row.organization_id}`}>Organisation</Link>
-                      </div>
+                      <details className="action-menu">
+                        <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
+                        <div className="action-menu__dropdown">
+                          <Link className="action-menu__item action-menu__item--primary" href={`/cases/${row.case_id}`}>Open case</Link>
+                          <Link className="action-menu__item" href={workspaceLink(row)}>{workspaceLabel(row)}</Link>
+                          <Link className="action-menu__item" href={`/cases/${row.case_id}/assignments`}>Assignments</Link>
+                          <Link className="action-menu__item" href={`/cases/${row.case_id}/dossier`}>Dossier</Link>
+                          <Link className="action-menu__item" href={`/organisations/${row.organization_id}`}>Organisation</Link>
+                        </div>
+                      </details>
                     </td>
                   </tr>
                 );

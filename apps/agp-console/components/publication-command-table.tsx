@@ -106,32 +106,25 @@ export function PublicationCommandTable({ rows }: { rows: PublicationCommandRow[
                 )}
               </td>
               <td>
-                <div style={{ display: "grid", gap: 8 }}>
-                  {row.latest_draft_snapshot ? (
-                    <form action={publishTrustSnapshotAction}>
-                      <input type="hidden" name="snapshot_id" value={row.latest_draft_snapshot.id} />
-                      <button className="btn-primary" disabled={!row.can_publish_latest_draft} type="submit">
-                        Publish draft
-                      </button>
-                    </form>
-                  ) : null}
-
-                  {row.current_published_snapshot ? (
-                    <form action={unpublishTrustSnapshotAction}>
-                      <input type="hidden" name="snapshot_id" value={row.current_published_snapshot.id} />
-                      <button className="btn-secondary" type="submit">
-                        Unpublish live
-                      </button>
-                    </form>
-                  ) : null}
-
-                  <Link className="btn-secondary" href={`/organisations/${row.organization_id}`}>
-                    Open organisation
-                  </Link>
-                  <Link className="btn-secondary" href={`/public-trust-profiles/${row.organization_id}`}>
-                    Public preview
-                  </Link>
-                </div>
+                <details className="action-menu">
+                  <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
+                  <div className="action-menu__dropdown">
+                    {row.latest_draft_snapshot ? (
+                      <form action={publishTrustSnapshotAction} style={{ display: "contents" }}>
+                        <input type="hidden" name="snapshot_id" value={row.latest_draft_snapshot.id} />
+                        <button className="action-menu__item action-menu__item--primary" disabled={!row.can_publish_latest_draft} type="submit">Publish draft</button>
+                      </form>
+                    ) : null}
+                    {row.current_published_snapshot ? (
+                      <form action={unpublishTrustSnapshotAction} style={{ display: "contents" }}>
+                        <input type="hidden" name="snapshot_id" value={row.current_published_snapshot.id} />
+                        <button className="action-menu__item action-menu__item--muted" type="submit">Unpublish</button>
+                      </form>
+                    ) : null}
+                    <Link className="action-menu__item" href={`/organisations/${row.organization_id}`}>Organisation</Link>
+                    <Link className="action-menu__item" href={`/public-trust-profiles/${row.organization_id}`}>Public preview</Link>
+                  </div>
+                </details>
               </td>
             </tr>
           ))}
