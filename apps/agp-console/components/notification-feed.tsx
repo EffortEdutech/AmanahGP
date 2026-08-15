@@ -42,17 +42,28 @@ export function NotificationFeed({
   emptyText?: string;
 }) {
   const [level, setLevel] = useState("");
-  const [kind,  setKind]  = useState("");
+  const [type,  setType]  = useState("");
   const [shown, setShown] = useState(PAGE_SIZE);
 
   if (notifications.length === 0) {
     return <div className="muted">{emptyText}</div>;
   }
 
+  // counts for dropdown labels
+  const n = notifications;
+  const c = {
+    danger:     n.filter(i => i.level === "danger").length,
+    warning:    n.filter(i => i.level === "warning").length,
+    info:       n.filter(i => i.level === "info").length,
+    invitation: n.filter(i => i.kind === "invitation").length,
+    billing:    n.filter(i => i.kind === "billing" || i.kind === "subscription").length,
+    compliance: n.filter(i => i.kind === "compliance").length,
+  };
+
   const filtered = notifications.filter(item => {
     if (level && item.level !== level) return false;
-    if (kind === "billing") return item.kind === "billing" || item.kind === "subscription";
-    if (kind && item.kind !== kind) return false;
+    if (type === "billing") return item.kind === "billing" || item.kind === "subscription";
+    if (type && item.kind !== type) return false;
     return true;
   });
 
@@ -60,7 +71,7 @@ export function NotificationFeed({
   const remaining = filtered.length - shown;
 
   function handleLevelChange(v: string) { setLevel(v); setShown(PAGE_SIZE); }
-  function handleKindChange(v: string)  { setKind(v);  setShown(PAGE_SIZE); }
+  function handleTypeChange(v: string)  { setType(v);  setShown(PAGE_SIZE); }
 
   return (
     <div className="stack" style={{ gap: 16 }}>
@@ -70,27 +81,27 @@ export function NotificationFeed({
         <div className="field">
           <label htmlFor="notif-level">Level</label>
           <select className="select" id="notif-level" value={level} onChange={e => handleLevelChange(e.target.value)}>
-            <option value="">All levels</option>
-            <option value="danger">Danger</option>
-            <option value="warning">Warning</option>
-            <option value="info">Info</option>
+            <option value="">All levels — {n.length}</option>
+            <option value="danger">Danger — {c.danger}</option>
+            <option value="warning">Warning — {c.warning}</option>
+            <option value="info">Info — {c.info}</option>
           </select>
         </div>
         <div className="field">
-          <label htmlFor="notif-kind">Kind</label>
-          <select className="select" id="notif-kind" value={kind} onChange={e => handleKindChange(e.target.value)}>
-            <option value="">All kinds</option>
-            <option value="invitation">Invitations</option>
-            <option value="billing">Billing</option>
-            <option value="compliance">Compliance</option>
+          <label htmlFor="notif-type">Type</label>
+          <select className="select" id="notif-type" value={type} onChange={e => handleTypeChange(e.target.value)}>
+            <option value="">All types — {n.length}</option>
+            <option value="invitation">Invitations — {c.invitation}</option>
+            <option value="billing">Billing — {c.billing}</option>
+            <option value="compliance">Compliance — {c.compliance}</option>
           </select>
         </div>
-        {(level || kind) ? (
+        {(level || type) ? (
           <div className="field" style={{ justifyContent: "flex-end" }}>
             <label style={{ visibility: "hidden" }}>Reset</label>
             <button
               className="btn btn-secondary btn-sm"
-              onClick={() => { setLevel(""); setKind(""); setShown(PAGE_SIZE); }}
+              onClick={() => { setLevel(""); setType(""); setShown(PAGE_SIZE); }}
             >
               Clear filters
             </button>
@@ -108,7 +119,7 @@ export function NotificationFeed({
               <tr>
                 <th style={{ width: 4, padding: 0 }} />
                 <th>Level</th>
-                <th>Kind</th>
+                <th>Type</th>
                 <th>Organisation</th>
                 <th>Alert</th>
                 <th style={{ whiteSpace: "nowrap" }}>Date</th>
