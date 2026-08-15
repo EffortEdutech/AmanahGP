@@ -21,7 +21,7 @@ export default async function NotificationsPage() {
     >
       <section className="grid-cards">
         <StatsCard label="Open alerts" value={summary.total} note="All active alerts" accent={summary.total > 0 ? "amber" : "green"} />
-        <StatsCard label="Critical" value={summary.danger} note="Immediate action needed" accent={summary.danger > 0 ? "red" : "green"} />
+        <StatsCard label="Critical" value={summary.danger} note="Immediate action needed" accent={summary.danger > 0 ? "amber" : "green"} />
         <StatsCard label="Pending invites" value={summary.invites} note="Awaiting acceptance" />
         <StatsCard label="Billing" value={summary.billing} note="Invoices & subscriptions" />
         <StatsCard label="Compliance" value={summary.compliance} note="Lifecycle & listing issues" />
