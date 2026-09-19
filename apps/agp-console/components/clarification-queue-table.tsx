@@ -1,8 +1,19 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { MessageSquareReply, FolderOpen } from "lucide-react";
 import { reviewClarificationAction } from "@/app/(console)/cases/[caseId]/clarifications/actions";
 import type { GovernanceClarificationRow } from "@/lib/console/case-clarifications";
 import { formatDate, statusBadgeClass, titleCase } from "@/lib/console/mappers";
+
+const STATUS_OPTIONS = [
+  { value: "submitted",      label: "Submitted" },
+  { value: "under_review",   label: "Under Review" },
+  { value: "accepted",       label: "Accepted" },
+  { value: "needs_more_info", label: "Needs More Info" },
+  { value: "rejected",       label: "Rejected" },
+];
 
 type ClarificationQueueTableProps = {
   rows: GovernanceClarificationRow[];
@@ -10,6 +21,13 @@ type ClarificationQueueTableProps = {
 };
 
 export function ClarificationQueueTable({ rows, title }: ClarificationQueueTableProps) {
+  const [status, setStatus] = useState("");
+
+  const filtered = rows.filter(r => {
+    if (status && r.status !== status) return false;
+    return true;
+  });
+
   return (
     <section className="panel section stack">
       <div className="row-between">
@@ -18,6 +36,30 @@ export function ClarificationQueueTable({ rows, title }: ClarificationQueueTable
           <p className="muted">Organisation responses submitted from AmanahOS can be reviewed here before the case moves forward.</p>
         </div>
       </div>
+
+      {rows.length > 0 && (
+        <div className="form-grid">
+          <div className="field">
+            <label htmlFor="clar-status">Status</label>
+            <select className="select" id="clar-status" value={status} onChange={e => setStatus(e.target.value)}>
+              <option value="">All statuses — {rows.length}</option>
+              {STATUS_OPTIONS.map(o => (
+                <option key={o.value} value={o.value}>
+                  {o.label} — {rows.filter(r => r.status === o.value).length}
+                </option>
+              ))}
+            </select>
+          </div>
+          {status ? (
+            <div className="field" style={{ justifyContent: "flex-end" }}>
+              <label style={{ visibility: "hidden" }}>Reset</label>
+              <button className="btn btn-secondary btn-sm" onClick={() => setStatus("")}>
+                Clear filters
+              </button>
+            </div>
+          ) : null}
+        </div>
+      )}
 
       <div className="table-card">
         <table className="table">
@@ -33,14 +75,14 @@ export function ClarificationQueueTable({ rows, title }: ClarificationQueueTable
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {filtered.length === 0 ? (
               <tr>
                 <td colSpan={7}>
                   <div className="empty-state">No organisation clarifications in this queue.</div>
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
+              filtered.map((row) => (
                 <tr key={row.id}>
                   <td>
                     <div style={{ display: "grid", gap: 4 }}>
@@ -90,16 +132,19 @@ export function ClarificationQueueTable({ rows, title }: ClarificationQueueTable
                     </form>
                   </td>
                   <td>
-                    <div className="row">
-                      <Link className="btn btn-secondary" href={`/cases/${row.case_id}`}>
-                        <FolderOpen size={14} />
-                        Case
-                      </Link>
-                      <Link className="btn btn-secondary" href={`/cases/${row.case_id}/clarifications`}>
-                        <FolderOpen size={14} />
-                        Thread
-                      </Link>
-                    </div>
+                    <details className="action-menu">
+                      <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
+                      <div className="action-menu__dropdown">
+                        <Link className="action-menu__item action-menu__item--primary" href={`/cases/${row.case_id}`}>
+                          <FolderOpen size={13} style={{ display: "inline", marginRight: 4 }} />
+                          Case
+                        </Link>
+                        <Link className="action-menu__item" href={`/cases/${row.case_id}/clarifications`}>
+                          <FolderOpen size={13} style={{ display: "inline", marginRight: 4 }} />
+                          Thread
+                        </Link>
+                      </div>
+                    </details>
                   </td>
                 </tr>
               ))
@@ -107,6 +152,12 @@ export function ClarificationQueueTable({ rows, title }: ClarificationQueueTable
           </tbody>
         </table>
       </div>
+
+      {rows.length > 0 && (
+        <div className="muted" style={{ fontSize: 12 }}>
+          Showing {filtered.length} of {rows.length}
+        </div>
+      )}
     </section>
   );
 }

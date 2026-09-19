@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
 import { publishTrustSnapshotAction, unpublishTrustSnapshotAction } from "@/app/(console)/publication-command/actions";
 import { formatDateTime, titleCase } from "@/lib/console/mappers";
@@ -6,21 +9,37 @@ import type { PublicationCommandRow } from "@/lib/console/publication-command";
 function trustBadgeClass(level: string) {
   if (level === "exemplary" || level === "assured") return "badge badge-green";
   if (level === "developing") return "badge badge-amber";
-  if (level === "watchlist") return "badge badge-red";
+  if (level === "watchlist")  return "badge badge-red";
   return "badge badge-neutral";
 }
 
 function statusBadgeClass(value: string | null | undefined) {
   if (!value) return "badge badge-neutral";
-  if (["approved", "active", "listed"].includes(value)) return "badge badge-green";
+  if (["approved", "active", "listed"].includes(value))              return "badge badge-green";
   if (["draft", "under_review", "approval_pending"].includes(value)) return "badge badge-amber";
-  if (["rejected", "suspended", "archived"].includes(value)) return "badge badge-red";
+  if (["rejected", "suspended", "archived"].includes(value))        return "badge badge-red";
   return "badge badge-neutral";
 }
 
 function gateBadge(active: boolean, label: string) {
   return <span className={active ? "badge badge-green" : "badge badge-neutral"}>{label}</span>;
 }
+
+type PubStatus = "live" | "ready" | "blocked" | "no_draft";
+
+function pubStatus(row: PublicationCommandRow): PubStatus {
+  if (row.current_published_snapshot) return "live";
+  if (row.can_publish_latest_draft)   return "ready";
+  if (row.latest_draft_snapshot)      return "blocked";
+  return "no_draft";
+}
+
+const PUB_STATUS_OPTIONS: { value: PubStatus; label: string }[] = [
+  { value: "live",     label: "Currently live" },
+  { value: "ready",    label: "Ready to publish" },
+  { value: "blocked",  label: "Blocked" },
+  { value: "no_draft", label: "No draft" },
+];
 
 function SnapshotCard({
   label,
@@ -29,9 +48,7 @@ function SnapshotCard({
   label: string;
   snapshot: PublicationCommandRow["latest_draft_snapshot"];
 }) {
-  if (!snapshot) {
-    return <div className="muted">No snapshot</div>;
-  }
+  if (!snapshot) return <div className="muted">No snapshot</div>;
 
   return (
     <div style={{ display: "grid", gap: 6 }}>
@@ -45,91 +62,138 @@ function SnapshotCard({
         Governance: {titleCase(snapshot.governance_status.replaceAll("_", " "))}
       </div>
       <div className="muted" style={{ fontSize: 12 }}>
-        {snapshot.published_at ? `Published ${formatDateTime(snapshot.published_at)}` : `Created ${formatDateTime(snapshot.created_at)}`}
+        {snapshot.published_at
+          ? `Published ${formatDateTime(snapshot.published_at)}`
+          : `Created ${formatDateTime(snapshot.created_at)}`}
       </div>
     </div>
   );
 }
 
 export function PublicationCommandTable({ rows }: { rows: PublicationCommandRow[] }) {
+  const [pubFilter, setPubFilter] = useState("");
+
+  const filtered = rows.filter(r => {
+    if (pubFilter && pubStatus(r) !== pubFilter) return false;
+    return true;
+  });
+
   if (rows.length === 0) {
     return <div className="notice">No organisations found.</div>;
   }
 
   return (
-    <div className="table-wrap">
-      <table className="table">
-        <thead>
-          <tr>
-            <th>Organisation</th>
-            <th>Live profile</th>
-            <th>Draft candidate</th>
-            <th>Publication gates</th>
-            <th>Blockers</th>
-            <th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row) => (
-            <tr key={row.organization_id}>
-              <td>
-                <div style={{ display: "grid", gap: 4 }}>
-                  <div>{row.organization_name}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>{row.registration_no || "—"}</div>
-                  <div className="muted" style={{ fontSize: 12 }}>{titleCase((row.org_type || "other").replaceAll("_", " "))}</div>
-                </div>
-              </td>
-              <td>
-                <SnapshotCard label="Live" snapshot={row.current_published_snapshot ?? row.last_published_snapshot} />
-              </td>
-              <td>
-                <SnapshotCard label="Draft" snapshot={row.latest_draft_snapshot} />
-              </td>
-              <td>
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                  {gateBadge(row.workspace_status === "active", "workspace")}
-                  {gateBadge(row.listing_status === "listed", "listing")}
-                  {gateBadge(row.has_amanah_hub, "amanah_hub")}
-                  {gateBadge(row.open_case_count === 0, "no open cases")}
-                  {gateBadge(row.can_publish_latest_draft, "publish-ready")}
-                </div>
-              </td>
-              <td>
-                {row.blocker_reasons.length > 0 ? (
-                  <ul style={{ margin: 0, paddingLeft: 18 }}>
-                    {row.blocker_reasons.map((reason, index) => (
-                      <li key={`${row.organization_id}-${index}`}>{reason}</li>
-                    ))}
-                  </ul>
-                ) : (
-                  <span className="muted">No blockers</span>
-                )}
-              </td>
-              <td>
-                <details className="action-menu">
-                  <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
-                  <div className="action-menu__dropdown">
-                    {row.latest_draft_snapshot ? (
-                      <form action={publishTrustSnapshotAction} style={{ display: "contents" }}>
-                        <input type="hidden" name="snapshot_id" value={row.latest_draft_snapshot.id} />
-                        <button className="action-menu__item action-menu__item--primary" disabled={!row.can_publish_latest_draft} type="submit">Publish draft</button>
-                      </form>
-                    ) : null}
-                    {row.current_published_snapshot ? (
-                      <form action={unpublishTrustSnapshotAction} style={{ display: "contents" }}>
-                        <input type="hidden" name="snapshot_id" value={row.current_published_snapshot.id} />
-                        <button className="action-menu__item action-menu__item--muted" type="submit">Unpublish</button>
-                      </form>
-                    ) : null}
-                    <Link className="action-menu__item" href={`/organisations/${row.organization_id}`}>Organisation</Link>
-                    <Link className="action-menu__item" href={`/public-trust-profiles/${row.organization_id}`}>Public preview</Link>
-                  </div>
-                </details>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="stack">
+      <div className="form-grid">
+        <div className="field">
+          <label htmlFor="pub-status">Publication status</label>
+          <select className="select" id="pub-status" value={pubFilter} onChange={e => setPubFilter(e.target.value)}>
+            <option value="">All organisations — {rows.length}</option>
+            {PUB_STATUS_OPTIONS.map(o => (
+              <option key={o.value} value={o.value}>
+                {o.label} — {rows.filter(r => pubStatus(r) === o.value).length}
+              </option>
+            ))}
+          </select>
+        </div>
+        {pubFilter ? (
+          <div className="field" style={{ justifyContent: "flex-end" }}>
+            <label style={{ visibility: "hidden" }}>Reset</label>
+            <button className="btn btn-secondary btn-sm" onClick={() => setPubFilter("")}>
+              Clear filters
+            </button>
+          </div>
+        ) : null}
+      </div>
+
+      {filtered.length === 0 ? (
+        <div className="muted">No organisations match the selected filter.</div>
+      ) : (
+        <div className="table-wrap">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Organisation</th>
+                <th>Live profile</th>
+                <th>Draft candidate</th>
+                <th>Publication gates</th>
+                <th>Blockers</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map((row) => (
+                <tr key={row.organization_id}>
+                  <td>
+                    <div style={{ display: "grid", gap: 4 }}>
+                      <div>{row.organization_name}</div>
+                      <div className="muted" style={{ fontSize: 12 }}>{row.registration_no || "—"}</div>
+                      <div className="muted" style={{ fontSize: 12 }}>{titleCase((row.org_type || "other").replaceAll("_", " "))}</div>
+                    </div>
+                  </td>
+                  <td>
+                    <SnapshotCard label="Live" snapshot={row.current_published_snapshot ?? row.last_published_snapshot} />
+                  </td>
+                  <td>
+                    <SnapshotCard label="Draft" snapshot={row.latest_draft_snapshot} />
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                      {gateBadge(row.workspace_status === "active", "workspace")}
+                      {gateBadge(row.listing_status === "listed", "listing")}
+                      {gateBadge(row.has_amanah_hub, "amanah_hub")}
+                      {gateBadge(row.open_case_count === 0, "no open cases")}
+                      {gateBadge(row.can_publish_latest_draft, "publish-ready")}
+                    </div>
+                  </td>
+                  <td>
+                    {row.blocker_reasons.length > 0 ? (
+                      <ul style={{ margin: 0, paddingLeft: 18 }}>
+                        {row.blocker_reasons.map((reason, index) => (
+                          <li key={`${row.organization_id}-${index}`}>{reason}</li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="muted">No blockers</span>
+                    )}
+                  </td>
+                  <td>
+                    <details className="action-menu">
+                      <summary className="btn btn-secondary btn-sm">Actions ▾</summary>
+                      <div className="action-menu__dropdown">
+                        {row.latest_draft_snapshot ? (
+                          <form action={publishTrustSnapshotAction} style={{ display: "contents" }}>
+                            <input type="hidden" name="snapshot_id" value={row.latest_draft_snapshot.id} />
+                            <button
+                              className="action-menu__item action-menu__item--primary"
+                              disabled={!row.can_publish_latest_draft}
+                              type="submit"
+                            >
+                              Publish draft
+                            </button>
+                          </form>
+                        ) : null}
+                        {row.current_published_snapshot ? (
+                          <form action={unpublishTrustSnapshotAction} style={{ display: "contents" }}>
+                            <input type="hidden" name="snapshot_id" value={row.current_published_snapshot.id} />
+                            <button className="action-menu__item action-menu__item--muted" type="submit">Unpublish</button>
+                          </form>
+                        ) : null}
+                        <Link className="action-menu__item" href={`/organisations/${row.organization_id}`}>Organisation</Link>
+                        <Link className="action-menu__item" href={`/public-trust-profiles/${row.organization_id}`}>Public preview</Link>
+                      </div>
+                    </details>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      <div className="muted" style={{ fontSize: 12 }}>
+        Showing {filtered.length} of {rows.length} organisations
+      </div>
     </div>
   );
 }

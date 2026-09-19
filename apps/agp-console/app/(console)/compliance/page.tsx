@@ -3,8 +3,6 @@ import { ComplianceOrganizationsTable } from "@/components/compliance-organizati
 import { StatsCard } from "@/components/stats-card";
 import { requireConsoleAccess } from "@/lib/console/access";
 import { getComplianceSummary, listComplianceOrganizations, normalizeOrganizationDataset } from "@/lib/console/server";
-import Link from "next/link";
-
 export default async function CompliancePage({ searchParams }: { searchParams: Promise<{ dataset?: string }> }) {
   const { user, roles } = await requireConsoleAccess("audit.read");
   const datasetFilter = normalizeOrganizationDataset((await searchParams).dataset);
@@ -37,27 +35,28 @@ export default async function CompliancePage({ searchParams }: { searchParams: P
       <section className="panel section stack">
         <div className="h2">Organisation compliance matrix</div>
         <div className="muted">Rows are sorted by risk level first, then most recent activity.</div>
-        <DatasetTabs current={datasetFilter} />
+        <DatasetFilter current={datasetFilter} />
         <ComplianceOrganizationsTable rows={orderedRows} />
       </section>
     </ConsoleShell>
   );
 }
 
-function DatasetTabs({ current }: { current: "actual" | "seed" | "all" }) {
-  const tabs = [
-    { value: "actual", label: "Actual charities", href: "/compliance" },
-    { value: "seed", label: "Seed charities", href: "/compliance?dataset=seed" },
-    { value: "all", label: "All", href: "/compliance?dataset=all" },
-  ] as const;
-
+function DatasetFilter({ current }: { current: "actual" | "seed" | "all" }) {
   return (
-    <div className="row" style={{ gap: 8 }}>
-      {tabs.map((tab) => (
-        <Link key={tab.value} className={current === tab.value ? "btn btn-primary" : "btn btn-secondary"} href={tab.href}>
-          {tab.label}
-        </Link>
-      ))}
-    </div>
+    <form method="get" className="form-grid">
+      <div className="field">
+        <label htmlFor="comp-dataset">Dataset</label>
+        <select className="select" id="comp-dataset" name="dataset" defaultValue={current}>
+          <option value="actual">Actual charities</option>
+          <option value="seed">Seed charities</option>
+          <option value="all">All</option>
+        </select>
+      </div>
+      <div className="field" style={{ justifyContent: "flex-end" }}>
+        <label style={{ visibility: "hidden" }}>Apply</label>
+        <button type="submit" className="btn btn-secondary btn-sm">Apply</button>
+      </div>
+    </form>
   );
 }
