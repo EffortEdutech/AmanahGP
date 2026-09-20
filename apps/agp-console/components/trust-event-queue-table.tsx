@@ -23,7 +23,7 @@ export function TrustEventQueueTable({ rows }: { rows: GovernanceEventIntakeRow[
     ignored:     rows.filter(r => r.intake_status === "ignored").length,
     urgent: rows.filter(r => r.suggested_priority === "urgent").length,
     high:   rows.filter(r => r.suggested_priority === "high").length,
-    normal: rows.filter(r => r.suggested_priority === "normal").length,
+    medium: rows.filter(r => r.suggested_priority === "medium").length,
     low:    rows.filter(r => r.suggested_priority === "low").length,
   };
 
@@ -61,7 +61,7 @@ export function TrustEventQueueTable({ rows }: { rows: GovernanceEventIntakeRow[
             <option value="">All priorities — {rows.length}</option>
             <option value="urgent">Urgent — {c.urgent}</option>
             <option value="high">High — {c.high}</option>
-            <option value="normal">Normal — {c.normal}</option>
+            <option value="medium">Medium — {c.medium}</option>
             <option value="low">Low — {c.low}</option>
           </select>
         </div>
