@@ -58,5 +58,10 @@ export async function POST(request: NextRequest) {
     p_ref_id:          reportId,
   });
 
+  await service.rpc('agp_upsert_regulatory_submission_for_project_report', {
+    p_project_report_id: reportId,
+    p_actor_user_id: platformUser.id,
+  });
+
   return NextResponse.json({ success: true });
 }

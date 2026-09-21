@@ -57,6 +57,13 @@ export const PLATFORM_USER_ROLE_OPTIONS = [
   { value: "platform_approver", label: "Approver" },
 ] as const;
 
+export const AUTHORITY_ROLE_OPTIONS = [
+  { value: "authority_viewer", label: "Authority Viewer" },
+  { value: "authority_reviewer", label: "Authority Reviewer" },
+  { value: "authority_manager", label: "Authority Manager" },
+  { value: "authority_admin", label: "Authority Admin" },
+] as const;
+
 export const GOVERNANCE_CASE_TYPE_OPTIONS = [
   { value: "governance_review", label: "Governance Review" },
   { value: "onboarding_review", label: "Onboarding Review" },
@@ -149,4 +156,18 @@ export type ConsolePermission =
   | "audit.read"
   | "notifications.read"
   | "cases.read"
-  | "cases.write";
+  | "cases.write"
+  | "authority.dashboard.read"
+  | "authority.organizations.read"
+  | "authority.submissions.read"
+  | "authority.submissions.review"
+  | "authority.obligations.read"
+  | "authority.exceptions.read"
+  | "authority.exceptions.manage"
+  | "authority.cases.read"
+  | "authority.cases.write"
+  | "authority.evidence.read"
+  | "authority.policy.read"
+  | "authority.policy.write"
+  | "authority.audit.read"
+  | "authority.reports.export";

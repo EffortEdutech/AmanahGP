@@ -1,9 +1,9 @@
-// packages/validation/src/org.ts
-// Amanah Governance Platform — Organization validation schemas (shared)
+﻿// packages/validation/src/org.ts
+// Amanah Governance Platform â€” Organization validation schemas (shared)
 
 import { z } from 'zod';
 
-// ── Malaysia classification options ───────────────────────────
+// â”€â”€ Malaysia classification options â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const ORG_TYPE_OPTIONS = [
   { value: 'ngo',              label: 'NGO / Welfare Association' },
   { value: 'mosque_surau',     label: 'Mosque / Surau' },
@@ -39,7 +39,44 @@ export const MALAYSIA_STATES = [
   'Kuala Lumpur', 'Labuan', 'Putrajaya',
 ] as const;
 
-// ── Schema: create org (step 1 — basic profile) ───────────────
+export const AUTHORITY_TYPE_OPTIONS = [
+  { value: 'main_jain', label: 'MAIN/JAIN' },
+  { value: 'jakim', label: 'JAKIM' },
+  { value: 'jawhar', label: 'JAWHAR' },
+  { value: 'state_agency', label: 'State Agency' },
+  { value: 'federal_agency', label: 'Federal Agency' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+export const AUTHORITY_ROLE_OPTIONS = [
+  { value: 'authority_viewer', label: 'Authority Viewer' },
+  { value: 'authority_reviewer', label: 'Authority Reviewer' },
+  { value: 'authority_manager', label: 'Authority Manager' },
+  { value: 'authority_admin', label: 'Authority Admin' },
+] as const;
+
+export const JURISDICTION_TYPE_OPTIONS = [
+  { value: 'national', label: 'National' },
+  { value: 'state', label: 'State' },
+  { value: 'district', label: 'District' },
+  { value: 'zone', label: 'Zone' },
+  { value: 'pilot_cohort', label: 'Pilot Cohort' },
+  { value: 'other', label: 'Other' },
+] as const;
+export const POLICY_RULE_CATEGORY_OPTIONS = [
+  { value: 'submission', label: 'Submission' },
+  { value: 'obligation', label: 'Obligation' },
+  { value: 'approval', label: 'Approval' },
+  { value: 'exception', label: 'Exception' },
+  { value: 'reporting', label: 'Reporting' },
+  { value: 'evidence', label: 'Evidence' },
+  { value: 'disclosure', label: 'Disclosure' },
+  { value: 'governance_review', label: 'Governance Review' },
+  { value: 'telemetry', label: 'Telemetry' },
+  { value: 'other', label: 'Other' },
+] as const;
+
+// â”€â”€ Schema: create org (step 1 â€” basic profile) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const createOrgSchema = z.object({
   name: z
     .string()
@@ -84,7 +121,7 @@ export const createOrgSchema = z.object({
     .max(1000, 'Summary must be 1000 characters or less'),
 });
 
-// ── Schema: Malaysia classification (step 2) ──────────────────
+// â”€â”€ Schema: Malaysia classification (step 2) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const classifyOrgSchema = z.object({
   orgType: z.enum(
     ['ngo','mosque_surau','waqf_institution','zakat_body','foundation','cooperative','other'],
@@ -96,12 +133,12 @@ export const classifyOrgSchema = z.object({
     .min(1, 'Please select at least one fund type'),
 });
 
-// ── Schema: update org profile ────────────────────────────────
+// â”€â”€ Schema: update org profile â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const updateOrgSchema = createOrgSchema.partial().merge(
   classifyOrgSchema.partial()
 );
 
-// ── Schema: invite member ─────────────────────────────────────
+// â”€â”€ Schema: invite member â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export const inviteMemberSchema = z.object({
   email: z
     .string()
@@ -117,3 +154,7 @@ export type CreateOrgInput    = z.infer<typeof createOrgSchema>;
 export type ClassifyOrgInput  = z.infer<typeof classifyOrgSchema>;
 export type UpdateOrgInput    = z.infer<typeof updateOrgSchema>;
 export type InviteMemberInput = z.infer<typeof inviteMemberSchema>;
+export type AuthorityRole = typeof AUTHORITY_ROLE_OPTIONS[number]['value'];
+export type AuthorityType = typeof AUTHORITY_TYPE_OPTIONS[number]['value'];
+export type JurisdictionType = typeof JURISDICTION_TYPE_OPTIONS[number]['value'];
+export type PolicyRuleCategory = typeof POLICY_RULE_CATEGORY_OPTIONS[number]['value'];

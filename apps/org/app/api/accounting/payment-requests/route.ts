@@ -60,6 +60,17 @@ export async function POST(request: NextRequest) {
       .select('id').single();
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await service.rpc('agp_record_payment_approval_action', {
+      p_payment_request_id: data.id,
+      p_action_type: 'created',
+      p_actor_user_id: platformUser.id,
+      p_from_status: null,
+      p_to_status: 'draft',
+      p_comment: null,
+      p_metadata: { request_no: requestNo },
+    });
+
     return NextResponse.json({ success: true, id: data.id });
   }
 
@@ -79,6 +90,17 @@ export async function POST(request: NextRequest) {
       .eq('id', requestId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await service.rpc('agp_record_payment_approval_action', {
+      p_payment_request_id: requestId,
+      p_action_type: 'submitted',
+      p_actor_user_id: platformUser.id,
+      p_from_status: req.status,
+      p_to_status: 'pending_review',
+      p_comment: null,
+      p_metadata: {},
+    });
+
     return NextResponse.json({ success: true });
   }
 
@@ -100,6 +122,17 @@ export async function POST(request: NextRequest) {
       .eq('id', requestId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await service.rpc('agp_record_payment_approval_action', {
+      p_payment_request_id: requestId,
+      p_action_type: 'reviewed',
+      p_actor_user_id: platformUser.id,
+      p_from_status: req.status,
+      p_to_status: 'pending_approval',
+      p_comment: null,
+      p_metadata: {},
+    });
+
     return NextResponse.json({ success: true });
   }
 
@@ -111,7 +144,14 @@ export async function POST(request: NextRequest) {
     if (req.status !== 'pending_approval')
       return NextResponse.json({ error: 'Request is not pending approval.' }, { status: 400 });
 
-    // Check SoD — warn but do NOT block (trigger emits penalty event instead)
+    const policyCheck = await service.rpc('agp_assert_payment_approval_allowed', {
+      p_payment_request_id: requestId,
+      p_actor_user_id: platformUser.id,
+    });
+    if (policyCheck.error) {
+      return NextResponse.json({ error: policyCheck.error.message }, { status: 403 });
+    }
+
     const isSelfApproval = req.created_by_user_id === platformUser.id;
 
     const { error } = await service.from('payment_requests')
@@ -125,6 +165,17 @@ export async function POST(request: NextRequest) {
 
     // DB trigger fires automatically after this update ↑
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await service.rpc('agp_record_payment_approval_action', {
+      p_payment_request_id: requestId,
+      p_action_type: 'approved',
+      p_actor_user_id: platformUser.id,
+      p_from_status: req.status,
+      p_to_status: 'approved',
+      p_comment: null,
+      p_metadata: { self_approval: isSelfApproval },
+    });
+
     return NextResponse.json({ success: true, selfApproval: isSelfApproval });
   }
 
@@ -145,6 +196,17 @@ export async function POST(request: NextRequest) {
       .eq('id', requestId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await service.rpc('agp_record_payment_approval_action', {
+      p_payment_request_id: requestId,
+      p_action_type: 'rejected',
+      p_actor_user_id: platformUser.id,
+      p_from_status: req.status,
+      p_to_status: 'rejected',
+      p_comment: rejectionReason ?? null,
+      p_metadata: {},
+    });
+
     return NextResponse.json({ success: true });
   }
 
@@ -208,6 +270,17 @@ export async function POST(request: NextRequest) {
       .eq('id', requestId);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    await service.rpc('agp_record_payment_approval_action', {
+      p_payment_request_id: requestId,
+      p_action_type: 'marked_paid',
+      p_actor_user_id: platformUser.id,
+      p_from_status: req.status,
+      p_to_status: 'paid',
+      p_comment: null,
+      p_metadata: { journal_entry_id: journalEntryId },
+    });
+
     return NextResponse.json({ success: true, journalEntryId });
   }
 
