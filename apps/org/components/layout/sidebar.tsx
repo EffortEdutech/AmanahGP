@@ -124,7 +124,7 @@ export function Sidebar({
           </div>
 
           {switcherOpen && hasMultiOrg && (
-            <div className="mt-2 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="mt-2 max-h-[52vh] overflow-y-auto overscroll-contain rounded-lg border border-gray-200 bg-white shadow-sm">
               {orgs.map((org) => (
                 <Link
                   key={org.organization_id}
