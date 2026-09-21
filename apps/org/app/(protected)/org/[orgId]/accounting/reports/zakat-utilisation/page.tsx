@@ -6,6 +6,7 @@
 import { redirect }            from 'next/navigation';
 import { createClient }        from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
+import { MonthYearPicker }     from '@/components/ui/month-year-picker';
 import { getOrgAccessOrRedirect } from '@/lib/access/org-access';
 function relationOne<T>(value: unknown): T | null {
   if (Array.isArray(value)) {
@@ -148,18 +149,10 @@ export default async function ZakatUtilisationPage({
           </div>
           <p className="text-sm text-gray-500 mt-0.5">{org?.name} · Year {selectedYear}</p>
         </div>
-        <div className="flex gap-1">
-          {[currentYear - 1, currentYear].map((y) => (
-            <a key={y} href={`/org/${orgId}/accounting/reports/zakat-utilisation?year=${y}`}
-              className={`px-3 py-1.5 text-xs font-medium rounded-md border transition-colors ${
-                y === selectedYear
-                  ? 'bg-amber-600 text-white border-amber-600'
-                  : 'bg-white text-gray-600 border-gray-200 hover:bg-gray-50'
-              }`}>
-              {y}
-            </a>
-          ))}
-        </div>
+        <MonthYearPicker
+          selectedYear={selectedYear}
+          basePath={`/org/${orgId}/accounting/reports/zakat-utilisation`}
+        />
       </div>
 
       {/* Org header block (for print/submission) */}
